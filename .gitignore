@@ -30,3 +30,11 @@
 *.exe
 *.out
 *.app
+
+# vscode 
+.vscode/
+.cache/
+
+# meson
+builddir/
+compile_commands.json
