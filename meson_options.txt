@@ -1,0 +1,2 @@
+option('cli_terminal_color_support', type : 'boolean', value : true, description : 'support terminal color')
+
