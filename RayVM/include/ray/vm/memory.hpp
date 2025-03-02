@@ -16,7 +16,7 @@ class Memory {
 	std::vector<Byte> data;
 
   public:
-	void resize(std::size_t size) { data.resize(size); }
+	void resize(std::size_t size);
 
 	Byte readByte(std::size_t index) const;
 	bool writeByte(std::size_t index, Byte value);
@@ -30,6 +30,6 @@ class Memory {
 	QWord readQWord(std::size_t index) const;
 	bool writeQWord(std::size_t index, QWord value);
 
-	std::size_t size() const { return data.size(); }
+	std::size_t size() const;
 };
 } // namespace ray::vm
