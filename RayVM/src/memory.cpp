@@ -7,6 +7,8 @@ using Word = definitions::Word;
 using DWord = definitions::DWord;
 using QWord = definitions::QWord;
 
+Memory::Memory(std::size_t bytes) : data(bytes) {}
+
 void Memory::resize(std::size_t size) { data.resize(size); }
 
 Byte Memory::readByte(std::size_t index) const {

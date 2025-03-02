@@ -15,5 +15,15 @@ class CPUCore {
 	uint64_t pc = 0;
 	// return address
 	uint64_t ra = 0;
+
+	// trap flags
+	// zero flag
+	bool zf = false;
+	// overflow flag
+	bool of = false;
+	// invalid address flag
+	bool inv_addr_f = false;
+	// invalid instruction flag
+	bool inv_inst_f = false;
 };
 } // namespace ray::vm

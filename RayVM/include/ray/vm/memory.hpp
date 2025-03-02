@@ -16,6 +16,8 @@ class Memory {
 	std::vector<Byte> data;
 
   public:
+	Memory(size_t bytes = 256);
+
 	void resize(std::size_t size);
 
 	Byte readByte(std::size_t index) const;
