@@ -1,3 +1,4 @@
+#include <rayvmapp/options.hpp>
 #include <rayvmapp/terminal.hpp>
 
 #include <cstddef>
@@ -25,26 +26,16 @@ int main(int argc, char **argv) {
 	std::string_view input_file;
 	std::vector<std::string> options_stack;
 	std::vector<std::string> errors;
-	for (size_t i = 1; i < argc; i++) {
+	for (size_t i = 1; i < static_cast<size_t>(argc); i++) {
 		std::string_view arg = argv[i];
 		if (arg.starts_with("-") && arg.size() > 1) {
 			char flag = arg[1];
 			switch (flag) {
 			case 'S': {
-				if (flags.contains("disassembly")) {
-					errors.push_back(std::format(
-					    "{}: cannot specify both -S and -d", "Error"_red));
-					break;
-				}
 				flags.insert("assembly");
 				break;
 			}
 			case 'd': {
-				if (flags.contains("assembly")) {
-					errors.push_back(std::format(
-					    "{}: cannot specify both -S and -d", "Error"_red));
-					break;
-				}
 				flags.insert("disassembly");
 				break;
 			}
@@ -90,6 +81,18 @@ int main(int argc, char **argv) {
 		for (auto &error : errors) {
 			std::cout << error << "\n";
 		}
+		return 1;
+	}
+
+	ray::vmapp::Options opts;
+	opts.assembly = flags.contains("assembly");
+	opts.disassembly = flags.contains("disassembly");
+	opts.input = input_file;
+	opts.output = options.contains("-o")
+	                  ? options["-o"]
+	                  : std::format("out.{}", opts.assembly ? "asm" : "bin");
+
+	if (!opts.validate()) {
 		return 1;
 	}
 }

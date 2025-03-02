@@ -1,6 +1,7 @@
 rayvm_cli_incl = include_directories('include')
 
 rayvm_cli_srcs = [
+    'src/options.cpp',
     'src/source.cpp',
     'src/terminal.cpp',
 ]
