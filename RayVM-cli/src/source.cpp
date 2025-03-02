@@ -6,6 +6,7 @@
 #include <iostream>
 #include <string_view>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 using namespace ray::vmapp::terminal::literals;
@@ -19,22 +20,43 @@ int main(int argc, char **argv) {
 		    "<binary file>"_cyan);
 		return 1;
 	}
-	std::unordered_map<std::string, bool> flags;
+	std::unordered_set<std::string> flags;
 	std::unordered_map<std::string, std::string> options;
 	std::string_view input_file;
 	std::vector<std::string> options_stack;
 	std::vector<std::string> errors;
 	for (size_t i = 1; i < argc; i++) {
 		std::string_view arg = argv[i];
-		if (arg.starts_with("-")) {
-			if (arg == "-S") {
-				flags["assembly"] = true;
-			} else if (arg == "-o") {
+		if (arg.starts_with("-") && arg.size() > 1) {
+			char flag = arg[1];
+			switch (flag) {
+			case 'S': {
+				if (flags.contains("disassembly")) {
+					errors.push_back(std::format(
+					    "{}: cannot specify both -S and -d", "Error"_red));
+					break;
+				}
+				flags.insert("assembly");
+				break;
+			}
+			case 'd': {
+				if (flags.contains("assembly")) {
+					errors.push_back(std::format(
+					    "{}: cannot specify both -S and -d", "Error"_red));
+					break;
+				}
+				flags.insert("disassembly");
+				break;
+			}
+			case 'o': {
 				options_stack.push_back(std::string(arg));
-			} else {
+				break;
+			}
+			default: {
 				errors.push_back(
 				    std::format("{}: unknown flag '{}'", "Error"_red, arg));
-				continue;
+				break;
+			}
 			}
 		} else {
 			// common value
