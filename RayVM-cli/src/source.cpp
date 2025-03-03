@@ -8,6 +8,7 @@
 #include <format>
 #include <fstream>
 #include <iostream>
+#include <sstream>
 
 using namespace ray::vmapp::terminal::literals;
 
