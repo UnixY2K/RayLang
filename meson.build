@@ -6,5 +6,6 @@ project(
     license: 'BSD-3',
 )
 
+subdir('RayC')
 subdir('RayVM')
 subdir('RayVM-cli')
