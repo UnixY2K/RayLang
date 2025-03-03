@@ -1,6 +1,8 @@
 rayc_incl = include_directories('include')
 
 rayc_srcs = [
+	'src/compiler/lexer/lexer.cpp',
+	'src/compiler/lexer/token.cpp',
 	'src/source.cpp',
 ]
 rayc_args = []

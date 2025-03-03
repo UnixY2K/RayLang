@@ -1,13 +1,13 @@
 #pragma once
 
 #include <cstddef>
-#include <ray/compiler/token.hpp>
+#include <ray/compiler/lexer/token.hpp>
 
 #include <string_view>
 #include <vector>
 
 namespace ray::compiler {
-class Tokenizer {
+class Lexer {
 	std::string_view source;
 	std::vector<Token> tokens;
 	size_t start;
@@ -15,7 +15,7 @@ class Tokenizer {
 	size_t line;
 
   public:
-	Tokenizer(std::string_view source);
+	Lexer(std::string_view source);
 
 	bool isAtEnd();
 	std::vector<Token> scanTokens();
@@ -35,7 +35,6 @@ class Tokenizer {
 	void identifier();
 	char peek();
 	char peekNext();
-
 };
 
 } // namespace ray::compiler

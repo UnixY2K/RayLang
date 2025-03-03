@@ -30,7 +30,6 @@ struct Token {
 		// increment, decrement
 		TOKEN_PLUS_PLUS,   // ++
 		TOKEN_MINUS_MINUS, // --
-
 		// arithmetic
 		TOKEN_PLUS,        // +
 		TOKEN_MINUS,       // -
@@ -80,6 +79,8 @@ struct Token {
 	TokenType type;
 	std::string lexeme;
 	size_t line;
+
+	std::string toString() const;
 
 	static TokenType fromString(std::string_view str);
 	static std::string_view toString(TokenType token);
