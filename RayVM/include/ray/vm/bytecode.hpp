@@ -1,5 +1,8 @@
 #pragma once
 
+#include <array>
+#include <string>
+
 namespace ray::vm {
 enum class OpCode {
 	// Arithmetic
@@ -20,7 +23,7 @@ enum class OpCode {
 	Or,
 	Not,
 	// Control flow
-	Jmp,
+	Beq,
 	JmpIf,
 	JmpIfNot,
 	Call,
@@ -31,5 +34,13 @@ enum class OpCode {
 	// Misc
 	Nop,
 	Halt,
+	// invalid/non parsable
+	INVALID,
 };
-}
+
+struct Instruction {
+	OpCode opcode;
+	std::array<std::string, 3> operands;
+};
+
+} // namespace ray::vm

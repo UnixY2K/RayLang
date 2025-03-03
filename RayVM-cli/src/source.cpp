@@ -48,7 +48,7 @@ int main(int argc, char **argv) {
 			if (std::holds_alternative<std::vector<std::string>>(result)) {
 				for (const auto &error :
 				     std::get<std::vector<std::string>>(result)) {
-					std::cout << error << '\n';
+					std::cerr << std::format("{}: {}\n", "Error"_red, error);
 				}
 				return 1;
 			} else {
