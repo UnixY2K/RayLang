@@ -1,6 +1,7 @@
 rayvm_incl = include_directories('include')
 
 rayvm_srcs = [
+	'src/assembler.cpp',
 	'src/memory.cpp',
 	'src/vm.cpp',
 ]
