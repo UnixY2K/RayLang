@@ -1,6 +1,7 @@
 #include <ray/compiler/lexer/token.hpp>
 
 #include <format>
+#include <unordered_map>
 
 namespace ray::compiler {
 std::string Token::toString() const {
@@ -8,7 +9,76 @@ std::string Token::toString() const {
 	                   toString(type), lexeme, line);
 }
 
-Token::TokenType Token::fromString(std::string_view str) {}
+Token::TokenType Token::fromString(std::string_view str) {
+	static std::unordered_map<std::string, TokenType> map = {
+	    // block tokens
+	    {"(", Token::TokenType::TOKEN_LEFT_PAREN},         // (
+	    {")", Token::TokenType::TOKEN_RIGHT_PAREN},        // )
+	    {"{", Token::TokenType::TOKEN_LEFT_BRACE},         // {
+	    {"}", Token::TokenType::TOKEN_RIGHT_BRACE},        // }
+	    {"[", Token::TokenType::TOKEN_LEFT_SQUARE_BRACE},  // [
+	    {"]", Token::TokenType::TOKEN_RIGHT_SQUARE_BRACE}, // ]
+	    // assignment
+	    {"=", Token::TokenType::TOKEN_EQUAL},               // =
+	    {"+=", Token::TokenType::TOKEN_PLUS_EQUAL},         // +=
+	    {"-=", Token::TokenType::TOKEN_MINUS_EQUAL},        // -=
+	    {"*=", Token::TokenType::TOKEN_STAR_EQUAL},         // *=
+	    {"/=", Token::TokenType::TOKEN_SLASH_EQUAL},        // /=
+	    {"*=", Token::TokenType::TOKEN_PERCENT_EQUAL},      // *=
+	    {"&=", Token::TokenType::TOKEN_AMPERSAND_EQUAL},    // &=
+	    {"|=", Token::TokenType::TOKEN_PIPE_EQUAL},         // |=
+	    {"^=", Token::TokenType::TOKEN_CARET_EQUAL},        // ^=
+	    {"<<=", Token::TokenType::TOKEN_LESS_LESS_EQUAL},   // <<=
+	    {">>=", Token::TokenType::TOKEN_GREAT_GREAT_EQUAL}, // >>=
+	    // increment, decrement
+	    {"++", Token::TokenType::TOKEN_PLUS_PLUS},   // ++
+	    {"--", Token::TokenType::TOKEN_MINUS_MINUS}, // --
+	    // arithmetic
+	    {"+", Token::TokenType::TOKEN_PLUS},         // +
+	    {"-", Token::TokenType::TOKEN_MINUS},        // -
+	    {"*", Token::TokenType::TOKEN_STAR},         // *
+	    {"/", Token::TokenType::TOKEN_SLASH},        // /
+	    {"%", Token::TokenType::TOKEN_PERCENT},      // %
+	    {"&", Token::TokenType::TOKEN_AMPERSAND},    // &
+	    {"|", Token::TokenType::TOKEN_PIPE},         // |
+	    {"^", Token::TokenType::TOKEN_CARET},        // ^
+	    {"<<", Token::TokenType::TOKEN_LEFT_SHIFT},  // <<
+	    {">>", Token::TokenType::TOKEN_RIGHT_SHIFT}, // >>
+	    // logical
+	    {"!", Token::TokenType::TOKEN_BANG},                 // !
+	    {"&&", Token::TokenType::TOKEN_AMPERSAND_AMPERSAND}, // &&
+	    {"||", Token::TokenType::TOKEN_PIPE_PIPE},           // ||
+	    // comparison
+	    {"==", Token::TokenType::TOKEN_EQUAL_EQUAL}, // ==
+	    {"!=", Token::TokenType::TOKEN_BANG_EQUAL},  // !=
+	    {"<", Token::TokenType::TOKEN_LESS},         // <
+	    {">", Token::TokenType::TOKEN_GREAT},        // >
+	    {"<=", Token::TokenType::TOKEN_LESS_EQUAL},  // <=
+	    {">=", Token::TokenType::TOKEN_GREAT_EQUAL}, // >=
+	    // misc
+	    {".", Token::TokenType::TOKEN_DOT},      // .
+	    {",", Token::TokenType::TOKEN_COMMA},    // ,
+	    {"?", Token::TokenType::TOKEN_QUESTION}, // ?
+	    // literals
+	    //{"", Token::TokenType::TOKEN_IDENTIFIER}, // ex: foo, bar, baz, etc.
+	    //{"", Token::TokenType::TOKEN_STRING},     // ex: "Hello, world"
+	    //{"", Token::TokenType::TOKEN_NUMBER},     // ex: 0x01}, 10}, 10.2}, -2
+	    // keywords
+	    {"if", Token::TokenType::TOKEN_IF},             // if
+	    {"else", Token::TokenType::TOKEN_ELSE},         // else
+	    {"true", Token::TokenType::TOKEN_TRUE},         // true
+	    {"false", Token::TokenType::TOKEN_FALSE},       // false
+	    {"for", Token::TokenType::TOKEN_FOR},           // for
+	    {"while", Token::TokenType::TOKEN_WHILE},       // while
+	    {"fn", Token::TokenType::TOKEN_FN},             // fn
+	    {"return", Token::TokenType::TOKEN_RETURN},     // return
+	    {"continue", Token::TokenType::TOKEN_CONTINUE}, // continue
+	    {"break", Token::TokenType::TOKEN_BREAK},       // break
+
+	};
+	std::string key{str};
+	return map.contains(key) ? map.at(key) : TokenType::TOKEN_ERROR;
+}
 
 std::string_view Token::toString(TokenType token) {
 	switch (token) {

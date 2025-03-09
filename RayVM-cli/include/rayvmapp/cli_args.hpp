@@ -1,7 +1,9 @@
 #pragma once
 #include <rayvmapp/options.hpp>
 
+#include <string>
 #include <variant>
+#include <vector>
 
 namespace ray::vmapp::terminal {
 
