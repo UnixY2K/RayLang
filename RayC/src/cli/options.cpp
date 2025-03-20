@@ -10,11 +10,6 @@ using namespace terminal::literals;
 
 bool Options::validate() const {
 	bool success = true;
-	if (assembly && disassembly) {
-		std::cerr << std::format("{}: cannot specify both -S and -d\n",
-		                         "Error"_red);
-		success = false;
-	}
 
 	// check if the input file is a valid file
 	if (!std::filesystem::exists(input)) {

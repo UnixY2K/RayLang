@@ -1,7 +1,7 @@
 #include <format>
 #include <iostream>
 
-#include <ray/compiler/lexer/token.hpp>
+#include <ray/cli/cli_args.hpp>
 
 using namespace ray::compiler;
 
@@ -11,7 +11,16 @@ int main(int argc, char **argv) {
 		return 1;
 	}
 
-	Token token{Token::fromString("{"), "{", 0};
-
-	std::cout << std::format("{}\n", token.toString());
+	auto result = ray::compiler::cli::parse_args(argc, argv);
+	if (std::holds_alternative<std::vector<std::string>>(result)) {
+		for (const auto &error : std::get<std::vector<std::string>>(result)) {
+			std::cout << error << '\n';
+		}
+		return 1;
+	} else {
+		auto opts = std::get<ray::compiler::cli::Options>(result);
+		if (!opts.validate()) {
+			return 1;
+		}
+	}
 }
