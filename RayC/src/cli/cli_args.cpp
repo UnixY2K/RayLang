@@ -32,10 +32,6 @@ std::variant<Options, std::vector<std::string>> parse_args(int argc,
 				flags.insert("assembly");
 				break;
 			}
-			case 'd': {
-				flags.insert("disassembly");
-				break;
-			}
 			case 'o': {
 				options_stack.push_back(std::string(arg));
 				break;
@@ -80,7 +76,6 @@ std::variant<Options, std::vector<std::string>> parse_args(int argc,
 
 	Options opts;
 	opts.assembly = flags.contains("assembly");
-	opts.disassembly = flags.contains("disassembly");
 	opts.input = input_file;
 	opts.output = options.contains("-o")
 	                  ? options["-o"]
