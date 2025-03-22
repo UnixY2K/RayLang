@@ -5,10 +5,12 @@
 
 namespace ray::compiler {
 std::string Token::toString() const {
-	return std::format("Token{{type: {}, lexeme: '{}', line: {}}}",
-	                   toString(type), lexeme, line);
+	return std::format(
+	    "Token{{type: {:<25},line: {:<4},char: {:<4},lexeme: '{}'}}",
+	    toString(type), line, column, lexeme);
 }
 
+Token::TokenType Token::fromChar(const char c) { return fromString({&c, 1}); }
 Token::TokenType Token::fromString(std::string_view str) {
 	static std::unordered_map<std::string, TokenType> map = {
 	    // block tokens
@@ -56,13 +58,16 @@ Token::TokenType Token::fromString(std::string_view str) {
 	    {"<=", Token::TokenType::TOKEN_LESS_EQUAL},  // <=
 	    {">=", Token::TokenType::TOKEN_GREAT_EQUAL}, // >=
 	    // misc
-	    {".", Token::TokenType::TOKEN_DOT},      // .
-	    {",", Token::TokenType::TOKEN_COMMA},    // ,
-	    {"?", Token::TokenType::TOKEN_QUESTION}, // ?
+	    {".", Token::TokenType::TOKEN_DOT},       // .
+	    {",", Token::TokenType::TOKEN_COMMA},     // ,
+	    {"?", Token::TokenType::TOKEN_QUESTION},  // ?
+	    {":", Token::TokenType::TOKEN_COLON},     // :
+	    {";", Token::TokenType::TOKEN_SEMICOLON}, // ;
 	    // literals
 	    //{"", Token::TokenType::TOKEN_IDENTIFIER}, // ex: foo, bar, baz, etc.
 	    //{"", Token::TokenType::TOKEN_STRING},     // ex: "Hello, world"
-	    //{"", Token::TokenType::TOKEN_NUMBER},     // ex: 0x01}, 10}, 10.2}, -2
+	    //{"", Token::TokenType::TOKEN_NUMBER},     // ex: 0x01, 10, 10.2, -2,
+	    //.1
 	    // keywords
 	    {"if", Token::TokenType::TOKEN_IF},             // if
 	    {"else", Token::TokenType::TOKEN_ELSE},         // else
@@ -174,6 +179,10 @@ std::string_view Token::toString(TokenType token) {
 		return "TOKEN_COMMA";
 	case TokenType::TOKEN_QUESTION:
 		return "TOKEN_QUESTION";
+	case TokenType::TOKEN_COLON:
+		return "TOKEN_COLON";
+	case TokenType::TOKEN_SEMICOLON:
+		return "TOKEN_SEMICOLON";
 	// Literals.
 	case TokenType::TOKEN_IDENTIFIER:
 		return "TOKEN_IDENTIFIER";

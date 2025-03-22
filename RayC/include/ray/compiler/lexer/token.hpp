@@ -1,4 +1,5 @@
 #pragma once
+#include <cstddef>
 #include <string>
 #include <string_view>
 
@@ -53,9 +54,11 @@ struct Token {
 		TOKEN_LESS_EQUAL,  // <=
 		TOKEN_GREAT_EQUAL, // >=
 		// MISC
-		TOKEN_DOT,      // .
-		TOKEN_COMMA,    // ,
-		TOKEN_QUESTION, // ?
+		TOKEN_DOT,       // .
+		TOKEN_COMMA,     // ,
+		TOKEN_QUESTION,  // ?
+		TOKEN_COLON,     // :
+		TOKEN_SEMICOLON, // ;
 		// Literals.
 		TOKEN_IDENTIFIER, // ex: foo, bar, baz, etc.
 		TOKEN_STRING,     // ex: "Hello, world"
@@ -79,9 +82,11 @@ struct Token {
 	TokenType type;
 	std::string lexeme;
 	size_t line;
+	size_t column;
 
 	std::string toString() const;
 
+	static TokenType fromChar(const char c);
 	static TokenType fromString(std::string_view str);
 	static std::string_view toString(TokenType token);
 };
