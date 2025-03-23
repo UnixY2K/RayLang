@@ -3,6 +3,7 @@
 #include <vector>
 
 #include <ray/compiler/lexer/lexer.hpp>
+#include <ray/compiler/lexer/lexer_error.hpp>
 #include <ray/compiler/lexer/token.hpp>
 
 namespace ray::compiler {
@@ -13,6 +14,7 @@ bool Lexer::isAtEnd() const { return current >= source.length(); };
 
 std::vector<Token> Lexer::scanTokens() {
 	tokens.clear();
+	errors.clear();
 	start = 0;
 	current = 0;
 	line = 0;
@@ -27,6 +29,8 @@ std::vector<Token> Lexer::scanTokens() {
 
 	return tokens;
 }
+
+const std::vector<LexerError> &Lexer::getErrors() const { return errors; }
 
 void Lexer::scanToken() {
 	char c = advance();
@@ -50,10 +54,13 @@ void Lexer::scanToken() {
 		} else if (c == '\n') {
 			line++;
 			column = 0;
-		}
-		else{
-			// TODO: report an error here
-			addToken(type, std::string{std::string_view(&c, 1)});
+		} else {
+			Token errorToken =
+			    Token{type, std::string{std::string_view(&c, 1)}, line, column};
+			errors.push_back(
+			    {.category = LexerError::ErrorCategory::UnexpectedCharacter,
+			     .token = errorToken,
+			     .message = "Unexpected character"});
 		}
 		break;
 	}
@@ -84,7 +91,7 @@ bool Lexer::match(char expected) {
 }
 
 void Lexer::string() {
-	while (peek() != '"' && isAtEnd()) {
+	while (peek() != '"' && !isAtEnd()) {
 		if (peek() == '\n') {
 			line++;
 			column = 0;
@@ -93,7 +100,12 @@ void Lexer::string() {
 	}
 
 	if (isAtEnd()) {
-		// TODO: return an unterminated string with the current info
+		std::string value = std::string{source.substr(start, current - start)};
+		Token errorToken{Token::TokenType::TOKEN_STRING, value, line, column};
+		errors.push_back(
+		    {.category = LexerError::ErrorCategory::UnterminatedString,
+		     .token = errorToken,
+		     .message = "Unterminated string"});
 		return;
 	}
 

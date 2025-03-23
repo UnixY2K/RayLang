@@ -46,5 +46,9 @@ int main(int argc, char **argv) {
 		for (auto &token : tokens) {
 			std::cout << std::format("{}\n", token.toString());
 		}
+		for (auto &error : lexer.getErrors()) {
+			std::cerr << std::format("{}: {}\n", "LexerError"_red,
+			                         error.toString());
+		}
 	}
 }
