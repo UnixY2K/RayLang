@@ -22,12 +22,12 @@ template <class T> class Ternary : Expression<T> {
 	    : cond(cond), left(left), right(right) {}
 
 	T accept(ExpressionVisitor<T> &visitor) override {
-		return visitor.visitTernaryExpr(this);
+		return visitor.visitTernaryExpression(this);
 	}
 };
 
 template <class T> class ExpressionVisitor {
-	virtual T visitTernaryExpr(Ternary<T> &ternary) = 0;
+	virtual T visitTernaryExpression(Ternary<T> &ternary) = 0;
 };
 
 } // namespace ray::compiler::ast
