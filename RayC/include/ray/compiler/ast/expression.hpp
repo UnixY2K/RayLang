@@ -3,11 +3,11 @@
 
 namespace ray::compiler::ast {
 
-template <class T> class ExprVisitor;
+template <class T> class ExpressionVisitor;
 
 template <class T> class Expression {
   public:
-	virtual T accept(ExprVisitor<T> &visitor) = 0;
+	virtual T accept(ExpressionVisitor<T> &visitor) = 0;
 };
 
 template <class T> class Ternary : Expression<T> {
@@ -21,12 +21,13 @@ template <class T> class Ternary : Expression<T> {
 	        std::unique_ptr<Expression<T>> right)
 	    : cond(cond), left(left), right(right) {}
 
-	T accept(ExprVisitor<T> &visitor) override {
+	T accept(ExpressionVisitor<T> &visitor) override {
 		return visitor.visitTernaryExpr(this);
 	}
 };
 
-template <class T> class ExprVisitor {
+template <class T> class ExpressionVisitor {
 	virtual T visitTernaryExpr(Ternary<T> &ternary) = 0;
 };
+
 } // namespace ray::compiler::ast
