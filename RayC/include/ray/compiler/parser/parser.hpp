@@ -1,8 +1,8 @@
 #pragma once
+#include <ray/compiler/lexer/token.hpp>
+#include <ray/compiler/ast/statement.hpp>
 
 #include <cstddef>
-#include <ray/compiler/lexer/token.hpp>
-
 #include <vector>
 
 namespace ray::compiler {
@@ -15,6 +15,6 @@ class Parser {
 	Parser() = default;
 	Parser(std::vector<Token> tokens) : tokens(tokens) {}
 
-	std::vector<Statement> parse();
+	std::vector<ast::Statement> parse();
 };
 } // namespace ray::compiler

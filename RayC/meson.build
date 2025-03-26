@@ -1,6 +1,7 @@
 rayc_incl = include_directories('include')
 
 rayc_srcs = [
+	'src/ast/parser.cpp',
 	'src/cli/cli_args.cpp',
 	'src/cli/options.cpp',
 	'src/cli/terminal.cpp',

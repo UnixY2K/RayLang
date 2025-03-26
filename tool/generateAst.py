@@ -32,12 +32,8 @@ def defineAst(outputDir: str, baseName: str, requiredHeaders: list[str], types: 
         headerFile.write("\n")
         headerFile.write("namespace ray::compiler::ast {\n")
         headerFile.write("\n")
-        headerFile.write(f"template <class T> class {baseName}Visitor;\n")
-        headerFile.write("\n")
-        headerFile.write(f"template <class T> class {baseName} {{\n")
+        headerFile.write(f"class {baseName} {{\n")
         headerFile.write("  public:\n")
-        headerFile.write(
-            f"\tvirtual T accept({baseName}Visitor<T> &visitor) = 0;\n")
         headerFile.write("};\n\n")
 
         for clazz in processedClasses:
@@ -46,11 +42,6 @@ def defineAst(outputDir: str, baseName: str, requiredHeaders: list[str], types: 
             headerFile.write("\n")
 
         headerFile.write("\n")
-        headerFile.write(f"template <class T> class {baseName}Visitor {{\n")
-        for clazz in processedClasses:
-            headerFile.write(
-                f"\tvirtual T visit{clazz["Name"]}Expression({clazz["Name"]}<T> &ternary) = 0;\n")
-        headerFile.write("};\n\n")
 
         headerFile.write("} // namespace ray::compiler::ast\n")
 
@@ -59,7 +50,7 @@ def defineType(baseName: str, clazz: dict[str]):
     stringList = list[str]()
 
     stringList.append(
-        f"template <class T> class {clazz["Name"]} : {baseName}<T> {{\n")
+        f"class {clazz["Name"]} : {baseName} {{\n")
     stringList.append(f"  public:\n")
     for field in clazz["Fields"]:
         stringList.append(
@@ -82,34 +73,16 @@ def defineType(baseName: str, clazz: dict[str]):
     stringList.append(", ".join(initializerList))
     stringList.append(" {}\n\n")
 
-    # define accept method
-    stringList.append(
-        f"\tT accept({baseName}Visitor<T> &visitor) override {{\n")
-    stringList.append(
-        f"\t\treturn visitor.visit{clazz["Name"]}{baseName}(this);\n")
-    stringList.append("\t}\n")
-
-    stringList.append("};\n")
-    return "".join(stringList)
-
-
-def defineVisitor(baseName: str, types: dict):
-    stringList = list[str]()
-    stringList.append("class ${baseName}Visitor {\n")
-    for typeValue in types:
-        className = typeValue.Name
-        stringList.append(
-            f"\tvisit${className}${baseName}([${className}]`$${className}) {{}}")
-
-    stringList.append("}`n")
+    stringList.append("};")
 
     return "".join(stringList)
+
 
 
 def main():
     outputDir = "./RayC/include/ray/compiler/ast"
     defineAst(outputDir, "Expression", ["memory", "ray/compiler/lexer/token.hpp"], [
-        "Ternary		= Expression<T> cond, Expression<T> left, Expression<T> right",
+        "Ternary		= Expression cond, Expression left, Expression right",
         "Variable		= Token name",
     ])
     defineAst(outputDir, "Statement",
@@ -119,15 +92,15 @@ def main():
              "ray/compiler/ast/expression.hpp"
             ],
             [
-                "Block			= std::vector<Statement<T>> statements",
-                "TerminalExpr	= Expression<T> expression",
-                "ExpressionStmt	= Expression<T> expression",
-                "Function		= Token name, std::vector<Token> params, std::vector<Statement<T>> body",
-                "If				= Expression<T> condition, Statement<T> thenBranch, Statement<T> elseBranch",
-                "Print			= Expression<T> expression",
-                "Jump			= Token keyword, Expression<T> value",
-                "Var			= Token name, Expression<T> initializer",
-                "While			= Expression<T> condition, Statement<T> body"
+                "Block			= std::vector<Statement> statements",
+                "TerminalExpr	= Expression expression",
+                "ExpressionStmt	= Expression expression",
+                "Function		= Token name, std::vector<Token> params, std::vector<Statement> body",
+                "If				= Expression condition, Statement thenBranch, Statement elseBranch",
+                "Print			= Expression expression",
+                "Jump			= Token keyword, Expression value",
+                "Var			= Token name, Expression initializer",
+                "While			= Expression condition, Statement body"
             ])
 
 
