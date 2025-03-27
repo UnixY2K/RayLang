@@ -8,7 +8,7 @@ class Expression {
   public:
 };
 
-class Ternary : Expression {
+class Ternary : public Expression {
   public:
 	std::unique_ptr<Expression> cond;
 	std::unique_ptr<Expression> left;
@@ -20,7 +20,7 @@ class Ternary : Expression {
 	    : cond(std::move(cond)), left(std::move(left)), right(std::move(right)) {}
 
 };
-class Variable : Expression {
+class Variable : public Expression {
   public:
 	std::unique_ptr<Token> name;
 

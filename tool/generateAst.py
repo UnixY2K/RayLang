@@ -50,7 +50,7 @@ def defineType(baseName: str, clazz: dict[str]):
     stringList = list[str]()
 
     stringList.append(
-        f"class {clazz["Name"]} : {baseName} {{\n")
+        f"class {clazz["Name"]} : public {baseName} {{\n")
     stringList.append(f"  public:\n")
     for field in clazz["Fields"]:
         stringList.append(

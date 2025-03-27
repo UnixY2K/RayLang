@@ -71,6 +71,7 @@ struct Token {
 		TOKEN_FOR,      // for
 		TOKEN_WHILE,    // while
 		TOKEN_FN,       // fn
+		TOKEN_LET,      // let
 		TOKEN_RETURN,   // return
 		TOKEN_CONTINUE, // continue
 		TOKEN_BREAK,    // break

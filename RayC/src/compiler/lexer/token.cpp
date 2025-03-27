@@ -76,6 +76,7 @@ Token::TokenType Token::fromString(std::string_view str) {
 	    {"for", Token::TokenType::TOKEN_FOR},           // for
 	    {"while", Token::TokenType::TOKEN_WHILE},       // while
 	    {"fn", Token::TokenType::TOKEN_FN},             // fn
+	    {"let", Token::TokenType::TOKEN_LET},           // let
 	    {"return", Token::TokenType::TOKEN_RETURN},     // return
 	    {"continue", Token::TokenType::TOKEN_CONTINUE}, // continue
 	    {"break", Token::TokenType::TOKEN_BREAK},       // break
@@ -205,6 +206,8 @@ std::string_view Token::toString(TokenType token) {
 		return "TOKEN_WHILE";
 	case TokenType::TOKEN_FN:
 		return "TOKEN_FN";
+	case TokenType::TOKEN_LET:
+		return "TOKEN_LET";
 	case TokenType::TOKEN_RETURN:
 		return "TOKEN_RETURN";
 	case TokenType::TOKEN_CONTINUE:

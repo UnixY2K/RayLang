@@ -10,7 +10,7 @@ class Statement {
   public:
 };
 
-class Block : Statement {
+class Block : public Statement {
   public:
 	std::unique_ptr<std::vector<Statement>> statements;
 
@@ -18,7 +18,7 @@ class Block : Statement {
 	    : statements(std::move(statements)) {}
 
 };
-class TerminalExpr : Statement {
+class TerminalExpr : public Statement {
   public:
 	std::unique_ptr<Expression> expression;
 
@@ -26,7 +26,7 @@ class TerminalExpr : Statement {
 	    : expression(std::move(expression)) {}
 
 };
-class ExpressionStmt : Statement {
+class ExpressionStmt : public Statement {
   public:
 	std::unique_ptr<Expression> expression;
 
@@ -34,7 +34,7 @@ class ExpressionStmt : Statement {
 	    : expression(std::move(expression)) {}
 
 };
-class Function : Statement {
+class Function : public Statement {
   public:
 	std::unique_ptr<Token> name;
 	std::unique_ptr<std::vector<Token>> params;
@@ -46,7 +46,7 @@ class Function : Statement {
 	    : name(std::move(name)), params(std::move(params)), body(std::move(body)) {}
 
 };
-class If : Statement {
+class If : public Statement {
   public:
 	std::unique_ptr<Expression> condition;
 	std::unique_ptr<Statement> thenBranch;
@@ -58,7 +58,7 @@ class If : Statement {
 	    : condition(std::move(condition)), thenBranch(std::move(thenBranch)), elseBranch(std::move(elseBranch)) {}
 
 };
-class Print : Statement {
+class Print : public Statement {
   public:
 	std::unique_ptr<Expression> expression;
 
@@ -66,7 +66,7 @@ class Print : Statement {
 	    : expression(std::move(expression)) {}
 
 };
-class Jump : Statement {
+class Jump : public Statement {
   public:
 	std::unique_ptr<Token> keyword;
 	std::unique_ptr<Expression> value;
@@ -76,7 +76,7 @@ class Jump : Statement {
 	    : keyword(std::move(keyword)), value(std::move(value)) {}
 
 };
-class Var : Statement {
+class Var : public Statement {
   public:
 	std::unique_ptr<Token> name;
 	std::unique_ptr<Expression> initializer;
@@ -86,7 +86,7 @@ class Var : Statement {
 	    : name(std::move(name)), initializer(std::move(initializer)) {}
 
 };
-class While : Statement {
+class While : public Statement {
   public:
 	std::unique_ptr<Expression> condition;
 	std::unique_ptr<Statement> body;
