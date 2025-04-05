@@ -1,3 +1,4 @@
+#include "ray/compiler/parser/parser.hpp"
 #include <format>
 #include <fstream>
 #include <iostream>
@@ -43,12 +44,14 @@ int main(int argc, char **argv) {
 		Lexer lexer(oss.view());
 
 		auto tokens = lexer.scanTokens();
-		for (auto &token : tokens) {
-			std::cout << std::format("{}\n", token.toString());
-		}
-		for (auto &error : lexer.getErrors()) {
-			std::cerr << std::format("{}: {}\n", "LexerError"_red,
-			                         error.toString());
+		if (lexer.getErrors().size() == 0) {
+			auto parser = Parser(tokens);
+			auto statements = parser.parse();
+		} else {
+			for (auto &error : lexer.getErrors()) {
+				std::cerr << std::format("{}: {}\n", "LexerError"_red,
+				                         error.toString());
+			}
 		}
 	}
 }
