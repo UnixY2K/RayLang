@@ -35,7 +35,7 @@ class Parser {
 	ast::Statement varDeclaration();
 	ast::Statement expressionStatement();
 	ast::Function function(std::string kind);
-	std::vector<ast::Statement> block();
+	std::vector<std::unique_ptr<ast::Statement>> block();
 	ast::Expression comma();
 	ast::Expression assignment();
 	ast::Expression orExpression();

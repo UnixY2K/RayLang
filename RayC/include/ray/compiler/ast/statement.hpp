@@ -38,11 +38,11 @@ class Function : public Statement {
   public:
 	std::unique_ptr<Token> name;
 	std::unique_ptr<std::vector<Token>> params;
-	std::unique_ptr<std::vector<Statement>> body;
+	std::unique_ptr<std::vector<std::unique_ptr<Statement>>> body;
 
 	Function(std::unique_ptr<Token> name,
 	        std::unique_ptr<std::vector<Token>> params,
-	        std::unique_ptr<std::vector<Statement>> body)
+	        std::unique_ptr<std::vector<std::unique_ptr<Statement>>> body)
 	    : name(std::move(name)), params(std::move(params)), body(std::move(body)) {}
 
 };

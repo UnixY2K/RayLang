@@ -95,7 +95,7 @@ def main():
                 "Block			= std::vector<Statement> statements",
                 "TerminalExpr	= Expression expression",
                 "ExpressionStmt	= Expression expression",
-                "Function		= Token name, std::vector<Token> params, std::vector<Statement> body",
+                "Function		= Token name, std::vector<Token> params, std::vector<std::unique_ptr<Statement>> body",
                 "If				= Expression condition, Statement thenBranch, Statement elseBranch",
                 "Print			= Expression expression",
                 "Jump			= Token keyword, Expression value",
