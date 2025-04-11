@@ -1,4 +1,5 @@
 #pragma once
+#include <memory>
 #include <ray/compiler/ast/expression.hpp>
 #include <ray/compiler/ast/statement.hpp>
 #include <ray/compiler/lexer/token.hpp>
@@ -19,20 +20,19 @@ class Parser {
 	Parser() = default;
 	Parser(std::vector<Token> tokens) : tokens(tokens) {}
 
-	std::vector<ast::Statement> parse();
+	std::vector<std::unique_ptr<ast::Statement>> parse();
 
   private:
 	ast::Expression expression();
-	ast::Statement declaration();
-	ast::Statement statement();
+	std::unique_ptr<ast::Statement> declaration();
+	std::unique_ptr<ast::Statement> statement();
 	ast::Statement forStatement();
 	ast::Statement ifStatement();
-	ast::Statement printStatement();
 	ast::Statement returnStatement();
 	ast::Statement continueStatement();
 	ast::Statement breakStatement();
 	ast::Statement whileStatement();
-	ast::Statement varDeclaration();
+	std::unique_ptr<ast::Statement> varDeclaration();
 	ast::Statement expressionStatement();
 	ast::Function function(std::string kind);
 	std::vector<std::unique_ptr<ast::Statement>> block();

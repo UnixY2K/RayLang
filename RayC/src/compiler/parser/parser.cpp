@@ -2,16 +2,17 @@
 #include <memory>
 #include <utility>
 
+#include <ray/compiler/ast/expression.hpp>
 #include <ray/compiler/ast/statement.hpp>
 #include <ray/compiler/lexer/token.hpp>
 #include <ray/compiler/parser/parser.hpp>
 
 namespace ray::compiler {
 
-std::vector<ast::Statement> Parser::parse() {
+std::vector<std::unique_ptr<ast::Statement>> Parser::parse() {
 	current = 0;
 	try {
-		std::vector<ast::Statement> statements;
+		std::vector<std::unique_ptr<ast::Statement>> statements;
 
 		while (!isAtEnd()) {
 			statements.push_back(declaration());
@@ -23,10 +24,10 @@ std::vector<ast::Statement> Parser::parse() {
 	}
 }
 
-ast::Statement Parser::declaration() {
+std::unique_ptr<ast::Statement> Parser::declaration() {
 	try {
 		if (match({Token::TokenType::TOKEN_FN})) {
-			return function("function");
+			return std::make_unique<ast::Statement>(function("function"));
 		}
 		if (match({Token::TokenType::TOKEN_LET})) {
 			return varDeclaration();
@@ -34,9 +35,26 @@ ast::Statement Parser::declaration() {
 		return statement();
 	} catch (ParseException) {
 		synchronize();
-		return ast::Statement{};
+		return std::make_unique<ast::Statement>(ast::Statement{});
 	}
 }
+
+std::unique_ptr<ast::Statement> Parser::varDeclaration() {
+	Token name =
+	    consume(Token::TokenType::TOKEN_IDENTIFIER, "Expect variable name.");
+
+	ast::Expression initializer;
+	if (match({Token::TokenType::TOKEN_EQUAL})) {
+		initializer = expression();
+	}
+
+	consume(Token::TokenType::TOKEN_SEMICOLON,
+	        "Expect ';' after variable declaration.");
+	ast::Var variable{std::make_unique<Token>(name),
+	                  std::make_unique<ast::Expression>(initializer)};
+	return std::make_unique<ast::Statement>(std::move(variable));
+}
+
 ast::Function Parser::function(std::string kind) {
 	Token name = consume(Token::TokenType::TOKEN_IDENTIFIER,
 	                     std::format("Expect {} name.", kind));

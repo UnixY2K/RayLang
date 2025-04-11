@@ -58,14 +58,6 @@ class If : public Statement {
 	    : condition(std::move(condition)), thenBranch(std::move(thenBranch)), elseBranch(std::move(elseBranch)) {}
 
 };
-class Print : public Statement {
-  public:
-	std::unique_ptr<Expression> expression;
-
-	Print(std::unique_ptr<Expression> expression)
-	    : expression(std::move(expression)) {}
-
-};
 class Jump : public Statement {
   public:
 	std::unique_ptr<Token> keyword;
