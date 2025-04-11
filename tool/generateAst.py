@@ -34,6 +34,7 @@ def defineAst(outputDir: str, baseName: str, requiredHeaders: list[str], types: 
         headerFile.write("\n")
         headerFile.write(f"class {baseName} {{\n")
         headerFile.write("  public:\n")
+        headerFile.write(f"\tvirtual ~{baseName}() = default;\n")
         headerFile.write("};\n\n")
 
         for clazz in processedClasses:
@@ -54,7 +55,7 @@ def defineType(baseName: str, clazz: dict[str]):
     stringList.append(f"  public:\n")
     for field in clazz["Fields"]:
         stringList.append(
-            f"\tstd::unique_ptr<{field["Type"]}> {field["Name"]};\n")
+            f"\t{field["Type"]} {field["Name"]};\n")
     stringList.append("\n")
 
     # define constructor
@@ -62,7 +63,7 @@ def defineType(baseName: str, clazz: dict[str]):
     constructorParams = list[str]()
     for field in clazz["Fields"]:
         constructorParams.append(
-            f"std::unique_ptr<{field["Type"]}> {field["Name"]}")
+            f"{field["Type"]} {field["Name"]}")
 
     stringList.append(f",\n\t{" " * 8}".join(constructorParams))
     stringList.append(f")\n\t{" " * 4}: ")
@@ -81,8 +82,17 @@ def defineType(baseName: str, clazz: dict[str]):
 
 def main():
     outputDir = "./RayC/include/ray/compiler/ast"
-    defineAst(outputDir, "Expression", ["memory", "ray/compiler/lexer/token.hpp"], [
-        "Ternary		= Expression cond, Expression left, Expression right",
+    defineAst(outputDir, "Expression", ["any", "memory", "vector", "ray/compiler/lexer/token.hpp"], [
+        "Ternary		= std::unique_ptr<Expression> cond, std::unique_ptr<Expression> left, std::unique_ptr<Expression> right",
+        "Assign			= Token name, std::unique_ptr<Expression> value",
+        "Binary			= std::unique_ptr<Expression> left, Token op, std::unique_ptr<Expression> right",
+        "Call			= std::unique_ptr<Expression> callee, Token paren, std::vector<std::unique_ptr<Expression>> arguments",
+        "Get			= std::unique_ptr<Expression> object, Token name",
+        "Grouping		= std::unique_ptr<Expression> expression",
+        "Literal		= std::any value",
+        "Logical		= std::unique_ptr<Expression> left, Token op, std::unique_ptr<Expression> right",
+        "Set			= std::unique_ptr<Expression> object, Token name, std::unique_ptr<Expression> value",
+        "Unary			= Token op, std::unique_ptr<Expression> right",
         "Variable		= Token name",
     ])
     defineAst(outputDir, "Statement",
@@ -92,14 +102,14 @@ def main():
              "ray/compiler/ast/expression.hpp"
             ],
             [
-                "Block			= std::vector<Statement> statements",
-                "TerminalExpr	= Expression expression",
-                "ExpressionStmt	= Expression expression",
+                "Block			= std::vector<std::unique_ptr<Statement>> statements",
+                "TerminalExpr	= std::unique_ptr<Expression> expression",
+                "ExpressionStmt	= std::unique_ptr<Expression> expression",
                 "Function		= Token name, std::vector<Token> params, std::vector<std::unique_ptr<Statement>> body",
-                "If				= Expression condition, Statement thenBranch, Statement elseBranch",
-                "Jump			= Token keyword, Expression value",
-                "Var			= Token name, Expression initializer",
-                "While			= Expression condition, Statement body"
+                "If				= std::unique_ptr<Expression> condition, Statement thenBranch, Statement elseBranch",
+                "Jump			= Token keyword, std::unique_ptr<Expression> value",
+                "Var			= Token name, std::unique_ptr<Expression> initializer",
+                "While			= std::unique_ptr<Expression> condition, Statement body"
             ])
 
 

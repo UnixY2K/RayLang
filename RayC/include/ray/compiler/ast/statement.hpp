@@ -8,13 +8,14 @@ namespace ray::compiler::ast {
 
 class Statement {
   public:
+	virtual ~Statement() = default;
 };
 
 class Block : public Statement {
   public:
-	std::unique_ptr<std::vector<Statement>> statements;
+	std::vector<std::unique_ptr<Statement>> statements;
 
-	Block(std::unique_ptr<std::vector<Statement>> statements)
+	Block(std::vector<std::unique_ptr<Statement>> statements)
 	    : statements(std::move(statements)) {}
 
 };
@@ -36,44 +37,44 @@ class ExpressionStmt : public Statement {
 };
 class Function : public Statement {
   public:
-	std::unique_ptr<Token> name;
-	std::unique_ptr<std::vector<Token>> params;
-	std::unique_ptr<std::vector<std::unique_ptr<Statement>>> body;
+	Token name;
+	std::vector<Token> params;
+	std::vector<std::unique_ptr<Statement>> body;
 
-	Function(std::unique_ptr<Token> name,
-	        std::unique_ptr<std::vector<Token>> params,
-	        std::unique_ptr<std::vector<std::unique_ptr<Statement>>> body)
+	Function(Token name,
+	        std::vector<Token> params,
+	        std::vector<std::unique_ptr<Statement>> body)
 	    : name(std::move(name)), params(std::move(params)), body(std::move(body)) {}
 
 };
 class If : public Statement {
   public:
 	std::unique_ptr<Expression> condition;
-	std::unique_ptr<Statement> thenBranch;
-	std::unique_ptr<Statement> elseBranch;
+	Statement thenBranch;
+	Statement elseBranch;
 
 	If(std::unique_ptr<Expression> condition,
-	        std::unique_ptr<Statement> thenBranch,
-	        std::unique_ptr<Statement> elseBranch)
+	        Statement thenBranch,
+	        Statement elseBranch)
 	    : condition(std::move(condition)), thenBranch(std::move(thenBranch)), elseBranch(std::move(elseBranch)) {}
 
 };
 class Jump : public Statement {
   public:
-	std::unique_ptr<Token> keyword;
+	Token keyword;
 	std::unique_ptr<Expression> value;
 
-	Jump(std::unique_ptr<Token> keyword,
+	Jump(Token keyword,
 	        std::unique_ptr<Expression> value)
 	    : keyword(std::move(keyword)), value(std::move(value)) {}
 
 };
 class Var : public Statement {
   public:
-	std::unique_ptr<Token> name;
+	Token name;
 	std::unique_ptr<Expression> initializer;
 
-	Var(std::unique_ptr<Token> name,
+	Var(Token name,
 	        std::unique_ptr<Expression> initializer)
 	    : name(std::move(name)), initializer(std::move(initializer)) {}
 
@@ -81,10 +82,10 @@ class Var : public Statement {
 class While : public Statement {
   public:
 	std::unique_ptr<Expression> condition;
-	std::unique_ptr<Statement> body;
+	Statement body;
 
 	While(std::unique_ptr<Expression> condition,
-	        std::unique_ptr<Statement> body)
+	        Statement body)
 	    : condition(std::move(condition)), body(std::move(body)) {}
 
 };

@@ -8,6 +8,7 @@ rayc_srcs = [
 	'src/compiler/lexer/lexer.cpp',
 	'src/compiler/lexer/token.cpp',
 	'src/compiler/parser/parser.cpp',
+	'src/compiler/error_bag.cpp',
 	'src/source.cpp',
 ]
 rayc_args = []
