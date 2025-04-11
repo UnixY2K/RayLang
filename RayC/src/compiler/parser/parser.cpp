@@ -216,7 +216,6 @@ std::unique_ptr<ast::Expression> Parser::orExpression() {
 
 	return expr;
 }
-
 std::unique_ptr<ast::Expression> Parser::andExpression() {
 	auto expr = equalityExpression();
 
@@ -242,7 +241,117 @@ std::unique_ptr<ast::Expression> Parser::equalityExpression() {
 
 	return expr;
 }
-std::unique_ptr<ast::Expression> Parser::comparisonExpression() {}
+std::unique_ptr<ast::Expression> Parser::comparisonExpression() {
+	auto expr = terminalExpression();
+
+	while (match(
+	    {Token::TokenType::TOKEN_GREAT, Token::TokenType::TOKEN_GREAT_EQUAL,
+	     Token::TokenType::TOKEN_LESS, Token::TokenType::TOKEN_LESS_EQUAL})) {
+		Token op = previous();
+		auto right = terminalExpression();
+		expr = std::make_unique<ast::Expression>(
+		    ast::Binary(std::move(expr), op, std::move(right)));
+	}
+
+	return expr;
+}
+std::unique_ptr<ast::Expression> Parser::terminalExpression() {
+	auto expr = factorExpression();
+
+	while (
+	    match({Token::TokenType::TOKEN_MINUS, Token::TokenType::TOKEN_PLUS})) {
+		Token op = previous();
+		auto right = factorExpression();
+		expr = std::make_unique<ast::Expression>(
+		    ast::Binary(std::move(expr), op, std::move(right)));
+	}
+
+	return expr;
+}
+std::unique_ptr<ast::Expression> Parser::factorExpression() {
+	auto expr = unaryExpression();
+
+	while (
+	    match({Token::TokenType::TOKEN_SLASH, Token::TokenType::TOKEN_STAR})) {
+		Token op = previous();
+		auto right = unaryExpression();
+		expr = std::make_unique<ast::Expression>(
+		    ast::Binary(std::move(expr), op, std::move(right)));
+	}
+
+	return expr;
+}
+std::unique_ptr<ast::Expression> Parser::unaryExpression() {
+	if (match({Token::TokenType::TOKEN_BANG, Token::TokenType::TOKEN_MINUS})) {
+		auto op = previous();
+		auto right = unaryExpression();
+		return std::make_unique<ast::Expression>(
+		    ast::Unary(op, std::move(right)));
+	}
+	return call();
+}
+std::unique_ptr<ast::Expression>
+Parser::finishCall(std::unique_ptr<ast::Expression> callee) {
+	std::vector<std::unique_ptr<ast::Expression>> arguments;
+	if (!check(Token::TokenType::TOKEN_RIGHT_PAREN)) {
+		do {
+			auto argument = expression();
+			ast::Binary* binaryArg = dynamic_cast<ast::Binary*>(argument.get());
+			if (binaryArg && binaryArg->op.type == Token::TokenType::TOKEN_COMMA) {
+				do {
+					arguments.push_back(std::move(binaryArg->left));
+					argument = std::move(binaryArg->right);
+					binaryArg = dynamic_cast<ast::Binary*>(argument.get());
+				} while (binaryArg && binaryArg->op.type == Token::TokenType::TOKEN_COMMA);
+			}
+			arguments.push_back(std::move(argument));
+		} while (match({Token::TokenType::TOKEN_COMMA}));
+	}
+
+	auto paren = consume(Token::TokenType::TOKEN_RIGHT_PAREN, "Expect ')' after arguments.");
+	return std::make_unique<ast::Expression>(ast::Call(std::move(callee), paren, std::move(arguments)));
+}
+std::unique_ptr<ast::Expression> Parser::call() {
+	auto expr = primaryExpresion();
+
+	while (true) {
+		if (match({Token::TokenType::TOKEN_LEFT_PAREN})) {
+			expr = finishCall(std::move(expr));
+		} else {
+			break;
+		}
+	}
+
+	return expr;
+}
+std::unique_ptr<ast::Expression> Parser::primaryExpresion() {
+	if (match({Token::TokenType::TOKEN_FALSE})) {
+		return std::make_unique<ast::Expression>(ast::Literal(false));
+	}
+	if (match({Token::TokenType::TOKEN_TRUE})) {
+		return std::make_unique<ast::Expression>(ast::Literal(true));
+	}
+
+	if (match(
+	        {Token::TokenType::TOKEN_NUMBER, Token::TokenType::TOKEN_STRING})) {
+		return std::make_unique<ast::Expression>(
+		    ast::Literal(previous().lexeme));
+	}
+
+	if (match({Token::TokenType::TOKEN_IDENTIFIER})) {
+		return std::make_unique<ast::Expression>(ast::Variable(previous()));
+	}
+
+	if (match({Token::TokenType::TOKEN_LEFT_PAREN})) {
+		auto expr = expression();
+		consume(Token::TokenType::TOKEN_RIGHT_PAREN,
+		        "Expect ')' after expression.");
+		return std::make_unique<ast::Expression>(
+		    ast::Grouping(std::move(expr)));
+	}
+
+	throw error(peek(), "Expect expression.");
+}
 
 bool Parser::match(std::vector<Token::TokenType> types) {
 	for (auto type : types) {
