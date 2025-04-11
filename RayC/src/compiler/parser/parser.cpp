@@ -84,4 +84,28 @@ Token Parser::peek() const {
 	                               : Token{Token::TokenType::TOKEN_EOF};
 }
 
+void Parser::synchronize() {
+	advance();
+
+	while (!isAtEnd()) {
+		if (previous().type == Token::TokenType::TOKEN_SEMICOLON) {
+			return;
+		}
+
+		switch (peek().type) {
+		case Token::TokenType::TOKEN_FN:
+		case Token::TokenType::TOKEN_LET:
+		case Token::TokenType::TOKEN_FOR:
+		case Token::TokenType::TOKEN_IF:
+		case Token::TokenType::TOKEN_WHILE:
+		case Token::TokenType::TOKEN_RETURN:
+			return;
+		default: {
+		}
+		}
+
+		advance();
+	}
+}
+
 } // namespace ray::compiler
