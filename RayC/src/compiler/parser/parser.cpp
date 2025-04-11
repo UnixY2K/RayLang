@@ -1,9 +1,10 @@
 #include <format>
 #include <memory>
+#include <utility>
+
 #include <ray/compiler/ast/statement.hpp>
 #include <ray/compiler/lexer/token.hpp>
 #include <ray/compiler/parser/parser.hpp>
-#include <utility>
 
 namespace ray::compiler {
 
