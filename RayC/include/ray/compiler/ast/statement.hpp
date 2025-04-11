@@ -50,12 +50,12 @@ class Function : public Statement {
 class If : public Statement {
   public:
 	std::unique_ptr<Expression> condition;
-	Statement thenBranch;
-	Statement elseBranch;
+	std::unique_ptr<Statement> thenBranch;
+	std::unique_ptr<Statement> elseBranch;
 
 	If(std::unique_ptr<Expression> condition,
-	        Statement thenBranch,
-	        Statement elseBranch)
+	        std::unique_ptr<Statement> thenBranch,
+	        std::unique_ptr<Statement> elseBranch)
 	    : condition(std::move(condition)), thenBranch(std::move(thenBranch)), elseBranch(std::move(elseBranch)) {}
 
 };
@@ -82,10 +82,10 @@ class Var : public Statement {
 class While : public Statement {
   public:
 	std::unique_ptr<Expression> condition;
-	Statement body;
+	std::unique_ptr<Statement> body;
 
 	While(std::unique_ptr<Expression> condition,
-	        Statement body)
+	        std::unique_ptr<Statement> body)
 	    : condition(std::move(condition)), body(std::move(body)) {}
 
 };

@@ -106,10 +106,10 @@ def main():
                 "TerminalExpr	= std::unique_ptr<Expression> expression",
                 "ExpressionStmt	= std::unique_ptr<Expression> expression",
                 "Function		= Token name, std::vector<Token> params, std::vector<std::unique_ptr<Statement>> body",
-                "If				= std::unique_ptr<Expression> condition, Statement thenBranch, Statement elseBranch",
+                "If				= std::unique_ptr<Expression> condition, std::unique_ptr<Statement> thenBranch, std::unique_ptr<Statement> elseBranch",
                 "Jump			= Token keyword, std::unique_ptr<Expression> value",
                 "Var			= Token name, std::unique_ptr<Expression> initializer",
-                "While			= std::unique_ptr<Expression> condition, Statement body"
+                "While			= std::unique_ptr<Expression> condition, std::unique_ptr<Statement> body"
             ])
 
 
