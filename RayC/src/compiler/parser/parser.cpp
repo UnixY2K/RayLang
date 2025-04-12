@@ -1,6 +1,7 @@
 #include <format>
 #include <memory>
 #include <utility>
+#include <vector>
 
 #include <ray/compiler/ast/expression.hpp>
 #include <ray/compiler/ast/statement.hpp>
@@ -65,7 +66,59 @@ std::unique_ptr<ast::Statement> Parser::statement() {
 
 	return expressionStatement();
 }
-std::unique_ptr<ast::Statement> Parser::forStatement() {}
+std::unique_ptr<ast::Statement> Parser::forStatement() {
+	consume(Token::TokenType::TOKEN_LEFT_PAREN, "Expect '(' after 'for'.");
+
+	std::unique_ptr<ast::Statement> initializer;
+	if (!match({Token::TokenType::TOKEN_SEMICOLON})) {
+		if (match({Token::TokenType::TOKEN_LET})) {
+			initializer = varDeclaration();
+		} else {
+			initializer = expressionStatement();
+		}
+	}
+
+	std::unique_ptr<ast::Expression> condition;
+	if (!check(Token::TokenType::TOKEN_SEMICOLON)) {
+		condition = expression();
+	}
+	consume(Token::TokenType::TOKEN_SEMICOLON,
+	        "Expect ';' after loop condition.");
+
+	std::unique_ptr<ast::Expression> increment;
+	if (!check(Token::TokenType::TOKEN_RIGHT_PAREN)) {
+		increment = expression();
+	}
+	consume(Token::TokenType::TOKEN_RIGHT_PAREN,
+	        "Expect ')' after for clauses.");
+
+	std::unique_ptr<ast::Statement> body = statement();
+
+	if (increment) {
+		std::vector<std::unique_ptr<ast::Statement>> bodyStatements;
+		bodyStatements.push_back(std::move(body));
+		bodyStatements.push_back(std::make_unique<ast::Statement>(
+		    ast::ExpressionStmt(std::move(increment))));
+		body = std::make_unique<ast::Statement>(
+		    ast::Block(std::move(bodyStatements)));
+	}
+
+	if (!condition) {
+		condition = std::make_unique<ast::Expression>(ast::Literal(true));
+	}
+	body = std::make_unique<ast::Statement>(
+	    ast::While(std::move(condition), std::move(body)));
+
+	if (initializer) {
+		std::vector<std::unique_ptr<ast::Statement>> bodyStatements;
+		bodyStatements.push_back(std::move(initializer));
+		bodyStatements.push_back(std::move(body));
+		body = std::make_unique<ast::Statement>(
+		    ast::Block(std::move(bodyStatements)));
+	}
+
+	return body;
+}
 std::unique_ptr<ast::Statement> Parser::ifStatement() {
 	consume(Token::TokenType::TOKEN_LEFT_PAREN, "Expect '(' after 'if'.");
 	auto condition = expression();
@@ -296,20 +349,25 @@ Parser::finishCall(std::unique_ptr<ast::Expression> callee) {
 	if (!check(Token::TokenType::TOKEN_RIGHT_PAREN)) {
 		do {
 			auto argument = expression();
-			ast::Binary* binaryArg = dynamic_cast<ast::Binary*>(argument.get());
-			if (binaryArg && binaryArg->op.type == Token::TokenType::TOKEN_COMMA) {
+			ast::Binary *binaryArg =
+			    dynamic_cast<ast::Binary *>(argument.get());
+			if (binaryArg &&
+			    binaryArg->op.type == Token::TokenType::TOKEN_COMMA) {
 				do {
 					arguments.push_back(std::move(binaryArg->left));
 					argument = std::move(binaryArg->right);
-					binaryArg = dynamic_cast<ast::Binary*>(argument.get());
-				} while (binaryArg && binaryArg->op.type == Token::TokenType::TOKEN_COMMA);
+					binaryArg = dynamic_cast<ast::Binary *>(argument.get());
+				} while (binaryArg &&
+				         binaryArg->op.type == Token::TokenType::TOKEN_COMMA);
 			}
 			arguments.push_back(std::move(argument));
 		} while (match({Token::TokenType::TOKEN_COMMA}));
 	}
 
-	auto paren = consume(Token::TokenType::TOKEN_RIGHT_PAREN, "Expect ')' after arguments.");
-	return std::make_unique<ast::Expression>(ast::Call(std::move(callee), paren, std::move(arguments)));
+	auto paren = consume(Token::TokenType::TOKEN_RIGHT_PAREN,
+	                     "Expect ')' after arguments.");
+	return std::make_unique<ast::Expression>(
+	    ast::Call(std::move(callee), paren, std::move(arguments)));
 }
 std::unique_ptr<ast::Expression> Parser::call() {
 	auto expr = primaryExpresion();
@@ -352,7 +410,6 @@ std::unique_ptr<ast::Expression> Parser::primaryExpresion() {
 
 	throw error(peek(), "Expect expression.");
 }
-
 bool Parser::match(std::vector<Token::TokenType> types) {
 	for (auto type : types) {
 		if (check(type)) {
