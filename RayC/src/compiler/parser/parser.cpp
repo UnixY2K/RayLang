@@ -120,10 +120,7 @@ std::unique_ptr<ast::Statement> Parser::forStatement() {
 	return body;
 }
 std::unique_ptr<ast::Statement> Parser::ifStatement() {
-	consume(Token::TokenType::TOKEN_LEFT_PAREN, "Expect '(' after 'if'.");
 	auto condition = expression();
-	consume(Token::TokenType::TOKEN_RIGHT_PAREN,
-	        "Expect ')' after if condition.");
 
 	auto thenBranch = statement();
 	std::unique_ptr<ast::Statement> elseBranch = nullptr;
@@ -193,20 +190,39 @@ ast::Function Parser::function(std::string kind) {
 
 	consume(Token::TokenType::TOKEN_LEFT_PAREN,
 	        std::format("Expect '(' after {} name.", kind));
-	std::vector<Token> parameters;
+	std::vector<ast::Parameter> parameters;
 	if (!check(Token::TokenType::TOKEN_RIGHT_PAREN)) {
 		do {
-			parameters.push_back(consume(Token::TokenType::TOKEN_IDENTIFIER,
-			                             "Expect parameter name."));
+			auto parameterName = consume(Token::TokenType::TOKEN_IDENTIFIER,
+			                             "Expect parameter name.");
+			consume(Token::TokenType::TOKEN_COLON,
+			        "Expect ':' after parameter name.");
+			auto parameterType = consume(Token::TokenType::TOKEN_IDENTIFIER,
+			                             "Expect parameter type.");
+			auto parameter = ast::Parameter(parameterName, parameterType);
+
+			parameters.push_back(parameter);
 		} while (match({Token::TokenType::TOKEN_COMMA}));
 	}
 	consume(Token::TokenType::TOKEN_RIGHT_PAREN,
 	        "Expect ')' after parameters.");
+
+	auto previousToken = previous();
+
+	ast::Type returnType(
+	    types::makeUnitTypeToken(previous().line, previous().column));
+
+	if (match({Token::TokenType::TOKEN_ARROW})) {
+		auto returnTypeToken =
+		    consume(Token::TokenType::TOKEN_IDENTIFIER, "Expect return type.");
+		returnType = ast::Type(returnTypeToken);
+	}
+
 	consume(Token::TokenType::TOKEN_LEFT_BRACE,
 	        std::format("Expect '{{' before {} body.", kind));
 	auto body =
 	    std::make_unique<std::vector<std::unique_ptr<ast::Statement>>>(block());
-	return {name, std::move(parameters), std::move(*body)};
+	return {name, parameters, std::move(*body), returnType};
 }
 std::vector<std::unique_ptr<ast::Statement>> Parser::block() {
 	std::vector<std::unique_ptr<ast::Statement>> statements;
@@ -419,12 +435,7 @@ bool Parser::match(std::vector<Token::TokenType> types) {
 	}
 	return false;
 }
-bool Parser::check(Token::TokenType type) {
-	if (isAtEnd()) {
-		return false;
-	}
-	return peek().type == type;
-}
+bool Parser::check(Token::TokenType type) { return peek().type == type; }
 
 Token Parser::advance() {
 	if (!isAtEnd()) {
@@ -441,7 +452,7 @@ Token Parser::peek() const {
 	                               : Token{Token::TokenType::TOKEN_EOF};
 }
 Token Parser::previous() {
-	return tokens.size() < 1 ? Token{} : tokens[tokens.size() - 1];
+	return tokens.size() < 1 ? Token{} : tokens[current - 1];
 }
 Token Parser::consume(Token::TokenType type, std::string message) {
 	if (check(type)) {

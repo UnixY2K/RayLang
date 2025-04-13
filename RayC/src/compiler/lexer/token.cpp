@@ -1,13 +1,18 @@
 #include <ray/compiler/lexer/token.hpp>
 
 #include <format>
+#include <string_view>
 #include <unordered_map>
 
 namespace ray::compiler {
 std::string Token::toString() const {
 	return std::format(
 	    "Token{{type: {:<25},line: {:<4},char: {:<4},lexeme: '{}'}}",
-	    toString(type), line, column, lexeme);
+	    toString(type), line, column, getLexeme());
+}
+
+std::string_view Token::getLexeme() const {
+	return lexeme.empty() ? glyph(type) : lexeme;
 }
 
 Token::TokenType Token::fromChar(const char c) { return fromString({&c, 1}); }
@@ -44,8 +49,8 @@ Token::TokenType Token::fromString(std::string_view str) {
 	    {"&", Token::TokenType::TOKEN_AMPERSAND},    // &
 	    {"|", Token::TokenType::TOKEN_PIPE},         // |
 	    {"^", Token::TokenType::TOKEN_CARET},        // ^
-	    {"<<", Token::TokenType::TOKEN_LEFT_SHIFT},  // <<
-	    {">>", Token::TokenType::TOKEN_RIGHT_SHIFT}, // >>
+	    {"<<", Token::TokenType::TOKEN_LESS_LESS},  // <<
+	    {">>", Token::TokenType::TOKEN_GREAT_GREAT}, // >>
 	    // logical
 	    {"!", Token::TokenType::TOKEN_BANG},                 // !
 	    {"&&", Token::TokenType::TOKEN_AMPERSAND_AMPERSAND}, // &&
@@ -63,6 +68,7 @@ Token::TokenType Token::fromString(std::string_view str) {
 	    {"?", Token::TokenType::TOKEN_QUESTION},  // ?
 	    {":", Token::TokenType::TOKEN_COLON},     // :
 	    {";", Token::TokenType::TOKEN_SEMICOLON}, // ;
+	    {"->", Token::TokenType::TOKEN_ARROW},    // ->
 	    // literals
 	    //{"", Token::TokenType::TOKEN_IDENTIFIER}, // ex: foo, bar, baz, etc.
 	    //{"", Token::TokenType::TOKEN_STRING},     // ex: "Hello, world"
@@ -80,7 +86,8 @@ Token::TokenType Token::fromString(std::string_view str) {
 	    {"return", Token::TokenType::TOKEN_RETURN},     // return
 	    {"continue", Token::TokenType::TOKEN_CONTINUE}, // continue
 	    {"break", Token::TokenType::TOKEN_BREAK},       // break
-
+	    // Token Types
+	    {"()", Token::TokenType::TOKEN_TYPE_UNIT}, // ()
 	};
 	std::string key{str};
 	return map.contains(key) ? map.at(key) : TokenType::TOKEN_ERROR;
@@ -149,10 +156,10 @@ std::string_view Token::toString(TokenType token) {
 		return "TOKEN_PIPE";
 	case TokenType::TOKEN_CARET:
 		return "TOKEN_CARET";
-	case TokenType::TOKEN_LEFT_SHIFT:
-		return "TOKEN_LEFT_SHIFT";
-	case TokenType::TOKEN_RIGHT_SHIFT:
-		return "TOKEN_RIGHT_SHIFT";
+	case TokenType::TOKEN_LESS_LESS:
+		return "TOKEN_LESS_LESS";
+	case TokenType::TOKEN_GREAT_GREAT:
+		return "TOKEN_GREAT_GREAT";
 	// logical
 	case TokenType::TOKEN_BANG:
 		return "TOKEN_BANG";
@@ -184,6 +191,8 @@ std::string_view Token::toString(TokenType token) {
 		return "TOKEN_COLON";
 	case TokenType::TOKEN_SEMICOLON:
 		return "TOKEN_SEMICOLON";
+	case TokenType::TOKEN_ARROW:
+		return "TOKEN_ARROW";
 	// Literals.
 	case TokenType::TOKEN_IDENTIFIER:
 		return "TOKEN_IDENTIFIER";
@@ -214,6 +223,9 @@ std::string_view Token::toString(TokenType token) {
 		return "TOKEN_CONTINUE";
 	case TokenType::TOKEN_BREAK:
 		return "TOKEN_BREAK";
+	// token types
+	case TokenType::TOKEN_TYPE_UNIT:
+		return "TOKEN_TYPE_UNIT";
 	// other
 	case TokenType::TOKEN_ERROR:
 		return "TOKEN_ERROR";
@@ -222,5 +234,153 @@ std::string_view Token::toString(TokenType token) {
 	}
 	return "???";
 }
+std::string_view Token::glyph(TokenType token) {
+	switch (token) {
+	// NON Used, only to hint that the token is not initialized
+	case TokenType::TOKEN_UNINITIALIZED:
+		return "TOKEN_UNINITIALIZED";
+	// block tokens
+	case TokenType::TOKEN_LEFT_PAREN:
+		return "(";
+	case TokenType::TOKEN_RIGHT_PAREN:
+		return ")";
+	case TokenType::TOKEN_LEFT_BRACE:
+		return "{";
+	case TokenType::TOKEN_RIGHT_BRACE:
+		return "}";
+	case TokenType::TOKEN_LEFT_SQUARE_BRACE:
+		return "[";
+	case TokenType::TOKEN_RIGHT_SQUARE_BRACE:
+		return "]";
+	// assignment
+	case TokenType::TOKEN_EQUAL:
+		return "=";
+	case TokenType::TOKEN_PLUS_EQUAL:
+		return "+=";
+	case TokenType::TOKEN_MINUS_EQUAL:
+		return "-=";
+	case TokenType::TOKEN_STAR_EQUAL:
+		return "*=";
+	case TokenType::TOKEN_SLASH_EQUAL:
+		return "/=";
+	case TokenType::TOKEN_PERCENT_EQUAL:
+		return "%=";
+	case TokenType::TOKEN_AMPERSAND_EQUAL:
+		return "&=";
+	case TokenType::TOKEN_PIPE_EQUAL:
+		return "|=";
+	case TokenType::TOKEN_CARET_EQUAL:
+		return "^=";
+	case TokenType::TOKEN_LESS_LESS_EQUAL:
+		return "<<=";
+	case TokenType::TOKEN_GREAT_GREAT_EQUAL:
+		return ">>=";
+	// increment, decrement
+	case TokenType::TOKEN_PLUS_PLUS:
+		return "++";
+	case TokenType::TOKEN_MINUS_MINUS:
+		return "--";
+	// arithmetic
+	case TokenType::TOKEN_PLUS:
+		return "+";
+	case TokenType::TOKEN_MINUS:
+		return "-";
+	case TokenType::TOKEN_STAR:
+		return "*";
+	case TokenType::TOKEN_SLASH:
+		return "/";
+	case TokenType::TOKEN_PERCENT:
+		return "%";
+	case TokenType::TOKEN_AMPERSAND:
+		return "&";
+	case TokenType::TOKEN_PIPE:
+		return "|";
+	case TokenType::TOKEN_CARET:
+		return "^";
+	case TokenType::TOKEN_LESS_LESS:
+		return "<<";
+	case TokenType::TOKEN_GREAT_GREAT:
+		return ">>";
+	// logical
+	case TokenType::TOKEN_BANG:
+		return "!";
+	case TokenType::TOKEN_AMPERSAND_AMPERSAND:
+		return "&&";
+	case TokenType::TOKEN_PIPE_PIPE:
+		return "||";
+	// comparison
+	case TokenType::TOKEN_EQUAL_EQUAL:
+		return "TOKEN_EQUAL_EQUAL";
+	case TokenType::TOKEN_BANG_EQUAL:
+		return "TOKEN_BANG_EQUAL";
+	case TokenType::TOKEN_LESS:
+		return "TOKEN_LESS";
+	case TokenType::TOKEN_GREAT:
+		return "TOKEN_GREAT";
+	case TokenType::TOKEN_LESS_EQUAL:
+		return "TOKEN_LESS_EQUAL";
+	case TokenType::TOKEN_GREAT_EQUAL:
+		return "TOKEN_GREAT_EQUAL";
+	// MISC
+	case TokenType::TOKEN_DOT:
+		return "TOKEN_DOT";
+	case TokenType::TOKEN_COMMA:
+		return "TOKEN_COMMA";
+	case TokenType::TOKEN_QUESTION:
+		return "TOKEN_QUESTION";
+	case TokenType::TOKEN_COLON:
+		return "TOKEN_COLON";
+	case TokenType::TOKEN_SEMICOLON:
+		return "TOKEN_SEMICOLON";
+	case TokenType::TOKEN_ARROW:
+		return "TOKEN_ARROW";
+	// Literals.
+	case TokenType::TOKEN_IDENTIFIER:
+		return "<identifier>";
+	case TokenType::TOKEN_STRING:
+		return "<string>";
+	case TokenType::TOKEN_NUMBER:
+		return "<number>";
+	// keywords
+	case TokenType::TOKEN_IF:
+		return "if";
+	case TokenType::TOKEN_ELSE:
+		return "else";
+	case TokenType::TOKEN_TRUE:
+		return "true";
+	case TokenType::TOKEN_FALSE:
+		return "false";
+	case TokenType::TOKEN_FOR:
+		return "for";
+	case TokenType::TOKEN_WHILE:
+		return "while";
+	case TokenType::TOKEN_FN:
+		return "fn";
+	case TokenType::TOKEN_LET:
+		return "let";
+	case TokenType::TOKEN_RETURN:
+		return "return";
+	case TokenType::TOKEN_CONTINUE:
+		return "continue";
+	case TokenType::TOKEN_BREAK:
+		return "break";
+	// token types
+	case TokenType::TOKEN_TYPE_UNIT:
+		return "()";
+	// other
+	case TokenType::TOKEN_ERROR:
+		return "<{TOKEN_ERROR}>";
+	case TokenType::TOKEN_EOF:
+		return "<{EOF}>";
+	}
+	return "<{???}>";
+}
+
+namespace types {
+Token makeUnitTypeToken(size_t line, size_t column) {
+	auto val = Token::fromString("()");
+	return Token{val, "()", line, column};
+}
+} // namespace types
 
 } // namespace ray::compiler

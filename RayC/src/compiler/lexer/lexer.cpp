@@ -36,6 +36,22 @@ void Lexer::scanToken() {
 	char c = advance();
 	Token::TokenType type = Token::fromChar(c);
 	switch (type) {
+	case Token::TokenType::TOKEN_MINUS: {
+		char next = peek();
+		if (next == '>') {
+			advance();
+			addToken(Token::TokenType::TOKEN_ARROW);
+		} else if (next == '-') {
+			advance();
+			addToken(Token::TokenType::TOKEN_MINUS_MINUS);
+		} else if (next == '=') {
+			advance();
+			addToken(Token::TokenType::TOKEN_MINUS_EQUAL);
+		} else {
+			addToken(Token::TokenType::TOKEN_MINUS);
+		}
+		break;
+	}
 	case Token::TokenType::TOKEN_DOT: {
 		char next = peekNext();
 		if (std::isdigit(next)) {

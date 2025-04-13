@@ -125,5 +125,23 @@ class Variable : public Expression {
 	    : name(std::move(name)) {}
 
 };
+class Type : public Expression {
+  public:
+	Token type;
+
+	Type(Token type)
+	    : type(std::move(type)) {}
+
+};
+class Parameter : public Expression {
+  public:
+	Token name;
+	Type type;
+
+	Parameter(Token name,
+	        Type type)
+	    : name(std::move(name)), type(std::move(type)) {}
+
+};
 
 } // namespace ray::compiler::ast

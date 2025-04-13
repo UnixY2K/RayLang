@@ -38,13 +38,15 @@ class ExpressionStmt : public Statement {
 class Function : public Statement {
   public:
 	Token name;
-	std::vector<Token> params;
+	std::vector<Parameter> params;
 	std::vector<std::unique_ptr<Statement>> body;
+	Type returnType;
 
 	Function(Token name,
-	        std::vector<Token> params,
-	        std::vector<std::unique_ptr<Statement>> body)
-	    : name(std::move(name)), params(std::move(params)), body(std::move(body)) {}
+	        std::vector<Parameter> params,
+	        std::vector<std::unique_ptr<Statement>> body,
+	        Type returnType)
+	    : name(std::move(name)), params(std::move(params)), body(std::move(body)), returnType(std::move(returnType)) {}
 
 };
 class If : public Statement {

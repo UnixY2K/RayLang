@@ -40,8 +40,8 @@ struct Token {
 		TOKEN_AMPERSAND,   // &
 		TOKEN_PIPE,        // |
 		TOKEN_CARET,       // ^
-		TOKEN_LEFT_SHIFT,  // <<
-		TOKEN_RIGHT_SHIFT, // >>
+		TOKEN_LESS_LESS,  // <<
+		TOKEN_GREAT_GREAT, // >>
 		// logical
 		TOKEN_BANG,                // !
 		TOKEN_AMPERSAND_AMPERSAND, // &&
@@ -59,6 +59,7 @@ struct Token {
 		TOKEN_QUESTION,  // ?
 		TOKEN_COLON,     // :
 		TOKEN_SEMICOLON, // ;
+		TOKEN_ARROW,     // ->
 		// Literals.
 		TOKEN_IDENTIFIER, // ex: foo, bar, baz, etc.
 		TOKEN_STRING,     // ex: "Hello, world"
@@ -75,6 +76,8 @@ struct Token {
 		TOKEN_RETURN,   // return
 		TOKEN_CONTINUE, // continue
 		TOKEN_BREAK,    // break
+		// token types
+		TOKEN_TYPE_UNIT, // unit aka '()'
 		// other
 		TOKEN_ERROR, // when a token failed to parse
 		TOKEN_EOF    // EOF
@@ -86,9 +89,16 @@ struct Token {
 	size_t column;
 
 	std::string toString() const;
+	std::string_view getLexeme() const;
 
 	static TokenType fromChar(const char c);
 	static TokenType fromString(std::string_view str);
 	static std::string_view toString(TokenType token);
+	static std::string_view glyph(TokenType token);
 };
+
+namespace types {
+Token makeUnitTypeToken(size_t line, size_t column);
+}
+
 } // namespace ray::compiler

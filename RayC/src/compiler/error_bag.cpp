@@ -15,13 +15,15 @@ void ErrorBag::error(const Token token, std::string_view message) {
 	if (token.type == Token::TokenType::TOKEN_EOF) {
 		report(token.line, token.column, " at end", message);
 	} else {
-		report(token.line, token.column, " at '" + token.lexeme + "'", message);
+		report(token.line, token.column,
+		       std::format("at '{}'", token.getLexeme()), message);
 	}
 }
 
 void ErrorBag::report(size_t line, size_t column, std::string_view where,
                       std::string_view message) {
-	std::cerr << std::format("[line {}:{}] Error{}: {}\n", line, column, where, message);
+	std::cerr << std::format("[line {}:{}] Error{}: {}\n", line, column, where,
+	                         message);
 	hadError = true;
 }
 } // namespace ray::compiler

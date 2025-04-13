@@ -94,6 +94,8 @@ def main():
         "Set			= std::unique_ptr<Expression> object, Token name, std::unique_ptr<Expression> value",
         "Unary			= Token op, std::unique_ptr<Expression> right",
         "Variable		= Token name",
+        "Type           = Token type",
+        "Parameter	    = Token name, Type type",
     ])
     defineAst(outputDir, "Statement",
             ["memory",
@@ -105,7 +107,7 @@ def main():
                 "Block			= std::vector<std::unique_ptr<Statement>> statements",
                 "TerminalExpr	= std::unique_ptr<Expression> expression",
                 "ExpressionStmt	= std::unique_ptr<Expression> expression",
-                "Function		= Token name, std::vector<Token> params, std::vector<std::unique_ptr<Statement>> body",
+                "Function		= Token name, std::vector<Parameter> params, std::vector<std::unique_ptr<Statement>> body, Type returnType",
                 "If				= std::unique_ptr<Expression> condition, std::unique_ptr<Statement> thenBranch, std::unique_ptr<Statement> elseBranch",
                 "Jump			= Token keyword, std::unique_ptr<Expression> value",
                 "Var			= Token name, std::unique_ptr<Expression> initializer",
