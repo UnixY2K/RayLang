@@ -21,7 +21,7 @@ void ErrorBag::error(const Token token, std::string_view message) {
 
 void ErrorBag::report(size_t line, size_t column, std::string_view where,
                       std::string_view message) {
-	std::cerr << std::format("[line {}] Error{}: {}\n", line, where, message);
+	std::cerr << std::format("[line {}:{}] Error{}: {}\n", line, column, where, message);
 	hadError = true;
 }
 } // namespace ray::compiler
