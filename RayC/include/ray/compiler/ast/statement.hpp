@@ -92,4 +92,17 @@ class While : public Statement {
 
 };
 
+
+class StatementVisitor {
+  public:
+	virtual void visitBlockStatement(Block& value) = 0;
+	virtual void visitTerminalExprStatement(TerminalExpr& value) = 0;
+	virtual void visitExpressionStmtStatement(ExpressionStmt& value) = 0;
+	virtual void visitFunctionStatement(Function& value) = 0;
+	virtual void visitIfStatement(If& value) = 0;
+	virtual void visitJumpStatement(Jump& value) = 0;
+	virtual void visitVarStatement(Var& value) = 0;
+	virtual void visitWhileStatement(While& value) = 0;
+};
+
 } // namespace ray::compiler::ast

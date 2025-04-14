@@ -44,6 +44,10 @@ def defineAst(outputDir: str, baseName: str, requiredHeaders: list[str], types: 
 
         headerFile.write("\n")
 
+        headerFile.write("\n")
+        headerFile.write(defineVisitor(baseName, processedClasses))
+        headerFile.write("\n")
+
         headerFile.write("} // namespace ray::compiler::ast\n")
 
 
@@ -75,6 +79,17 @@ def defineType(baseName: str, clazz: dict[str]):
     stringList.append(" {}\n\n")
 
     stringList.append("};")
+
+    return "".join(stringList)
+
+def defineVisitor(baseName: str, types: dict):
+    stringList = list[str]()
+    stringList.append(f"class {baseName}Visitor {{\n")
+    stringList.append("  public:\n")
+    for clazz in types:
+        className = clazz["Name"]
+        stringList.append(f"\tvirtual void visit{className}{baseName}({className}& value) = 0;\n")
+    stringList.append("};\n")
 
     return "".join(stringList)
 

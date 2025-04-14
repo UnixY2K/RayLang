@@ -144,4 +144,22 @@ class Parameter : public Expression {
 
 };
 
+
+class ExpressionVisitor {
+  public:
+	virtual void visitTernaryExpression(Ternary& value) = 0;
+	virtual void visitAssignExpression(Assign& value) = 0;
+	virtual void visitBinaryExpression(Binary& value) = 0;
+	virtual void visitCallExpression(Call& value) = 0;
+	virtual void visitGetExpression(Get& value) = 0;
+	virtual void visitGroupingExpression(Grouping& value) = 0;
+	virtual void visitLiteralExpression(Literal& value) = 0;
+	virtual void visitLogicalExpression(Logical& value) = 0;
+	virtual void visitSetExpression(Set& value) = 0;
+	virtual void visitUnaryExpression(Unary& value) = 0;
+	virtual void visitVariableExpression(Variable& value) = 0;
+	virtual void visitTypeExpression(Type& value) = 0;
+	virtual void visitParameterExpression(Parameter& value) = 0;
+};
+
 } // namespace ray::compiler::ast
