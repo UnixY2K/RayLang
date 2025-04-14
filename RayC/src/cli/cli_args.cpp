@@ -36,6 +36,10 @@ std::variant<Options, std::vector<std::string>> parse_args(int argc,
 				options_stack.push_back(std::string(arg));
 				break;
 			}
+			case 't': {
+				options_stack.push_back(std::string(arg));
+				break;
+			}
 			default: {
 				errors.push_back(
 				    std::format("{}: unknown flag '{}'", "Error"_red, arg));
@@ -76,6 +80,8 @@ std::variant<Options, std::vector<std::string>> parse_args(int argc,
 
 	Options opts;
 	opts.assembly = flags.contains("assembly");
+	opts.target = opts.targetFromString(
+	    options.contains("-t") ? options.at("-t") : "none");
 	opts.input = input_file;
 	opts.output = options.contains("-o")
 	                  ? options["-o"]

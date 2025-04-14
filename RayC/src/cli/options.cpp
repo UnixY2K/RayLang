@@ -3,6 +3,8 @@
 
 #include <format>
 #include <iostream>
+#include <string_view>
+#include <unordered_map>
 
 namespace ray::compiler::cli {
 
@@ -10,6 +12,12 @@ using namespace terminal::literals;
 
 bool Options::validate() const {
 	bool success = true;
+
+	if (target == TargetEnum::ERROR) {
+		std::cerr << std::format(
+		    "{}: specifed target is not an existing target\n", "Error"_red);
+		success = false;
+	}
 
 	// check if the input file is a valid file
 	if (!std::filesystem::exists(input)) {
@@ -44,6 +52,16 @@ bool Options::validate() const {
 	}
 
 	return success;
+}
+
+Options::TargetEnum Options::targetFromString(std::string_view str) {
+	static std::unordered_map<std::string, Options::TargetEnum> map{
+	    {"none", Options::TargetEnum::NONE},
+	    {"wasm_text", Options::TargetEnum::WASM_TEXT}};
+	std::string key{str};
+	std::transform(key.begin(), key.end(), key.begin(),
+	               [](unsigned char c) { return std::tolower(c); });
+	return map.contains(key) ? map.at(key) : Options::TargetEnum::ERROR;
 }
 
 } // namespace ray::compiler::cli
