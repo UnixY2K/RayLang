@@ -89,6 +89,7 @@ def defineVisitor(baseName: str, types: dict):
     for clazz in types:
         className = clazz["Name"]
         stringList.append(f"\tvirtual void visit{className}{baseName}({className}& value) = 0;\n")
+    stringList.append(f"\tvirtual ~{baseName}Visitor() = default;\n")
     stringList.append("};\n")
 
     return "".join(stringList)

@@ -4,10 +4,13 @@
 #include <sstream>
 
 #include <ray/cli/cli_args.hpp>
+#include <ray/cli/options.hpp>
 #include <ray/cli/terminal.hpp>
 
 #include <ray/compiler/lexer/lexer.hpp>
 #include <ray/compiler/parser/parser.hpp>
+
+#include <ray/generators/wasm_text.hpp>
 
 using namespace ray::compiler;
 
@@ -47,6 +50,20 @@ int main(int argc, char **argv) {
 		if (lexer.getErrors().size() == 0) {
 			auto parser = Parser(tokens);
 			auto statements = parser.parse();
+			if (!parser.failed()) {
+				if (opts.target ==
+				    ray::compiler::cli::Options::TargetEnum::NONE) {
+					opts.target = opts.defaultTarget;
+				}
+				switch (opts.target) {
+				case cli::Options::TargetEnum::WASM_TEXT: {
+					generator::WASMTextGenerator wasmTextGen;
+				}
+				case cli::Options::TargetEnum::NONE:
+				case cli::Options::TargetEnum::ERROR:
+					break;
+				}
+			}
 		} else {
 			for (auto &error : lexer.getErrors()) {
 				std::cerr << std::format("{}: {}\n", "LexerError"_red,

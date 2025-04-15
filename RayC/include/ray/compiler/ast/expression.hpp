@@ -160,6 +160,7 @@ class ExpressionVisitor {
 	virtual void visitVariableExpression(Variable& value) = 0;
 	virtual void visitTypeExpression(Type& value) = 0;
 	virtual void visitParameterExpression(Parameter& value) = 0;
+	virtual ~ExpressionVisitor() = default;
 };
 
 } // namespace ray::compiler::ast

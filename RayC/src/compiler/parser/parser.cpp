@@ -26,6 +26,10 @@ std::vector<std::unique_ptr<ast::Statement>> Parser::parse() {
 	}
 }
 
+bool Parser::failed() const {
+	return ErrorBag::hadError;
+}
+
 std::unique_ptr<ast::Expression> Parser::expression() { return comma(); }
 std::unique_ptr<ast::Statement> Parser::declaration() {
 	try {

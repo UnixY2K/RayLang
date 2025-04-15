@@ -103,6 +103,7 @@ class StatementVisitor {
 	virtual void visitJumpStatement(Jump& value) = 0;
 	virtual void visitVarStatement(Var& value) = 0;
 	virtual void visitWhileStatement(While& value) = 0;
+	virtual ~StatementVisitor() = default;
 };
 
 } // namespace ray::compiler::ast

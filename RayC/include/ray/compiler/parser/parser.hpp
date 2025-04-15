@@ -22,6 +22,8 @@ class Parser {
 
 	std::vector<std::unique_ptr<ast::Statement>> parse();
 
+	bool failed() const;
+
   private:
 	std::unique_ptr<ast::Expression> expression();
 	std::unique_ptr<ast::Statement> declaration();
