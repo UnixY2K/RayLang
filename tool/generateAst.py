@@ -44,6 +44,7 @@ def defineAst(outputDir: str, baseName: str, requiredHeaders: list[str], types: 
         headerFile.write(f"class {baseName} {{\n")
         headerFile.write("  public:\n")
         headerFile.write(f"\tvirtual void visit({baseName}Visitor& visitor) const = 0;\n")
+        headerFile.write(f"\tvirtual std::string variantName() const = 0;\n")
         headerFile.write(f"\tvirtual ~{baseName}() = default;\n")
         headerFile.write("};\n\n")
 
@@ -86,6 +87,7 @@ def defineType(baseName: str, clazz: dict[str]):
     stringList.append(", ".join(initializerList))
     stringList.append(" {}\n\n")
     stringList.append(f"\tvoid visit({baseName}Visitor& visitor) const override {{ visitor.visit{clazz["Name"]}{baseName}(*this); }}\n\n")
+    stringList.append(f"\tstd::string variantName() const override {{ return \"{clazz["Name"]}\"; }}\n\n")
 
     stringList.append("};")
 
@@ -113,7 +115,7 @@ def main():
         "Call			= std::unique_ptr<Expression> callee, Token paren, std::vector<std::unique_ptr<Expression>> arguments",
         "Get			= std::unique_ptr<Expression> object, Token name",
         "Grouping		= std::unique_ptr<Expression> expression",
-        "Literal		= std::any value",
+        "Literal		= Token kind, std::string value",
         "Logical		= std::unique_ptr<Expression> left, Token op, std::unique_ptr<Expression> right",
         "Set			= std::unique_ptr<Expression> object, Token name, std::unique_ptr<Expression> value",
         "Unary			= Token op, std::unique_ptr<Expression> right",
@@ -133,7 +135,7 @@ def main():
                 "TerminalExpr	= std::optional<std::unique_ptr<Expression>> expression",
                 "ExpressionStmt	= std::unique_ptr<Expression> expression",
                 "Function		= bool publicVisibility, Token name, std::vector<Parameter> params, Block body, Type returnType",
-                "If				= std::unique_ptr<Expression> condition, std::unique_ptr<Statement> thenBranch, std::unique_ptr<Statement> elseBranch",
+                "If				= std::unique_ptr<Expression> condition, std::unique_ptr<Statement> thenBranch, std::optional<std::unique_ptr<Statement>> elseBranch",
                 "Jump			= Token keyword, std::unique_ptr<Expression> value",
                 "Var			= Token name, std::unique_ptr<Expression> initializer",
                 "While			= std::unique_ptr<Expression> condition, std::unique_ptr<Statement> body"

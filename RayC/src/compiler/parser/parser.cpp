@@ -1,5 +1,6 @@
 #include <format>
 #include <memory>
+#include <optional>
 #include <utility>
 
 #include <ray/compiler/ast/expression.hpp>
@@ -117,7 +118,8 @@ std::unique_ptr<ast::Statement> Parser::forStatement() {
 	}
 
 	if (!condition) {
-		condition = std::make_unique<ast::Literal>(ast::Literal(true));
+		Token token = Token(Token::TokenType::TOKEN_TRUE, "", 0, 0);
+		condition = std::make_unique<ast::Literal>(ast::Literal(token, "true"));
 	}
 	body = std::make_unique<ast::While>(
 	    ast::While(std::move(condition), std::move(body)));
@@ -136,7 +138,7 @@ std::unique_ptr<ast::Statement> Parser::ifStatement() {
 	auto condition = expression();
 
 	auto thenBranch = statement();
-	std::unique_ptr<ast::Statement> elseBranch = nullptr;
+	std::optional<std::unique_ptr<ast::Statement>> elseBranch = std::nullopt;
 	if (match({Token::TokenType::TOKEN_ELSE})) {
 		elseBranch = statement();
 	}
@@ -414,16 +416,18 @@ std::unique_ptr<ast::Expression> Parser::call() {
 	return expr;
 }
 std::unique_ptr<ast::Expression> Parser::primaryExpresion() {
+	Token kind = peek();
 	if (match({Token::TokenType::TOKEN_FALSE})) {
-		return std::make_unique<ast::Literal>(ast::Literal(false));
+		return std::make_unique<ast::Literal>(ast::Literal(kind, "false"));
 	}
 	if (match({Token::TokenType::TOKEN_TRUE})) {
-		return std::make_unique<ast::Literal>(ast::Literal(true));
+		return std::make_unique<ast::Literal>(ast::Literal(kind, "true"));
 	}
 
 	if (match(
 	        {Token::TokenType::TOKEN_NUMBER, Token::TokenType::TOKEN_STRING})) {
-		return std::make_unique<ast::Literal>(ast::Literal(previous().lexeme));
+		return std::make_unique<ast::Literal>(
+		    ast::Literal(kind, previous().lexeme));
 	}
 
 	if (match({Token::TokenType::TOKEN_IDENTIFIER})) {

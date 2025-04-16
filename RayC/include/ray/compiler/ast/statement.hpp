@@ -32,6 +32,7 @@ class StatementVisitor {
 class Statement {
   public:
 	virtual void visit(StatementVisitor& visitor) const = 0;
+	virtual std::string variantName() const = 0;
 	virtual ~Statement() = default;
 };
 
@@ -44,6 +45,8 @@ class Block : public Statement {
 
 	void visit(StatementVisitor& visitor) const override { visitor.visitBlockStatement(*this); }
 
+	std::string variantName() const override { return "Block"; }
+
 };
 class TerminalExpr : public Statement {
   public:
@@ -54,6 +57,8 @@ class TerminalExpr : public Statement {
 
 	void visit(StatementVisitor& visitor) const override { visitor.visitTerminalExprStatement(*this); }
 
+	std::string variantName() const override { return "TerminalExpr"; }
+
 };
 class ExpressionStmt : public Statement {
   public:
@@ -63,6 +68,8 @@ class ExpressionStmt : public Statement {
 	    : expression(std::move(expression)) {}
 
 	void visit(StatementVisitor& visitor) const override { visitor.visitExpressionStmtStatement(*this); }
+
+	std::string variantName() const override { return "ExpressionStmt"; }
 
 };
 class Function : public Statement {
@@ -82,19 +89,23 @@ class Function : public Statement {
 
 	void visit(StatementVisitor& visitor) const override { visitor.visitFunctionStatement(*this); }
 
+	std::string variantName() const override { return "Function"; }
+
 };
 class If : public Statement {
   public:
 	std::unique_ptr<Expression> condition;
 	std::unique_ptr<Statement> thenBranch;
-	std::unique_ptr<Statement> elseBranch;
+	std::optional<std::unique_ptr<Statement>> elseBranch;
 
 	If(std::unique_ptr<Expression> condition,
 	        std::unique_ptr<Statement> thenBranch,
-	        std::unique_ptr<Statement> elseBranch)
+	        std::optional<std::unique_ptr<Statement>> elseBranch)
 	    : condition(std::move(condition)), thenBranch(std::move(thenBranch)), elseBranch(std::move(elseBranch)) {}
 
 	void visit(StatementVisitor& visitor) const override { visitor.visitIfStatement(*this); }
+
+	std::string variantName() const override { return "If"; }
 
 };
 class Jump : public Statement {
@@ -108,6 +119,8 @@ class Jump : public Statement {
 
 	void visit(StatementVisitor& visitor) const override { visitor.visitJumpStatement(*this); }
 
+	std::string variantName() const override { return "Jump"; }
+
 };
 class Var : public Statement {
   public:
@@ -120,6 +133,8 @@ class Var : public Statement {
 
 	void visit(StatementVisitor& visitor) const override { visitor.visitVarStatement(*this); }
 
+	std::string variantName() const override { return "Var"; }
+
 };
 class While : public Statement {
   public:
@@ -131,6 +146,8 @@ class While : public Statement {
 	    : condition(std::move(condition)), body(std::move(body)) {}
 
 	void visit(StatementVisitor& visitor) const override { visitor.visitWhileStatement(*this); }
+
+	std::string variantName() const override { return "While"; }
 
 };
 

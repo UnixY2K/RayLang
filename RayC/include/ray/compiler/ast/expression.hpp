@@ -39,6 +39,7 @@ class ExpressionVisitor {
 class Expression {
   public:
 	virtual void visit(ExpressionVisitor& visitor) const = 0;
+	virtual std::string variantName() const = 0;
 	virtual ~Expression() = default;
 };
 
@@ -52,6 +53,8 @@ class Assign : public Expression {
 	    : name(std::move(name)), value(std::move(value)) {}
 
 	void visit(ExpressionVisitor& visitor) const override { visitor.visitAssignExpression(*this); }
+
+	std::string variantName() const override { return "Assign"; }
 
 };
 class Binary : public Expression {
@@ -67,6 +70,8 @@ class Binary : public Expression {
 
 	void visit(ExpressionVisitor& visitor) const override { visitor.visitBinaryExpression(*this); }
 
+	std::string variantName() const override { return "Binary"; }
+
 };
 class Call : public Expression {
   public:
@@ -81,6 +86,8 @@ class Call : public Expression {
 
 	void visit(ExpressionVisitor& visitor) const override { visitor.visitCallExpression(*this); }
 
+	std::string variantName() const override { return "Call"; }
+
 };
 class Get : public Expression {
   public:
@@ -93,6 +100,8 @@ class Get : public Expression {
 
 	void visit(ExpressionVisitor& visitor) const override { visitor.visitGetExpression(*this); }
 
+	std::string variantName() const override { return "Get"; }
+
 };
 class Grouping : public Expression {
   public:
@@ -103,15 +112,21 @@ class Grouping : public Expression {
 
 	void visit(ExpressionVisitor& visitor) const override { visitor.visitGroupingExpression(*this); }
 
+	std::string variantName() const override { return "Grouping"; }
+
 };
 class Literal : public Expression {
   public:
-	std::any value;
+	Token kind;
+	std::string value;
 
-	Literal(std::any value)
-	    : value(std::move(value)) {}
+	Literal(Token kind,
+	        std::string value)
+	    : kind(std::move(kind)), value(std::move(value)) {}
 
 	void visit(ExpressionVisitor& visitor) const override { visitor.visitLiteralExpression(*this); }
+
+	std::string variantName() const override { return "Literal"; }
 
 };
 class Logical : public Expression {
@@ -127,6 +142,8 @@ class Logical : public Expression {
 
 	void visit(ExpressionVisitor& visitor) const override { visitor.visitLogicalExpression(*this); }
 
+	std::string variantName() const override { return "Logical"; }
+
 };
 class Set : public Expression {
   public:
@@ -141,6 +158,8 @@ class Set : public Expression {
 
 	void visit(ExpressionVisitor& visitor) const override { visitor.visitSetExpression(*this); }
 
+	std::string variantName() const override { return "Set"; }
+
 };
 class Unary : public Expression {
   public:
@@ -153,6 +172,8 @@ class Unary : public Expression {
 
 	void visit(ExpressionVisitor& visitor) const override { visitor.visitUnaryExpression(*this); }
 
+	std::string variantName() const override { return "Unary"; }
+
 };
 class Variable : public Expression {
   public:
@@ -163,6 +184,8 @@ class Variable : public Expression {
 
 	void visit(ExpressionVisitor& visitor) const override { visitor.visitVariableExpression(*this); }
 
+	std::string variantName() const override { return "Variable"; }
+
 };
 class Type : public Expression {
   public:
@@ -172,6 +195,8 @@ class Type : public Expression {
 	    : name(std::move(name)) {}
 
 	void visit(ExpressionVisitor& visitor) const override { visitor.visitTypeExpression(*this); }
+
+	std::string variantName() const override { return "Type"; }
 
 };
 class Parameter : public Expression {
@@ -184,6 +209,8 @@ class Parameter : public Expression {
 	    : name(std::move(name)), type(std::move(type)) {}
 
 	void visit(ExpressionVisitor& visitor) const override { visitor.visitParameterExpression(*this); }
+
+	std::string variantName() const override { return "Parameter"; }
 
 };
 
