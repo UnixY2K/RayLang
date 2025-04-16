@@ -37,6 +37,11 @@ class WASMTextGenerator : public ast::StatementVisitor,
 	void visitVariableExpression(const ast::Variable &value) override;
 	void visitTypeExpression(const ast::Type &value) override;
 	void visitParameterExpression(const ast::Parameter &value) override;
+
+	bool hasFailed() const;
+
+	std::string getOutput() const;
+
 };
 
 } // namespace ray::compiler::generator

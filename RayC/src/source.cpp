@@ -7,10 +7,11 @@
 #include <ray/cli/options.hpp>
 #include <ray/cli/terminal.hpp>
 
+#include <ray/compiler/generators/wasm_text.hpp>
+
 #include <ray/compiler/lexer/lexer.hpp>
 #include <ray/compiler/parser/parser.hpp>
 
-#include <ray/generators/wasm_text.hpp>
 
 using namespace ray::compiler;
 
@@ -55,17 +56,35 @@ int main(int argc, char **argv) {
 				    ray::compiler::cli::Options::TargetEnum::NONE) {
 					opts.target = opts.defaultTarget;
 				}
+				std::string output;
 				switch (opts.target) {
 				case cli::Options::TargetEnum::WASM_TEXT: {
 					generator::WASMTextGenerator wasmTextGen;
 					for (auto &statement : statements) {
 						wasmTextGen.resolve(*statement);
+
+						if(wasmTextGen.hasFailed()) {
+							std::cerr << std::format("{}: {}\n",
+							                         "Error"_red,
+							                         "WASMTextGenerator failed");
+							return 1;
+						}
+						output = wasmTextGen.getOutput();
 					}
 				}
 				case cli::Options::TargetEnum::NONE:
 				case cli::Options::TargetEnum::ERROR:
 					break;
 				}
+
+				std::ofstream outputFile(opts.output, std::ios::trunc);
+				if (!outputFile) {
+					std::cerr << std::format("{}: could not open file: {}\n",
+					                         "Error"_red,
+					                         opts.output.string());
+					return 1;
+				}
+				outputFile << output;
 			}
 		} else {
 			for (auto &error : lexer.getErrors()) {
