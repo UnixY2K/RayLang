@@ -49,7 +49,7 @@ Token::TokenType Token::fromString(std::string_view str) {
 	    {"&", Token::TokenType::TOKEN_AMPERSAND},    // &
 	    {"|", Token::TokenType::TOKEN_PIPE},         // |
 	    {"^", Token::TokenType::TOKEN_CARET},        // ^
-	    {"<<", Token::TokenType::TOKEN_LESS_LESS},  // <<
+	    {"<<", Token::TokenType::TOKEN_LESS_LESS},   // <<
 	    {">>", Token::TokenType::TOKEN_GREAT_GREAT}, // >>
 	    // logical
 	    {"!", Token::TokenType::TOKEN_BANG},                 // !
@@ -86,6 +86,7 @@ Token::TokenType Token::fromString(std::string_view str) {
 	    {"return", Token::TokenType::TOKEN_RETURN},     // return
 	    {"continue", Token::TokenType::TOKEN_CONTINUE}, // continue
 	    {"break", Token::TokenType::TOKEN_BREAK},       // break
+	    {"pub", Token::TokenType::TOKEN_PUB},
 	    // Token Types
 	    {"()", Token::TokenType::TOKEN_TYPE_UNIT}, // ()
 	};
@@ -223,6 +224,8 @@ std::string_view Token::toString(TokenType token) {
 		return "TOKEN_CONTINUE";
 	case TokenType::TOKEN_BREAK:
 		return "TOKEN_BREAK";
+	case TokenType::TOKEN_PUB:
+		return "TOKEN_PUB";
 	// token types
 	case TokenType::TOKEN_TYPE_UNIT:
 		return "TOKEN_TYPE_UNIT";
@@ -323,17 +326,17 @@ std::string_view Token::glyph(TokenType token) {
 		return "TOKEN_GREAT_EQUAL";
 	// MISC
 	case TokenType::TOKEN_DOT:
-		return "TOKEN_DOT";
+		return ".";
 	case TokenType::TOKEN_COMMA:
-		return "TOKEN_COMMA";
+		return ",";
 	case TokenType::TOKEN_QUESTION:
-		return "TOKEN_QUESTION";
+		return "?";
 	case TokenType::TOKEN_COLON:
-		return "TOKEN_COLON";
+		return ":";
 	case TokenType::TOKEN_SEMICOLON:
-		return "TOKEN_SEMICOLON";
+		return ";";
 	case TokenType::TOKEN_ARROW:
-		return "TOKEN_ARROW";
+		return "->";
 	// Literals.
 	case TokenType::TOKEN_IDENTIFIER:
 		return "<identifier>";
@@ -364,6 +367,8 @@ std::string_view Token::glyph(TokenType token) {
 		return "continue";
 	case TokenType::TOKEN_BREAK:
 		return "break";
+	case TokenType::TOKEN_PUB:
+		return "pub";
 	// token types
 	case TokenType::TOKEN_TYPE_UNIT:
 		return "()";

@@ -33,10 +33,19 @@ bool Parser::failed() const { return ErrorBag::hadError; }
 std::unique_ptr<ast::Expression> Parser::expression() { return comma(); }
 std::optional<std::unique_ptr<ast::Statement>> Parser::declaration() {
 	try {
+		Token pubToken;
+		if (match({Token::TokenType::TOKEN_PUB})) {
+			pubToken = previous();
+		}
 		if (match({Token::TokenType::TOKEN_FN})) {
-			return std::make_unique<ast::Function>(function("function"));
+			return std::make_unique<ast::Function>(function(
+			    "function", pubToken.type == Token::TokenType::TOKEN_PUB));
 		}
 		if (match({Token::TokenType::TOKEN_LET})) {
+			if (pubToken.type == Token::TokenType::TOKEN_PUB) {
+				error(pubToken,
+				      "pub token cannot be in a variable declaration");
+			}
 			return varDeclaration();
 		}
 		return statement();
@@ -188,7 +197,7 @@ std::unique_ptr<ast::Statement> Parser::expressionStatement() {
 	return std::make_unique<ast::TerminalExpr>(
 	    ast::TerminalExpr(std::move(expr)));
 }
-ast::Function Parser::function(std::string kind) {
+ast::Function Parser::function(std::string kind, bool publicVisiblity) {
 	Token name = consume(Token::TokenType::TOKEN_IDENTIFIER,
 	                     std::format("Expect {} name.", kind));
 
@@ -226,7 +235,7 @@ ast::Function Parser::function(std::string kind) {
 	        std::format("Expect '{{' before {} body.", kind));
 	auto body =
 	    std::make_unique<std::vector<std::unique_ptr<ast::Statement>>>(block());
-	return {name, parameters, std::move(*body), returnType};
+	return {publicVisiblity, name, parameters, std::move(*body), returnType};
 }
 std::vector<std::unique_ptr<ast::Statement>> Parser::block() {
 	std::vector<std::unique_ptr<ast::Statement>> statements;
@@ -245,7 +254,7 @@ std::vector<std::unique_ptr<ast::Statement>> Parser::block() {
 	    dynamic_cast<ast::TerminalExpr *>(
 	        statements[statements.size() - 1].get()) == nullptr) {
 		statements.push_back(
-		    std::make_unique<ast::TerminalExpr>(ast::TerminalExpr(nullptr)));
+		    std::make_unique<ast::TerminalExpr>(ast::TerminalExpr({})));
 	}
 	return statements;
 }

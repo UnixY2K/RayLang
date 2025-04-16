@@ -37,7 +37,7 @@ class Parser {
 	std::unique_ptr<ast::Statement> whileStatement();
 	std::unique_ptr<ast::Statement> varDeclaration();
 	std::unique_ptr<ast::Statement> expressionStatement();
-	ast::Function function(std::string kind);
+	ast::Function function(std::string kind, bool publicVisibility);
 	std::vector<std::unique_ptr<ast::Statement>> block();
 	std::unique_ptr<ast::Expression> comma();
 	std::unique_ptr<ast::Expression> assignment();

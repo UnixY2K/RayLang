@@ -76,6 +76,7 @@ struct Token {
 		TOKEN_RETURN,   // return
 		TOKEN_CONTINUE, // continue
 		TOKEN_BREAK,    // break
+		TOKEN_PUB,		// pub
 		// token types
 		TOKEN_TYPE_UNIT, // unit aka '()'
 		// other

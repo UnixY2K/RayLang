@@ -166,10 +166,10 @@ class Variable : public Expression {
 };
 class Type : public Expression {
   public:
-	Token type;
+	Token name;
 
-	Type(Token type)
-	    : type(std::move(type)) {}
+	Type(Token name)
+	    : name(std::move(name)) {}
 
 	void visit(ExpressionVisitor& visitor) const override { visitor.visitTypeExpression(*this); }
 

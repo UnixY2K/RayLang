@@ -1,6 +1,7 @@
 #pragma once
 #include <memory>
 #include <vector>
+#include <optional>
 #include <ray/compiler/lexer/token.hpp>
 #include <ray/compiler/ast/expression.hpp>
 
@@ -46,9 +47,9 @@ class Block : public Statement {
 };
 class TerminalExpr : public Statement {
   public:
-	std::unique_ptr<Expression> expression;
+	std::optional<std::unique_ptr<Expression>> expression;
 
-	TerminalExpr(std::unique_ptr<Expression> expression)
+	TerminalExpr(std::optional<std::unique_ptr<Expression>> expression)
 	    : expression(std::move(expression)) {}
 
 	void visit(StatementVisitor& visitor) const override { visitor.visitTerminalExprStatement(*this); }
@@ -66,16 +67,18 @@ class ExpressionStmt : public Statement {
 };
 class Function : public Statement {
   public:
+	bool publicVisibility;
 	Token name;
 	std::vector<Parameter> params;
-	std::vector<std::unique_ptr<Statement>> body;
+	Block body;
 	Type returnType;
 
-	Function(Token name,
+	Function(bool publicVisibility,
+	        Token name,
 	        std::vector<Parameter> params,
-	        std::vector<std::unique_ptr<Statement>> body,
+	        Block body,
 	        Type returnType)
-	    : name(std::move(name)), params(std::move(params)), body(std::move(body)), returnType(std::move(returnType)) {}
+	    : publicVisibility(std::move(publicVisibility)), name(std::move(name)), params(std::move(params)), body(std::move(body)), returnType(std::move(returnType)) {}
 
 	void visit(StatementVisitor& visitor) const override { visitor.visitFunctionStatement(*this); }
 

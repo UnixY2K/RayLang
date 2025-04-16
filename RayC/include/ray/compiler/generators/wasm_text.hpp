@@ -1,4 +1,5 @@
 #pragma once
+#include <cstddef>
 #include <sstream>
 
 #include <ray/compiler/ast/expression.hpp>
@@ -9,16 +10,22 @@ namespace ray::compiler::generator {
 class WASMTextGenerator : public ast::StatementVisitor,
                           public ast::ExpressionVisitor {
 	std::stringstream output;
+	size_t ident = 0;
+
+	std::string currentIdent() const;
 
   public:
-	void resolve(const ast::Statement& statement) {
-		statement.visit(*this);
-	}
+	void resolve(const std::vector<std::unique_ptr<ast::Statement>> &statement);
+
+	bool hasFailed() const;
+
+	std::string getOutput() const;
 
 	// Statement
 	void visitBlockStatement(const ast::Block &value) override;
 	void visitTerminalExprStatement(const ast::TerminalExpr &value) override;
-	void visitExpressionStmtStatement(const ast::ExpressionStmt &value) override;
+	void
+	visitExpressionStmtStatement(const ast::ExpressionStmt &value) override;
 	void visitFunctionStatement(const ast::Function &value) override;
 	void visitIfStatement(const ast::If &value) override;
 	void visitJumpStatement(const ast::Jump &value) override;
@@ -37,11 +44,6 @@ class WASMTextGenerator : public ast::StatementVisitor,
 	void visitVariableExpression(const ast::Variable &value) override;
 	void visitTypeExpression(const ast::Type &value) override;
 	void visitParameterExpression(const ast::Parameter &value) override;
-
-	bool hasFailed() const;
-
-	std::string getOutput() const;
-
 };
 
 } // namespace ray::compiler::generator

@@ -12,7 +12,6 @@
 #include <ray/compiler/lexer/lexer.hpp>
 #include <ray/compiler/parser/parser.hpp>
 
-
 using namespace ray::compiler;
 
 using namespace ray::compiler::terminal::literals;
@@ -48,49 +47,46 @@ int main(int argc, char **argv) {
 		Lexer lexer(oss.view());
 
 		auto tokens = lexer.scanTokens();
-		if (lexer.getErrors().size() == 0) {
-			auto parser = Parser(tokens);
-			auto statements = parser.parse();
-			if (!parser.failed()) {
-				if (opts.target ==
-				    ray::compiler::cli::Options::TargetEnum::NONE) {
-					opts.target = opts.defaultTarget;
-				}
-				std::string output;
-				switch (opts.target) {
-				case cli::Options::TargetEnum::WASM_TEXT: {
-					generator::WASMTextGenerator wasmTextGen;
-					for (auto &statement : statements) {
-						wasmTextGen.resolve(*statement);
-
-						if(wasmTextGen.hasFailed()) {
-							std::cerr << std::format("{}: {}\n",
-							                         "Error"_red,
-							                         "WASMTextGenerator failed");
-							return 1;
-						}
-						output = wasmTextGen.getOutput();
-					}
-				}
-				case cli::Options::TargetEnum::NONE:
-				case cli::Options::TargetEnum::ERROR:
-					break;
-				}
-
-				std::ofstream outputFile(opts.output, std::ios::trunc);
-				if (!outputFile) {
-					std::cerr << std::format("{}: could not open file: {}\n",
-					                         "Error"_red,
-					                         opts.output.string());
-					return 1;
-				}
-				outputFile << output;
-			}
-		} else {
+		if (lexer.getErrors().size() > 0) {
 			for (auto &error : lexer.getErrors()) {
 				std::cerr << std::format("{}: {}\n", "LexerError"_red,
 				                         error.toString());
 			}
+			return 1;
 		}
+
+		auto parser = Parser(tokens);
+		auto statements = parser.parse();
+		if (parser.failed()) {
+			return 1;
+		}
+		if (opts.target == ray::compiler::cli::Options::TargetEnum::NONE) {
+			opts.target = opts.defaultTarget;
+		}
+		std::string output;
+		switch (opts.target) {
+		case cli::Options::TargetEnum::WASM_TEXT: {
+			generator::WASMTextGenerator wasmTextGen;
+
+			wasmTextGen.resolve(statements);
+			if (wasmTextGen.hasFailed()) {
+				std::cerr << std::format("{}: {}\n", "Error"_red,
+				                         "WASMTextGenerator failed");
+				return 1;
+			}
+			output = wasmTextGen.getOutput();
+		}
+		case cli::Options::TargetEnum::NONE:
+		case cli::Options::TargetEnum::ERROR:
+			break;
+		}
+
+		std::ofstream outputFile(opts.output, std::ios::trunc);
+		if (!outputFile) {
+			std::cerr << std::format("{}: could not open file: {}\n",
+			                         "Error"_red, opts.output.string());
+			return 1;
+		}
+		outputFile << output;
 	}
 }
