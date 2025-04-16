@@ -120,7 +120,10 @@ void WASMTextGenerator::visitSetExpression(const ast::Set &value) {
 void WASMTextGenerator::visitUnaryExpression(const ast::Unary &value) {
 	std::cerr << "visitUnaryExpression not implemented\n";
 }
-void WASMTextGenerator::visitVariableExpression(const ast::Variable &value) {
+void WASMTextGenerator::visitVariableExpression(const ast::Variable &variable) {
+	std::string identTab = currentIdent();
+	output << std::format("{}local.get ${}\n", identTab,
+	                      variable.name.lexeme);
 	std::cerr << "visitVariableExpression not implemented\n";
 }
 void WASMTextGenerator::visitTypeExpression(const ast::Type &value) {
