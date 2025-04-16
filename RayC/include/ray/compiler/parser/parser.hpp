@@ -7,6 +7,7 @@
 #include <cstddef>
 #include <exception>
 #include <vector>
+#include <optional>
 
 namespace ray::compiler {
 
@@ -26,7 +27,7 @@ class Parser {
 
   private:
 	std::unique_ptr<ast::Expression> expression();
-	std::unique_ptr<ast::Statement> declaration();
+	std::optional<std::unique_ptr<ast::Statement>> declaration();
 	std::unique_ptr<ast::Statement> statement();
 	std::unique_ptr<ast::Statement> forStatement();
 	std::unique_ptr<ast::Statement> ifStatement();

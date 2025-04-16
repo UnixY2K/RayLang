@@ -6,23 +6,42 @@
 
 namespace ray::compiler::ast {
 
+class Assign;
+class Binary;
+class Call;
+class Get;
+class Grouping;
+class Literal;
+class Logical;
+class Set;
+class Unary;
+class Variable;
+class Type;
+class Parameter;
+
+class ExpressionVisitor {
+  public:
+	virtual void visitAssignExpression(const Assign& value) = 0;
+	virtual void visitBinaryExpression(const Binary& value) = 0;
+	virtual void visitCallExpression(const Call& value) = 0;
+	virtual void visitGetExpression(const Get& value) = 0;
+	virtual void visitGroupingExpression(const Grouping& value) = 0;
+	virtual void visitLiteralExpression(const Literal& value) = 0;
+	virtual void visitLogicalExpression(const Logical& value) = 0;
+	virtual void visitSetExpression(const Set& value) = 0;
+	virtual void visitUnaryExpression(const Unary& value) = 0;
+	virtual void visitVariableExpression(const Variable& value) = 0;
+	virtual void visitTypeExpression(const Type& value) = 0;
+	virtual void visitParameterExpression(const Parameter& value) = 0;
+	virtual ~ExpressionVisitor() = default;
+};
+
 class Expression {
   public:
+	virtual void visit(ExpressionVisitor& visitor) const = 0;
 	virtual ~Expression() = default;
 };
 
-class Ternary : public Expression {
-  public:
-	std::unique_ptr<Expression> cond;
-	std::unique_ptr<Expression> left;
-	std::unique_ptr<Expression> right;
-
-	Ternary(std::unique_ptr<Expression> cond,
-	        std::unique_ptr<Expression> left,
-	        std::unique_ptr<Expression> right)
-	    : cond(std::move(cond)), left(std::move(left)), right(std::move(right)) {}
-
-};
 class Assign : public Expression {
   public:
 	Token name;
@@ -31,6 +50,8 @@ class Assign : public Expression {
 	Assign(Token name,
 	        std::unique_ptr<Expression> value)
 	    : name(std::move(name)), value(std::move(value)) {}
+
+	void visit(ExpressionVisitor& visitor) const override { visitor.visitAssignExpression(*this); }
 
 };
 class Binary : public Expression {
@@ -44,6 +65,8 @@ class Binary : public Expression {
 	        std::unique_ptr<Expression> right)
 	    : left(std::move(left)), op(std::move(op)), right(std::move(right)) {}
 
+	void visit(ExpressionVisitor& visitor) const override { visitor.visitBinaryExpression(*this); }
+
 };
 class Call : public Expression {
   public:
@@ -56,6 +79,8 @@ class Call : public Expression {
 	        std::vector<std::unique_ptr<Expression>> arguments)
 	    : callee(std::move(callee)), paren(std::move(paren)), arguments(std::move(arguments)) {}
 
+	void visit(ExpressionVisitor& visitor) const override { visitor.visitCallExpression(*this); }
+
 };
 class Get : public Expression {
   public:
@@ -66,6 +91,8 @@ class Get : public Expression {
 	        Token name)
 	    : object(std::move(object)), name(std::move(name)) {}
 
+	void visit(ExpressionVisitor& visitor) const override { visitor.visitGetExpression(*this); }
+
 };
 class Grouping : public Expression {
   public:
@@ -74,6 +101,8 @@ class Grouping : public Expression {
 	Grouping(std::unique_ptr<Expression> expression)
 	    : expression(std::move(expression)) {}
 
+	void visit(ExpressionVisitor& visitor) const override { visitor.visitGroupingExpression(*this); }
+
 };
 class Literal : public Expression {
   public:
@@ -81,6 +110,8 @@ class Literal : public Expression {
 
 	Literal(std::any value)
 	    : value(std::move(value)) {}
+
+	void visit(ExpressionVisitor& visitor) const override { visitor.visitLiteralExpression(*this); }
 
 };
 class Logical : public Expression {
@@ -94,6 +125,8 @@ class Logical : public Expression {
 	        std::unique_ptr<Expression> right)
 	    : left(std::move(left)), op(std::move(op)), right(std::move(right)) {}
 
+	void visit(ExpressionVisitor& visitor) const override { visitor.visitLogicalExpression(*this); }
+
 };
 class Set : public Expression {
   public:
@@ -106,6 +139,8 @@ class Set : public Expression {
 	        std::unique_ptr<Expression> value)
 	    : object(std::move(object)), name(std::move(name)), value(std::move(value)) {}
 
+	void visit(ExpressionVisitor& visitor) const override { visitor.visitSetExpression(*this); }
+
 };
 class Unary : public Expression {
   public:
@@ -116,6 +151,8 @@ class Unary : public Expression {
 	        std::unique_ptr<Expression> right)
 	    : op(std::move(op)), right(std::move(right)) {}
 
+	void visit(ExpressionVisitor& visitor) const override { visitor.visitUnaryExpression(*this); }
+
 };
 class Variable : public Expression {
   public:
@@ -124,6 +161,8 @@ class Variable : public Expression {
 	Variable(Token name)
 	    : name(std::move(name)) {}
 
+	void visit(ExpressionVisitor& visitor) const override { visitor.visitVariableExpression(*this); }
+
 };
 class Type : public Expression {
   public:
@@ -131,6 +170,8 @@ class Type : public Expression {
 
 	Type(Token type)
 	    : type(std::move(type)) {}
+
+	void visit(ExpressionVisitor& visitor) const override { visitor.visitTypeExpression(*this); }
 
 };
 class Parameter : public Expression {
@@ -142,25 +183,8 @@ class Parameter : public Expression {
 	        Type type)
 	    : name(std::move(name)), type(std::move(type)) {}
 
-};
+	void visit(ExpressionVisitor& visitor) const override { visitor.visitParameterExpression(*this); }
 
-
-class ExpressionVisitor {
-  public:
-	virtual void visitTernaryExpression(Ternary& value) = 0;
-	virtual void visitAssignExpression(Assign& value) = 0;
-	virtual void visitBinaryExpression(Binary& value) = 0;
-	virtual void visitCallExpression(Call& value) = 0;
-	virtual void visitGetExpression(Get& value) = 0;
-	virtual void visitGroupingExpression(Grouping& value) = 0;
-	virtual void visitLiteralExpression(Literal& value) = 0;
-	virtual void visitLogicalExpression(Logical& value) = 0;
-	virtual void visitSetExpression(Set& value) = 0;
-	virtual void visitUnaryExpression(Unary& value) = 0;
-	virtual void visitVariableExpression(Variable& value) = 0;
-	virtual void visitTypeExpression(Type& value) = 0;
-	virtual void visitParameterExpression(Parameter& value) = 0;
-	virtual ~ExpressionVisitor() = default;
 };
 
 } // namespace ray::compiler::ast

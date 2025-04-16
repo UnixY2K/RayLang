@@ -6,8 +6,31 @@
 
 namespace ray::compiler::ast {
 
+class Block;
+class TerminalExpr;
+class ExpressionStmt;
+class Function;
+class If;
+class Jump;
+class Var;
+class While;
+
+class StatementVisitor {
+  public:
+	virtual void visitBlockStatement(const Block& value) = 0;
+	virtual void visitTerminalExprStatement(const TerminalExpr& value) = 0;
+	virtual void visitExpressionStmtStatement(const ExpressionStmt& value) = 0;
+	virtual void visitFunctionStatement(const Function& value) = 0;
+	virtual void visitIfStatement(const If& value) = 0;
+	virtual void visitJumpStatement(const Jump& value) = 0;
+	virtual void visitVarStatement(const Var& value) = 0;
+	virtual void visitWhileStatement(const While& value) = 0;
+	virtual ~StatementVisitor() = default;
+};
+
 class Statement {
   public:
+	virtual void visit(StatementVisitor& visitor) const = 0;
 	virtual ~Statement() = default;
 };
 
@@ -18,6 +41,8 @@ class Block : public Statement {
 	Block(std::vector<std::unique_ptr<Statement>> statements)
 	    : statements(std::move(statements)) {}
 
+	void visit(StatementVisitor& visitor) const override { visitor.visitBlockStatement(*this); }
+
 };
 class TerminalExpr : public Statement {
   public:
@@ -26,6 +51,8 @@ class TerminalExpr : public Statement {
 	TerminalExpr(std::unique_ptr<Expression> expression)
 	    : expression(std::move(expression)) {}
 
+	void visit(StatementVisitor& visitor) const override { visitor.visitTerminalExprStatement(*this); }
+
 };
 class ExpressionStmt : public Statement {
   public:
@@ -33,6 +60,8 @@ class ExpressionStmt : public Statement {
 
 	ExpressionStmt(std::unique_ptr<Expression> expression)
 	    : expression(std::move(expression)) {}
+
+	void visit(StatementVisitor& visitor) const override { visitor.visitExpressionStmtStatement(*this); }
 
 };
 class Function : public Statement {
@@ -48,6 +77,8 @@ class Function : public Statement {
 	        Type returnType)
 	    : name(std::move(name)), params(std::move(params)), body(std::move(body)), returnType(std::move(returnType)) {}
 
+	void visit(StatementVisitor& visitor) const override { visitor.visitFunctionStatement(*this); }
+
 };
 class If : public Statement {
   public:
@@ -60,6 +91,8 @@ class If : public Statement {
 	        std::unique_ptr<Statement> elseBranch)
 	    : condition(std::move(condition)), thenBranch(std::move(thenBranch)), elseBranch(std::move(elseBranch)) {}
 
+	void visit(StatementVisitor& visitor) const override { visitor.visitIfStatement(*this); }
+
 };
 class Jump : public Statement {
   public:
@@ -69,6 +102,8 @@ class Jump : public Statement {
 	Jump(Token keyword,
 	        std::unique_ptr<Expression> value)
 	    : keyword(std::move(keyword)), value(std::move(value)) {}
+
+	void visit(StatementVisitor& visitor) const override { visitor.visitJumpStatement(*this); }
 
 };
 class Var : public Statement {
@@ -80,6 +115,8 @@ class Var : public Statement {
 	        std::unique_ptr<Expression> initializer)
 	    : name(std::move(name)), initializer(std::move(initializer)) {}
 
+	void visit(StatementVisitor& visitor) const override { visitor.visitVarStatement(*this); }
+
 };
 class While : public Statement {
   public:
@@ -90,20 +127,8 @@ class While : public Statement {
 	        std::unique_ptr<Statement> body)
 	    : condition(std::move(condition)), body(std::move(body)) {}
 
-};
+	void visit(StatementVisitor& visitor) const override { visitor.visitWhileStatement(*this); }
 
-
-class StatementVisitor {
-  public:
-	virtual void visitBlockStatement(Block& value) = 0;
-	virtual void visitTerminalExprStatement(TerminalExpr& value) = 0;
-	virtual void visitExpressionStmtStatement(ExpressionStmt& value) = 0;
-	virtual void visitFunctionStatement(Function& value) = 0;
-	virtual void visitIfStatement(If& value) = 0;
-	virtual void visitJumpStatement(Jump& value) = 0;
-	virtual void visitVarStatement(Var& value) = 0;
-	virtual void visitWhileStatement(While& value) = 0;
-	virtual ~StatementVisitor() = default;
 };
 
 } // namespace ray::compiler::ast

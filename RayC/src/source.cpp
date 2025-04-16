@@ -58,6 +58,9 @@ int main(int argc, char **argv) {
 				switch (opts.target) {
 				case cli::Options::TargetEnum::WASM_TEXT: {
 					generator::WASMTextGenerator wasmTextGen;
+					for (auto &statement : statements) {
+						wasmTextGen.resolve(*statement);
+					}
 				}
 				case cli::Options::TargetEnum::NONE:
 				case cli::Options::TargetEnum::ERROR:

@@ -1,7 +1,6 @@
 #include <format>
 #include <memory>
 #include <utility>
-#include <vector>
 
 #include <ray/compiler/ast/expression.hpp>
 #include <ray/compiler/ast/statement.hpp>
@@ -17,7 +16,10 @@ std::vector<std::unique_ptr<ast::Statement>> Parser::parse() {
 		std::vector<std::unique_ptr<ast::Statement>> statements;
 
 		while (!isAtEnd()) {
-			statements.push_back(declaration());
+			auto result = declaration();
+			if (result.has_value()) {
+				statements.push_back(std::move(result.value()));
+			}
 		}
 
 		return statements;
@@ -26,15 +28,13 @@ std::vector<std::unique_ptr<ast::Statement>> Parser::parse() {
 	}
 }
 
-bool Parser::failed() const {
-	return ErrorBag::hadError;
-}
+bool Parser::failed() const { return ErrorBag::hadError; }
 
 std::unique_ptr<ast::Expression> Parser::expression() { return comma(); }
-std::unique_ptr<ast::Statement> Parser::declaration() {
+std::optional<std::unique_ptr<ast::Statement>> Parser::declaration() {
 	try {
 		if (match({Token::TokenType::TOKEN_FN})) {
-			return std::make_unique<ast::Statement>(function("function"));
+			return std::make_unique<ast::Function>(function("function"));
 		}
 		if (match({Token::TokenType::TOKEN_LET})) {
 			return varDeclaration();
@@ -42,7 +42,7 @@ std::unique_ptr<ast::Statement> Parser::declaration() {
 		return statement();
 	} catch (ParseException &e) {
 		synchronize();
-		return std::make_unique<ast::Statement>(ast::Statement{});
+		return std::nullopt;
 	}
 }
 std::unique_ptr<ast::Statement> Parser::statement() {
@@ -65,7 +65,7 @@ std::unique_ptr<ast::Statement> Parser::statement() {
 		return whileStatement();
 	}
 	if (match({Token::TokenType::TOKEN_LEFT_BRACE})) {
-		return std::make_unique<ast::Statement>(ast::Block((block())));
+		return std::make_unique<ast::Block>(ast::Block((block())));
 	}
 
 	return expressionStatement();
@@ -101,24 +101,24 @@ std::unique_ptr<ast::Statement> Parser::forStatement() {
 	if (increment) {
 		std::vector<std::unique_ptr<ast::Statement>> bodyStatements;
 		bodyStatements.push_back(std::move(body));
-		bodyStatements.push_back(std::make_unique<ast::Statement>(
+		bodyStatements.push_back(std::make_unique<ast::ExpressionStmt>(
 		    ast::ExpressionStmt(std::move(increment))));
-		body = std::make_unique<ast::Statement>(
-		    ast::Block(std::move(bodyStatements)));
+		body =
+		    std::make_unique<ast::Block>(ast::Block(std::move(bodyStatements)));
 	}
 
 	if (!condition) {
-		condition = std::make_unique<ast::Expression>(ast::Literal(true));
+		condition = std::make_unique<ast::Literal>(ast::Literal(true));
 	}
-	body = std::make_unique<ast::Statement>(
+	body = std::make_unique<ast::While>(
 	    ast::While(std::move(condition), std::move(body)));
 
 	if (initializer) {
 		std::vector<std::unique_ptr<ast::Statement>> bodyStatements;
 		bodyStatements.push_back(std::move(initializer));
 		bodyStatements.push_back(std::move(body));
-		body = std::make_unique<ast::Statement>(
-		    ast::Block(std::move(bodyStatements)));
+		body =
+		    std::make_unique<ast::Block>(ast::Block(std::move(bodyStatements)));
 	}
 
 	return body;
@@ -132,7 +132,7 @@ std::unique_ptr<ast::Statement> Parser::ifStatement() {
 		elseBranch = statement();
 	}
 
-	return std::make_unique<ast::Statement>(ast::If(
+	return std::make_unique<ast::If>(ast::If(
 	    std::move(condition), std::move(thenBranch), std::move(elseBranch)));
 }
 std::unique_ptr<ast::Statement> Parser::returnStatement() {
@@ -143,18 +143,17 @@ std::unique_ptr<ast::Statement> Parser::returnStatement() {
 	}
 	consume(Token::TokenType::TOKEN_SEMICOLON,
 	        "Expect ';' after return value.");
-	return std::make_unique<ast::Statement>(
-	    ast::Jump(keyword, std::move(value)));
+	return std::make_unique<ast::Jump>(ast::Jump(keyword, std::move(value)));
 }
 std::unique_ptr<ast::Statement> Parser::continueStatement() {
 	Token keyword = previous();
 	consume(Token::TokenType::TOKEN_SEMICOLON, "Expect ';' after continue.");
-	return std::make_unique<ast::Statement>(ast::Jump(keyword, nullptr));
+	return std::make_unique<ast::Jump>(ast::Jump(keyword, nullptr));
 }
 std::unique_ptr<ast::Statement> Parser::breakStatement() {
 	Token keyword = previous();
 	consume(Token::TokenType::TOKEN_SEMICOLON, "Expect ';' after break.");
-	return std::make_unique<ast::Statement>(ast::Jump(keyword, nullptr));
+	return std::make_unique<ast::Jump>(ast::Jump(keyword, nullptr));
 }
 std::unique_ptr<ast::Statement> Parser::whileStatement() {
 	consume(Token::TokenType::TOKEN_LEFT_PAREN, "Expect '(' after 'while'.");
@@ -163,7 +162,7 @@ std::unique_ptr<ast::Statement> Parser::whileStatement() {
 
 	auto body = statement();
 
-	return std::make_unique<ast::Statement>(
+	return std::make_unique<ast::While>(
 	    ast::While(std::move(condition), std::move(body)));
 }
 std::unique_ptr<ast::Statement> Parser::varDeclaration() {
@@ -178,15 +177,16 @@ std::unique_ptr<ast::Statement> Parser::varDeclaration() {
 	consume(Token::TokenType::TOKEN_SEMICOLON,
 	        "Expect ';' after variable declaration.");
 	ast::Var variable{name, std::move(initializer)};
-	return std::make_unique<ast::Statement>(std::move(variable));
+	return std::make_unique<ast::Var>(std::move(variable));
 }
 std::unique_ptr<ast::Statement> Parser::expressionStatement() {
 	auto expr = expression();
 	if (match({Token::TokenType::TOKEN_SEMICOLON})) {
-		return std::make_unique<ast::Statement>(
+		return std::make_unique<ast::ExpressionStmt>(
 		    ast::ExpressionStmt(std::move(expr)));
 	}
-	return std::make_unique<ast::Statement>(ast::TerminalExpr(std::move(expr)));
+	return std::make_unique<ast::TerminalExpr>(
+	    ast::TerminalExpr(std::move(expr)));
 }
 ast::Function Parser::function(std::string kind) {
 	Token name = consume(Token::TokenType::TOKEN_IDENTIFIER,
@@ -232,7 +232,10 @@ std::vector<std::unique_ptr<ast::Statement>> Parser::block() {
 	std::vector<std::unique_ptr<ast::Statement>> statements;
 
 	while (!check(Token::TokenType::TOKEN_RIGHT_BRACE) && !isAtEnd()) {
-		statements.push_back(declaration());
+		auto result = declaration();
+		if (result.has_value()) {
+			statements.push_back(std::move(result.value()));
+		}
 	}
 
 	consume(Token::TokenType::TOKEN_RIGHT_BRACE, "Expect '}' after block.");
@@ -242,7 +245,7 @@ std::vector<std::unique_ptr<ast::Statement>> Parser::block() {
 	    dynamic_cast<ast::TerminalExpr *>(
 	        statements[statements.size() - 1].get()) == nullptr) {
 		statements.push_back(
-		    std::make_unique<ast::Statement>(ast::TerminalExpr(nullptr)));
+		    std::make_unique<ast::TerminalExpr>(ast::TerminalExpr(nullptr)));
 	}
 	return statements;
 }
@@ -252,7 +255,7 @@ std::unique_ptr<ast::Expression> Parser::comma() {
 	while (match({Token::TokenType::TOKEN_COMMA})) {
 		Token op = previous();
 		auto right = expression();
-		expr = std::make_unique<ast::Expression>(
+		expr = std::make_unique<ast::Binary>(
 		    ast::Binary(std::move(expr), op, std::move(right)));
 	}
 
@@ -266,10 +269,10 @@ std::unique_ptr<ast::Expression> Parser::assignment() {
 		auto value = assignment();
 		if (auto variable = dynamic_cast<ast::Variable *>(expr.get())) {
 			Token name = variable->name;
-			return std::make_unique<ast::Expression>(
+			return std::make_unique<ast::Assign>(
 			    ast::Assign(name, std::move(value)));
 		} else if (auto get = dynamic_cast<ast::Get *>(expr.get())) {
-			return std::make_unique<ast::Expression>(
+			return std::make_unique<ast::Set>(
 			    ast::Set(std::move(get->object), get->name, std::move(value)));
 		}
 		error(equals, "Invalid assignment target.");
@@ -283,7 +286,7 @@ std::unique_ptr<ast::Expression> Parser::orExpression() {
 	while (match({Token::TokenType::TOKEN_PIPE_PIPE})) {
 		Token op = previous();
 		auto right = andExpression();
-		expr = std::make_unique<ast::Expression>(
+		expr = std::make_unique<ast::Logical>(
 		    ast::Logical(std::move(expr), op, std::move(right)));
 	}
 
@@ -295,7 +298,7 @@ std::unique_ptr<ast::Expression> Parser::andExpression() {
 	while (match({Token::TokenType::TOKEN_AMPERSAND_AMPERSAND})) {
 		Token op = previous();
 		auto right = equalityExpression();
-		expr = std::make_unique<ast::Expression>(
+		expr = std::make_unique<ast::Logical>(
 		    ast::Logical(std::move(expr), op, std::move(right)));
 	}
 
@@ -308,7 +311,7 @@ std::unique_ptr<ast::Expression> Parser::equalityExpression() {
 	              Token::TokenType::TOKEN_EQUAL_EQUAL})) {
 		Token op = previous();
 		auto right = comparisonExpression();
-		expr = std::make_unique<ast::Expression>(
+		expr = std::make_unique<ast::Binary>(
 		    ast::Binary(std::move(expr), op, std::move(right)));
 	}
 
@@ -322,7 +325,7 @@ std::unique_ptr<ast::Expression> Parser::comparisonExpression() {
 	     Token::TokenType::TOKEN_LESS, Token::TokenType::TOKEN_LESS_EQUAL})) {
 		Token op = previous();
 		auto right = terminalExpression();
-		expr = std::make_unique<ast::Expression>(
+		expr = std::make_unique<ast::Binary>(
 		    ast::Binary(std::move(expr), op, std::move(right)));
 	}
 
@@ -335,7 +338,7 @@ std::unique_ptr<ast::Expression> Parser::terminalExpression() {
 	    match({Token::TokenType::TOKEN_MINUS, Token::TokenType::TOKEN_PLUS})) {
 		Token op = previous();
 		auto right = factorExpression();
-		expr = std::make_unique<ast::Expression>(
+		expr = std::make_unique<ast::Binary>(
 		    ast::Binary(std::move(expr), op, std::move(right)));
 	}
 
@@ -348,7 +351,7 @@ std::unique_ptr<ast::Expression> Parser::factorExpression() {
 	    match({Token::TokenType::TOKEN_SLASH, Token::TokenType::TOKEN_STAR})) {
 		Token op = previous();
 		auto right = unaryExpression();
-		expr = std::make_unique<ast::Expression>(
+		expr = std::make_unique<ast::Binary>(
 		    ast::Binary(std::move(expr), op, std::move(right)));
 	}
 
@@ -358,8 +361,7 @@ std::unique_ptr<ast::Expression> Parser::unaryExpression() {
 	if (match({Token::TokenType::TOKEN_BANG, Token::TokenType::TOKEN_MINUS})) {
 		auto op = previous();
 		auto right = unaryExpression();
-		return std::make_unique<ast::Expression>(
-		    ast::Unary(op, std::move(right)));
+		return std::make_unique<ast::Unary>(ast::Unary(op, std::move(right)));
 	}
 	return call();
 }
@@ -386,7 +388,7 @@ Parser::finishCall(std::unique_ptr<ast::Expression> callee) {
 
 	auto paren = consume(Token::TokenType::TOKEN_RIGHT_PAREN,
 	                     "Expect ')' after arguments.");
-	return std::make_unique<ast::Expression>(
+	return std::make_unique<ast::Call>(
 	    ast::Call(std::move(callee), paren, std::move(arguments)));
 }
 std::unique_ptr<ast::Expression> Parser::call() {
@@ -404,28 +406,26 @@ std::unique_ptr<ast::Expression> Parser::call() {
 }
 std::unique_ptr<ast::Expression> Parser::primaryExpresion() {
 	if (match({Token::TokenType::TOKEN_FALSE})) {
-		return std::make_unique<ast::Expression>(ast::Literal(false));
+		return std::make_unique<ast::Literal>(ast::Literal(false));
 	}
 	if (match({Token::TokenType::TOKEN_TRUE})) {
-		return std::make_unique<ast::Expression>(ast::Literal(true));
+		return std::make_unique<ast::Literal>(ast::Literal(true));
 	}
 
 	if (match(
 	        {Token::TokenType::TOKEN_NUMBER, Token::TokenType::TOKEN_STRING})) {
-		return std::make_unique<ast::Expression>(
-		    ast::Literal(previous().lexeme));
+		return std::make_unique<ast::Literal>(ast::Literal(previous().lexeme));
 	}
 
 	if (match({Token::TokenType::TOKEN_IDENTIFIER})) {
-		return std::make_unique<ast::Expression>(ast::Variable(previous()));
+		return std::make_unique<ast::Variable>(ast::Variable(previous()));
 	}
 
 	if (match({Token::TokenType::TOKEN_LEFT_PAREN})) {
 		auto expr = expression();
 		consume(Token::TokenType::TOKEN_RIGHT_PAREN,
 		        "Expect ')' after expression.");
-		return std::make_unique<ast::Expression>(
-		    ast::Grouping(std::move(expr)));
+		return std::make_unique<ast::Grouping>(ast::Grouping(std::move(expr)));
 	}
 
 	throw error(peek(), "Expect expression.");

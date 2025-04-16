@@ -32,8 +32,18 @@ def defineAst(outputDir: str, baseName: str, requiredHeaders: list[str], types: 
         headerFile.write("\n")
         headerFile.write("namespace ray::compiler::ast {\n")
         headerFile.write("\n")
+
+        for clazz in processedClasses:
+            headerFile.write(f"class {clazz["Name"]};")
+            headerFile.write("\n")
+
+        headerFile.write("\n")
+        headerFile.write(defineVisitor(baseName, processedClasses))
+        headerFile.write("\n")
+
         headerFile.write(f"class {baseName} {{\n")
         headerFile.write("  public:\n")
+        headerFile.write(f"\tvirtual void visit({baseName}Visitor& visitor) const = 0;\n")
         headerFile.write(f"\tvirtual ~{baseName}() = default;\n")
         headerFile.write("};\n\n")
 
@@ -44,9 +54,7 @@ def defineAst(outputDir: str, baseName: str, requiredHeaders: list[str], types: 
 
         headerFile.write("\n")
 
-        headerFile.write("\n")
-        headerFile.write(defineVisitor(baseName, processedClasses))
-        headerFile.write("\n")
+
 
         headerFile.write("} // namespace ray::compiler::ast\n")
 
@@ -77,6 +85,7 @@ def defineType(baseName: str, clazz: dict[str]):
 
     stringList.append(", ".join(initializerList))
     stringList.append(" {}\n\n")
+    stringList.append(f"\tvoid visit({baseName}Visitor& visitor) const override {{ visitor.visit{clazz["Name"]}{baseName}(*this); }}\n\n")
 
     stringList.append("};")
 
@@ -88,7 +97,7 @@ def defineVisitor(baseName: str, types: dict):
     stringList.append("  public:\n")
     for clazz in types:
         className = clazz["Name"]
-        stringList.append(f"\tvirtual void visit{className}{baseName}({className}& value) = 0;\n")
+        stringList.append(f"\tvirtual void visit{className}{baseName}(const {className}& value) = 0;\n")
     stringList.append(f"\tvirtual ~{baseName}Visitor() = default;\n")
     stringList.append("};\n")
 
@@ -99,7 +108,6 @@ def defineVisitor(baseName: str, types: dict):
 def main():
     outputDir = "./RayC/include/ray/compiler/ast"
     defineAst(outputDir, "Expression", ["any", "memory", "vector", "ray/compiler/lexer/token.hpp"], [
-        "Ternary		= std::unique_ptr<Expression> cond, std::unique_ptr<Expression> left, std::unique_ptr<Expression> right",
         "Assign			= Token name, std::unique_ptr<Expression> value",
         "Binary			= std::unique_ptr<Expression> left, Token op, std::unique_ptr<Expression> right",
         "Call			= std::unique_ptr<Expression> callee, Token paren, std::vector<std::unique_ptr<Expression>> arguments",
