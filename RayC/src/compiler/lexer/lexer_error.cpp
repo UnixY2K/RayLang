@@ -8,21 +8,19 @@ namespace ray::compiler {
 std::string LexerError::toString() const {
 	switch (category) {
 	case ErrorCategory::UnterminatedString: {
-		return std::format("Unterminated string at line: {}, character: {}",
-		                   token.line,
+		return std::format("[{}, {}] Unterminated string", token.line,
 		                   token.column + token.lexeme.length() - 1);
 	}
 	case ErrorCategory::UnexpectedCharacter:
-		return std::format(
-		    "Unexpected character: '{}' at line: {}, character: {}",
-		    token.lexeme, token.line, token.column);
+		return std::format("[{}, {}] Unexpected character: '{}'", token.line,
+		                   token.column, token.lexeme);
 	case ErrorCategory::Undefined:
 	case ErrorCategory::Unkown:
-		return std::format("[{}]{} at line: {},character: {}", "", message,
-		                   token.line, token.column);
+		return std::format("[{}, {}] |Unknown/Undefined|: {} ", token.line,
+		                   token.column, message);
 	default:
-		return std::format("|UNHANDLED-CAT|[{}]{} at line: {},character: {}", "UNKNOWN_TAG",
-		                   message, token.line, token.column);
+		return std::format("[{}, {}] |UNHANDLED-CAT| {}", token.line,
+		                   token.column, message);
 	}
 }
 

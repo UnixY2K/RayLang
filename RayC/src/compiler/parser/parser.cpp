@@ -181,7 +181,7 @@ std::unique_ptr<ast::Statement> Parser::varDeclaration() {
 	    consume(Token::TokenType::TOKEN_IDENTIFIER, "Expect variable name.");
 
 	Token type = Token{Token::TokenType::TOKEN_UNINITIALIZED};
-	if(match({Token::TokenType::TOKEN_COLON})){
+	if (match({Token::TokenType::TOKEN_COLON})) {
 		consume(Token::TokenType::TOKEN_IDENTIFIER, "Expect type signature");
 		type = previous();
 	}
@@ -375,7 +375,9 @@ std::unique_ptr<ast::Expression> Parser::factorExpression() {
 	return expr;
 }
 std::unique_ptr<ast::Expression> Parser::unaryExpression() {
-	if (match({Token::TokenType::TOKEN_BANG, Token::TokenType::TOKEN_MINUS})) {
+	if (match({Token::TokenType::TOKEN_BANG, Token::TokenType::TOKEN_MINUS,
+	           Token::TokenType::TOKEN_PLUS_PLUS,
+	           Token::TokenType::TOKEN_MINUS_MINUS})) {
 		auto op = previous();
 		auto right = unaryExpression();
 		return std::make_unique<ast::Unary>(ast::Unary(op, std::move(right)));

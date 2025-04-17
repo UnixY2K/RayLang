@@ -236,8 +236,27 @@ void WASMTextGenerator::visitLogicalExpression(const ast::Logical &value) {
 void WASMTextGenerator::visitSetExpression(const ast::Set &value) {
 	std::cerr << "visitSetExpression not implemented\n";
 }
-void WASMTextGenerator::visitUnaryExpression(const ast::Unary &value) {
-	std::cerr << "visitUnaryExpression not implemented\n";
+void WASMTextGenerator::visitUnaryExpression(const ast::Unary &unary) {
+	unary.right->visit(*this);
+	switch (unary.op.type) {
+	case Token::TokenType::TOKEN_BANG:
+		output << std::format("{}i32.eqz\n", currentIdent());
+		break;
+	case Token::TokenType::TOKEN_MINUS:
+		output << std::format("{}i32.sub\n", currentIdent());
+		break;
+	case Token::TokenType::TOKEN_MINUS_MINUS:
+		output << std::format("{}i32.const -1\n", currentIdent());
+		output << std::format("{}i32.add\n", currentIdent());
+		break;
+	case Token::TokenType::TOKEN_PLUS_PLUS:
+		output << std::format("{}i32.const 1\n", currentIdent());
+		output << std::format("{}i32.sub\n", currentIdent());
+		break;
+	default:
+		std::cerr << std::format("'{}' is not a supported unary operation\n",
+		                         unary.op.getLexeme());
+	}
 }
 void WASMTextGenerator::visitVariableExpression(const ast::Variable &variable) {
 	std::string identTab = currentIdent();

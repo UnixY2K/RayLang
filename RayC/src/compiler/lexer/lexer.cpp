@@ -17,7 +17,7 @@ std::vector<Token> Lexer::scanTokens() {
 	errors.clear();
 	start = 0;
 	current = 0;
-	line = 0;
+	line = 1;
 	column = 0;
 
 	while (!isAtEnd()) {
@@ -81,6 +81,9 @@ void Lexer::scanToken() {
 		if (next == '=') {
 			advance();
 			addToken(Token::TokenType::TOKEN_SLASH_EQUAL);
+		} else if (next == '/') {
+			advance();
+			comment();
 		} else {
 			addToken(Token::TokenType::TOKEN_SLASH);
 		}
@@ -188,7 +191,7 @@ void Lexer::scanToken() {
 	}
 	// not expected character
 	case Token::TokenType::TOKEN_ERROR: {
-		if (std::isalpha(c)) {
+		if (std::isalpha(c) || c == '_') {
 			identifier();
 		} else if (std::isdigit(c)) {
 			number();
@@ -278,7 +281,7 @@ void Lexer::number() {
 }
 
 void Lexer::identifier() {
-	while (std::isalnum(peek())) {
+	while (std::isalnum(peek()) || peek() == '_') {
 		advance();
 	}
 	auto text = source.substr(start, current - start);
@@ -287,6 +290,17 @@ void Lexer::identifier() {
 	             ? Token::TokenType::TOKEN_IDENTIFIER
 	             : type,
 	         std::string{type == Token::TokenType::TOKEN_ERROR ? text : ""});
+}
+
+void Lexer::comment() {
+	while (!isAtEnd()) {
+		if (peek() == '\n') {
+			line++;
+			column = 0;
+			break;
+		}
+		advance();
+	}
 }
 
 char Lexer::peek() {
