@@ -180,14 +180,20 @@ std::unique_ptr<ast::Statement> Parser::varDeclaration() {
 	Token name =
 	    consume(Token::TokenType::TOKEN_IDENTIFIER, "Expect variable name.");
 
-	std::unique_ptr<ast::Expression> initializer;
+	Token type = Token{Token::TokenType::TOKEN_UNINITIALIZED};
+	if(match({Token::TokenType::TOKEN_COLON})){
+		consume(Token::TokenType::TOKEN_IDENTIFIER, "Expect type signature");
+		type = previous();
+	}
+
+	std::optional<std::unique_ptr<ast::Expression>> initializer = std::nullopt;
 	if (match({Token::TokenType::TOKEN_EQUAL})) {
 		initializer = expression();
 	}
 
 	consume(Token::TokenType::TOKEN_SEMICOLON,
 	        "Expect ';' after variable declaration.");
-	ast::Var variable{name, std::move(initializer)};
+	ast::Var variable{name, type, std::move(initializer)};
 	return std::make_unique<ast::Var>(std::move(variable));
 }
 std::unique_ptr<ast::Statement> Parser::expressionStatement() {

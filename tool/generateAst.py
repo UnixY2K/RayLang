@@ -109,20 +109,25 @@ def defineVisitor(baseName: str, types: dict):
 
 def main():
     outputDir = "./RayC/include/ray/compiler/ast"
-    defineAst(outputDir, "Expression", ["any", "memory", "vector", "ray/compiler/lexer/token.hpp"], [
-        "Assign			= Token name, std::unique_ptr<Expression> value",
-        "Binary			= std::unique_ptr<Expression> left, Token op, std::unique_ptr<Expression> right",
-        "Call			= std::unique_ptr<Expression> callee, Token paren, std::vector<std::unique_ptr<Expression>> arguments",
-        "Get			= std::unique_ptr<Expression> object, Token name",
-        "Grouping		= std::unique_ptr<Expression> expression",
-        "Literal		= Token kind, std::string value",
-        "Logical		= std::unique_ptr<Expression> left, Token op, std::unique_ptr<Expression> right",
-        "Set			= std::unique_ptr<Expression> object, Token name, std::unique_ptr<Expression> value",
-        "Unary			= Token op, std::unique_ptr<Expression> right",
-        "Variable		= Token name",
-        "Type           = Token name",
-        "Parameter	    = Token name, Type type",
-    ])
+    defineAst(outputDir, "Expression",
+            ["any",
+             "memory",
+             "vector",
+             "ray/compiler/lexer/token.hpp"
+            ],
+            ["Assign		= Token name, std::unique_ptr<Expression> value",
+             "Binary		= std::unique_ptr<Expression> left, Token op, std::unique_ptr<Expression> right",
+             "Call			= std::unique_ptr<Expression> callee, Token paren, std::vector<std::unique_ptr<Expression>> arguments",
+             "Get			= std::unique_ptr<Expression> object, Token name",
+             "Grouping		= std::unique_ptr<Expression> expression",
+             "Literal		= Token kind, std::string value",
+             "Logical		= std::unique_ptr<Expression> left, Token op, std::unique_ptr<Expression> right",
+             "Set			= std::unique_ptr<Expression> object, Token name, std::unique_ptr<Expression> value",
+             "Unary			= Token op, std::unique_ptr<Expression> right",
+             "Variable		= Token name",
+             "Type          = Token name",
+             "Parameter	    = Token name, Type type",
+            ])
     defineAst(outputDir, "Statement",
             ["memory",
              "vector",
@@ -130,15 +135,14 @@ def main():
              "ray/compiler/lexer/token.hpp",
              "ray/compiler/ast/expression.hpp"
             ],
-            [
-                "Block			= std::vector<std::unique_ptr<Statement>> statements",
-                "TerminalExpr	= std::optional<std::unique_ptr<Expression>> expression",
-                "ExpressionStmt	= std::unique_ptr<Expression> expression",
-                "Function		= bool publicVisibility, Token name, std::vector<Parameter> params, Block body, Type returnType",
-                "If				= std::unique_ptr<Expression> condition, std::unique_ptr<Statement> thenBranch, std::optional<std::unique_ptr<Statement>> elseBranch",
-                "Jump			= Token keyword, std::unique_ptr<Expression> value",
-                "Var			= Token name, std::unique_ptr<Expression> initializer",
-                "While			= std::unique_ptr<Expression> condition, std::unique_ptr<Statement> body"
+            ["Block			= std::vector<std::unique_ptr<Statement>> statements",
+             "TerminalExpr	= std::optional<std::unique_ptr<Expression>> expression",
+             "ExpressionStmt= std::unique_ptr<Expression> expression",
+             "Function		= bool publicVisibility, Token name, std::vector<Parameter> params, Block body, Type returnType",
+             "If			= std::unique_ptr<Expression> condition, std::unique_ptr<Statement> thenBranch, std::optional<std::unique_ptr<Statement>> elseBranch",
+             "Jump			= Token keyword, std::unique_ptr<Expression> value",
+             "Var			= Token name, Token type, std::optional<std::unique_ptr<Expression>> initializer",
+             "While			= std::unique_ptr<Expression> condition, std::unique_ptr<Statement> body"
             ])
 
 

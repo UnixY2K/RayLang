@@ -20,6 +20,9 @@ std::string LexerError::toString() const {
 	case ErrorCategory::Unkown:
 		return std::format("[{}]{} at line: {},character: {}", "", message,
 		                   token.line, token.column);
+	default:
+		return std::format("|UNHANDLED-CAT|[{}]{} at line: {},character: {}", "UNKNOWN_TAG",
+		                   message, token.line, token.column);
 	}
 }
 

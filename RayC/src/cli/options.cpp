@@ -15,7 +15,7 @@ bool Options::validate() const {
 
 	if (target == TargetEnum::ERROR) {
 		std::cerr << std::format(
-		    "{}: specifed target is not an existing target\n", "Error"_red);
+		    "{}: specified target is not an existing target\n", "Error"_red);
 		success = false;
 	}
 

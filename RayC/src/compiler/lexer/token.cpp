@@ -313,17 +313,17 @@ std::string_view Token::glyph(TokenType token) {
 		return "||";
 	// comparison
 	case TokenType::TOKEN_EQUAL_EQUAL:
-		return "TOKEN_EQUAL_EQUAL";
+		return "==";
 	case TokenType::TOKEN_BANG_EQUAL:
-		return "TOKEN_BANG_EQUAL";
+		return "!=";
 	case TokenType::TOKEN_LESS:
-		return "TOKEN_LESS";
+		return "<";
 	case TokenType::TOKEN_GREAT:
-		return "TOKEN_GREAT";
+		return ">";
 	case TokenType::TOKEN_LESS_EQUAL:
-		return "TOKEN_LESS_EQUAL";
+		return "<=";
 	case TokenType::TOKEN_GREAT_EQUAL:
-		return "TOKEN_GREAT_EQUAL";
+		return ">=";
 	// MISC
 	case TokenType::TOKEN_DOT:
 		return ".";

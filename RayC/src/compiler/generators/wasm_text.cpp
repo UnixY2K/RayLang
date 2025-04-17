@@ -1,4 +1,5 @@
-#include "ray/compiler/ast/statement.hpp"
+#include <ray/compiler/ast/expression.hpp>
+#include <ray/compiler/ast/statement.hpp>
 #include <ray/compiler/generators/wasm_text.hpp>
 #include <ray/compiler/lexer/token.hpp>
 
@@ -44,18 +45,18 @@ void WASMTextGenerator::visitTerminalExprStatement(
 	}
 }
 void WASMTextGenerator::visitExpressionStmtStatement(
-    const ast::ExpressionStmt &value) {}
+    const ast::ExpressionStmt &expression) {
+	expression.expression->visit(*this);
+	output << std::format("{}drop\n", currentIdent());
+}
 void WASMTextGenerator::visitFunctionStatement(const ast::Function &function) {
 
 	std::string identTabs = currentIdent();
 	std::string functionName;
 	functionName.reserve(function.name.lexeme.size() + 12);
 	functionName = function.name.lexeme;
-	functionName = function.publicVisibility
-	                   ? std::format("(export \"{}\")", functionName)
-	                   : std::format("${}", functionName);
 	output << identTabs;
-	output << std::format("(func {}", functionName);
+	output << std::format("(func ${}", functionName);
 	for (auto &parameter : function.params) {
 		output << std::format(" (param ${} {})", parameter.name.lexeme,
 		                      parameter.type.name.lexeme);
@@ -68,6 +69,9 @@ void WASMTextGenerator::visitFunctionStatement(const ast::Function &function) {
 	function.body.visit(*this);
 	ident--;
 	output << std::format("{})\n", identTabs);
+	if (function.publicVisibility) {
+		output << std::format("{}(export \"{}\" (func ${}))\n", identTabs, functionName, functionName);
+	}
 }
 void WASMTextGenerator::visitIfStatement(const ast::If &ifStatement) {
 	ifStatement.condition->visit(*this);
@@ -106,8 +110,23 @@ void WASMTextGenerator::visitJumpStatement(const ast::Jump &jump) {
 		break;
 	}
 }
-void WASMTextGenerator::visitVarStatement(const ast::Var &value) {
-	std::cerr << "visitVarStatement not implemented\n";
+void WASMTextGenerator::visitVarStatement(const ast::Var &var) {
+	std::string identTab = currentIdent();
+	output << std::format("{}(local ${} i32)\n", identTab, var.name.lexeme);
+	if (var.initializer.has_value()) {
+		if (dynamic_cast<ast::Literal *>(var.initializer->get())) {
+			output << std::format("{}(local.set ${} (", identTab,
+			                      var.name.lexeme);
+			auto currentIdent = ident;
+			ident = 0;
+			var.initializer.value()->visit(*this);
+			ident = currentIdent;
+			output << "))\n";
+		} else {
+			std::cerr << "visitVarStatement does not support non literal "
+			             "initialization\n";
+		}
+	}
 }
 void WASMTextGenerator::visitWhileStatement(const ast::While &value) {
 	std::cerr << "visitWhileStatement not implemented\n";
@@ -123,9 +142,6 @@ void WASMTextGenerator::visitBinaryExpression(
 	binaryExpression.right->visit(*this);
 	auto op = binaryExpression.op;
 	switch (op.type) {
-	case Token::TokenType::TOKEN_LESS:
-		output << std::format("{}i32.lt_s\n", identTab);
-		break;
 	case Token::TokenType::TOKEN_PLUS:
 		output << std::format("{}i32.add\n", identTab);
 		break;
@@ -146,6 +162,27 @@ void WASMTextGenerator::visitBinaryExpression(
 		break;
 	case Token::TokenType::TOKEN_PIPE:
 		output << std::format("{}i32.or\n", identTab);
+		break;
+	case Token::TokenType::TOKEN_CARET:
+		output << std::format("{}i32.xor\n", identTab);
+		break;
+	case Token::TokenType::TOKEN_LESS_LESS:
+		output << std::format("{}i32.shl\n", identTab);
+		break;
+	case Token::TokenType::TOKEN_GREAT_GREAT:
+		output << std::format("{}i32.shr\n", identTab);
+		break;
+	case Token::TokenType::TOKEN_LESS:
+		output << std::format("{}i32.lt_s\n", identTab);
+		break;
+	case Token::TokenType::TOKEN_GREAT:
+		output << std::format("{}i32.gt_s\n", identTab);
+		break;
+	case Token::TokenType::TOKEN_LESS_EQUAL:
+		output << std::format("{}i32.le_s\n", identTab);
+		break;
+	case Token::TokenType::TOKEN_GREAT_EQUAL:
+		output << std::format("{}i32.ge_s\n", identTab);
 		break;
 	default:
 		std::cerr << std::format("'{}' is not a supported binary operation\n",
@@ -168,26 +205,29 @@ void WASMTextGenerator::visitCallExpression(const ast::Call &callable) {
 void WASMTextGenerator::visitGetExpression(const ast::Get &value) {
 	std::cerr << "visitGetExpression not implemented\n";
 }
-void WASMTextGenerator::visitGroupingExpression(const ast::Grouping &value) {
-	std::cerr << "visitGroupingExpression not implemented\n";
+void WASMTextGenerator::visitGroupingExpression(const ast::Grouping &grouping) {
+	grouping.expression->visit(*this);
 }
 void WASMTextGenerator::visitLiteralExpression(const ast::Literal &literal) {
 	switch (literal.kind.type) {
 	case Token::TokenType::TOKEN_TRUE:
 	case Token::TokenType::TOKEN_FALSE:
 		output << std::format(
-		    "{}i32.const {}\n", currentIdent(),
+		    "{}i32.const {}", currentIdent(),
 		    literal.kind.type == Token::TokenType::TOKEN_TRUE ? 1 : 0);
 		break;
 	case Token::TokenType::TOKEN_NUMBER: {
 		std::string value = literal.value;
-		output << std::format("{}i32.const {}\n", currentIdent(), value);
+		output << std::format("{}i32.const {}", currentIdent(), value);
 		break;
 	}
 	default:
 		std::cerr << std::format("'{}' is not a supported literal type\n",
 		                         literal.kind.getLexeme());
 		break;
+	}
+	if (ident != 0) {
+		output << "\n";
 	}
 }
 void WASMTextGenerator::visitLogicalExpression(const ast::Logical &value) {

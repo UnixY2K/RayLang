@@ -36,6 +36,20 @@ void Lexer::scanToken() {
 	char c = advance();
 	Token::TokenType type = Token::fromChar(c);
 	switch (type) {
+	// multi char tokens
+	case Token::TokenType::TOKEN_PLUS: {
+		char next = peek();
+		if (next == '+') {
+			advance();
+			addToken(Token::TokenType::TOKEN_PLUS_PLUS);
+		} else if (next == '=') {
+			advance();
+			addToken(Token::TokenType::TOKEN_PLUS_EQUAL);
+		} else {
+			addToken(Token::TokenType::TOKEN_PLUS);
+		}
+		break;
+	}
 	case Token::TokenType::TOKEN_MINUS: {
 		char next = peek();
 		if (next == '>') {
@@ -52,6 +66,119 @@ void Lexer::scanToken() {
 		}
 		break;
 	}
+	case Token::TokenType::TOKEN_STAR: {
+		char next = peek();
+		if (next == '=') {
+			advance();
+			addToken(Token::TokenType::TOKEN_STAR_EQUAL);
+		} else {
+			addToken(Token::TokenType::TOKEN_STAR);
+		}
+		break;
+	}
+	case Token::TokenType::TOKEN_SLASH: {
+		char next = peek();
+		if (next == '=') {
+			advance();
+			addToken(Token::TokenType::TOKEN_SLASH_EQUAL);
+		} else {
+			addToken(Token::TokenType::TOKEN_SLASH);
+		}
+		break;
+	}
+	case Token::TokenType::TOKEN_PERCENT: {
+		char next = peek();
+		if (next == '=') {
+			advance();
+			addToken(Token::TokenType::TOKEN_PERCENT_EQUAL);
+		} else {
+			addToken(Token::TokenType::TOKEN_PERCENT);
+		}
+		break;
+	}
+	case Token::TokenType::TOKEN_AMPERSAND: {
+		char next = peek();
+		if (next == '=') {
+			advance();
+			addToken(Token::TokenType::TOKEN_AMPERSAND_EQUAL);
+		} else if (next == '&') {
+			advance();
+			addToken(Token::TokenType::TOKEN_AMPERSAND_AMPERSAND);
+		} else {
+			addToken(Token::TokenType::TOKEN_AMPERSAND);
+		}
+		break;
+	}
+	case Token::TokenType::TOKEN_PIPE: {
+		char next = peek();
+		if (next == '=') {
+			advance();
+			addToken(Token::TokenType::TOKEN_PIPE_EQUAL);
+		} else if (next == '|') {
+			advance();
+			addToken(Token::TokenType::TOKEN_PIPE_PIPE);
+		} else {
+			addToken(Token::TokenType::TOKEN_PIPE);
+		}
+		break;
+	}
+	case Token::TokenType::TOKEN_CARET: {
+		char next = peek();
+		if (next == '=') {
+			advance();
+			addToken(Token::TokenType::TOKEN_CARET_EQUAL);
+		} else {
+			addToken(Token::TokenType::TOKEN_CARET);
+		}
+		break;
+	}
+	case Token::TokenType::TOKEN_BANG: {
+		char next = peek();
+		if (next == '=') {
+			advance();
+			addToken(Token::TokenType::TOKEN_BANG_EQUAL);
+		} else {
+			addToken(Token::TokenType::TOKEN_BANG);
+		}
+		break;
+	}
+	case Token::TokenType::TOKEN_LESS: {
+		char next = peek();
+		if (next == '=') {
+			advance();
+			addToken(Token::TokenType::TOKEN_LESS_EQUAL);
+		} else if (next == '<') {
+			advance();
+			if (peek() == '=') {
+				advance();
+				addToken(Token::TokenType::TOKEN_LESS_LESS_EQUAL);
+			} else {
+				addToken(Token::TokenType::TOKEN_LESS_LESS);
+			}
+		} else {
+			addToken(Token::TokenType::TOKEN_LESS);
+		}
+		break;
+	}
+	case Token::TokenType::TOKEN_GREAT: {
+		char next = peek();
+		if (next == '=') {
+			advance();
+			addToken(Token::TokenType::TOKEN_GREAT_EQUAL);
+		} else if (next == '>') {
+			advance();
+			if (peek() == '=') {
+				advance();
+				addToken(Token::TokenType::TOKEN_GREAT_GREAT_EQUAL);
+			} else {
+				addToken(Token::TokenType::TOKEN_GREAT_GREAT);
+			}
+		} else {
+			addToken(Token::TokenType::TOKEN_LESS);
+		}
+		break;
+	}
+	// access or number
 	case Token::TokenType::TOKEN_DOT: {
 		char next = peekNext();
 		if (std::isdigit(next)) {
@@ -59,6 +186,7 @@ void Lexer::scanToken() {
 		}
 		break;
 	}
+	// not expected character
 	case Token::TokenType::TOKEN_ERROR: {
 		if (std::isalpha(c)) {
 			identifier();
@@ -80,6 +208,7 @@ void Lexer::scanToken() {
 		}
 		break;
 	}
+	// any other token
 	default: {
 		addToken(type);
 		break;
