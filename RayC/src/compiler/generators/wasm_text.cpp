@@ -114,18 +114,20 @@ void WASMTextGenerator::visitVarStatement(const ast::Var &var) {
 	std::string identTab = currentIdent();
 	output << std::format("{}(local ${} i32)\n", identTab, var.name.lexeme);
 	if (var.initializer.has_value()) {
-		if (dynamic_cast<ast::Literal *>(var.initializer->get())) {
+		auto initializer = var.initializer->get();
+		if (dynamic_cast<ast::Literal *>(initializer)) {
 			output << std::format("{}(local.set ${} (", identTab,
 			                      var.name.lexeme);
 			auto currentIdent = ident;
 			ident = 0;
-			var.initializer.value()->visit(*this);
+			initializer->visit(*this);
 			ident = currentIdent;
 			output << "))\n";
 		} else {
-			std::cerr << "visitVarStatement does not support non literal "
-			             "initialization\n";
+			initializer->visit(*this);
+			output << std::format("{}local.tee ${}\n", identTab, var.name.lexeme);
 		}
+		output << std::format("{}drop\n", identTab);
 	}
 }
 void WASMTextGenerator::visitWhileStatement(const ast::While &value) {
@@ -133,7 +135,9 @@ void WASMTextGenerator::visitWhileStatement(const ast::While &value) {
 }
 // Expression
 void WASMTextGenerator::visitAssignExpression(const ast::Assign &value) {
-	std::cerr << "visitAssignExpression not implemented\n";
+	std::string identTab = currentIdent();
+	value.value->visit(*this);
+	output << std::format("{}local.tee ${}\n", identTab, value.name.lexeme);
 }
 void WASMTextGenerator::visitBinaryExpression(
     const ast::Binary &binaryExpression) {
