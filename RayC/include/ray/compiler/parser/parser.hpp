@@ -1,4 +1,5 @@
 #pragma once
+#include "ray/compiler/error_bag.hpp"
 #include <memory>
 #include <ray/compiler/ast/expression.hpp>
 #include <ray/compiler/ast/statement.hpp>
@@ -6,20 +7,21 @@
 
 #include <cstddef>
 #include <exception>
-#include <vector>
 #include <optional>
+#include <vector>
 
 namespace ray::compiler {
 
 class ParseException : public std::exception {};
 
 class Parser {
+	ErrorBag errorBag;
 	std::vector<Token> tokens;
 	size_t current = 0;
 
   public:
-	Parser() = default;
-	Parser(std::vector<Token> tokens) : tokens(tokens) {}
+	Parser() : Parser("", {}) {};
+	Parser(std::string filepath, std::vector<Token> tokens);
 
 	std::vector<std::unique_ptr<ast::Statement>> parse();
 

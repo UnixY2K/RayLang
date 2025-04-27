@@ -36,6 +36,7 @@ class Lexer {
 	void number();
 	void identifier();
 	void comment();
+	void multiLineComment();
 
 	char peek();
 	char peekNext();

@@ -15,16 +15,21 @@ class RuntimeError : public std::runtime_error {
 };
 
 class ErrorBag {
+	bool hadError = false;
+	std::string filepath;
+
   public:
-	static bool hadError;
+	ErrorBag(std::string filepath) : filepath(filepath) {};
 
-	static void error(size_t line, size_t column, std::string_view message);
+	bool failed() const;
 
-	static void error(const Token token, std::string_view message);
+	void error(size_t line, size_t column, std::string_view message);
+
+	void error(const Token token, std::string_view message);
 
   private:
-	static void report(size_t line, size_t column, std::string_view where,
-	                   std::string_view message);
+	void report(size_t line, size_t column, std::string_view where,
+	            std::string_view message);
 };
 
 } // namespace ray::compiler

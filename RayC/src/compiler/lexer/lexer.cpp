@@ -1,4 +1,5 @@
 #include <cctype>
+#include <cstddef>
 #include <string_view>
 #include <vector>
 
@@ -84,6 +85,9 @@ void Lexer::scanToken() {
 		} else if (next == '/') {
 			advance();
 			comment();
+		} else if (next == '*') {
+			advance();
+			multiLineComment();
 		} else {
 			addToken(Token::TokenType::TOKEN_SLASH);
 		}
@@ -197,10 +201,7 @@ void Lexer::scanToken() {
 			number();
 		} else if (c == '"') {
 			string();
-		} else if (c == ' ' || c == '\r' || c == '\t') {
-		} else if (c == '\n') {
-			line++;
-			column = 0;
+		} else if (c == ' ' || c == '\r' || c == '\t' || c == '\n') {
 		} else {
 			Token errorToken =
 			    Token{type, std::string{std::string_view(&c, 1)}, line, column};
@@ -221,6 +222,10 @@ void Lexer::scanToken() {
 
 char Lexer::advance() {
 	column++;
+	if (peek() == '\n') {
+		line++;
+		column = 0;
+	}
 	return source[current++];
 };
 
@@ -240,10 +245,6 @@ bool Lexer::match(char expected) {
 
 void Lexer::string() {
 	while (peek() != '"' && !isAtEnd()) {
-		if (peek() == '\n') {
-			line++;
-			column = 0;
-		}
 		advance();
 	}
 
@@ -276,8 +277,34 @@ void Lexer::number() {
 		}
 	}
 
-	addToken(Token::TokenType::TOKEN_NUMBER,
-	         std::string{source.substr(start, current - start)});
+	auto number_literal = source.substr(start, current - start);
+
+	if (peek() == 'i' || peek() == 'u') {
+		size_t index = number_literal.length();
+		std::string_view new_literal = "";
+		auto subType = source.substr(start + index, 3);
+
+		if ((subType[1] == '1' && subType[2] == '6') ||
+		    (subType[1] == '3' && subType[2] == '2') ||
+		    (subType[1] == '6' && subType[2] == '4')) {
+			new_literal = source.substr(start, current - start + 3);
+		} else if (subType[1] == '8') {
+			new_literal = source.substr(start, current - start + 2);
+		}
+
+		auto nextChar = source[start + new_literal.length()];
+		if (!std::isalnum(nextChar) && nextChar != '_') {
+			number_literal = new_literal;
+		}
+
+		if (number_literal.length() != current - start) {
+			for (size_t i = current - start; i < number_literal.length(); i++) {
+				advance();
+			}
+		}
+	}
+
+	addToken(Token::TokenType::TOKEN_NUMBER, std::string{number_literal});
 }
 
 void Lexer::identifier() {
@@ -295,8 +322,18 @@ void Lexer::identifier() {
 void Lexer::comment() {
 	while (!isAtEnd()) {
 		if (peek() == '\n') {
-			line++;
-			column = 0;
+			advance();
+			break;
+		}
+		advance();
+	}
+}
+
+void Lexer::multiLineComment() {
+	while (!isAtEnd()) {
+		if (peek() == '*' && peekNext() == '/') {
+			advance();
+			advance();
 			break;
 		}
 		advance();

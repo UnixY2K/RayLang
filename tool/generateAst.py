@@ -141,7 +141,7 @@ def main():
              "Function		= bool publicVisibility, Token name, std::vector<Parameter> params, Block body, Type returnType",
              "If			= std::unique_ptr<Expression> condition, std::unique_ptr<Statement> thenBranch, std::optional<std::unique_ptr<Statement>> elseBranch",
              "Jump			= Token keyword, std::unique_ptr<Expression> value",
-             "Var			= Token name, Token type, std::optional<std::unique_ptr<Expression>> initializer",
+             "Var			= Token name, Token type, bool is_mutable, std::optional<std::unique_ptr<Expression>> initializer",
              "While			= std::unique_ptr<Expression> condition, std::unique_ptr<Statement> body"
             ])
 

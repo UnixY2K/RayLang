@@ -126,12 +126,14 @@ class Var : public Statement {
   public:
 	Token name;
 	Token type;
+	bool is_mutable;
 	std::optional<std::unique_ptr<Expression>> initializer;
 
 	Var(Token name,
 	        Token type,
+	        bool is_mutable,
 	        std::optional<std::unique_ptr<Expression>> initializer)
-	    : name(std::move(name)), type(std::move(type)), initializer(std::move(initializer)) {}
+	    : name(std::move(name)), type(std::move(type)), is_mutable(std::move(is_mutable)), initializer(std::move(initializer)) {}
 
 	void visit(StatementVisitor& visitor) const override { visitor.visitVarStatement(*this); }
 

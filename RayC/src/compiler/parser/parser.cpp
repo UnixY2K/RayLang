@@ -11,6 +11,9 @@
 
 namespace ray::compiler {
 
+Parser::Parser(std::string filepath, std::vector<Token> tokens)
+    : errorBag(filepath), tokens(tokens) {}
+
 std::vector<std::unique_ptr<ast::Statement>> Parser::parse() {
 	current = 0;
 	try {
@@ -29,7 +32,7 @@ std::vector<std::unique_ptr<ast::Statement>> Parser::parse() {
 	}
 }
 
-bool Parser::failed() const { return ErrorBag::hadError; }
+bool Parser::failed() const { return errorBag.failed(); }
 
 std::unique_ptr<ast::Expression> Parser::expression() { return comma(); }
 std::optional<std::unique_ptr<ast::Statement>> Parser::declaration() {
@@ -177,6 +180,10 @@ std::unique_ptr<ast::Statement> Parser::whileStatement() {
 	    ast::While(std::move(condition), std::move(body)));
 }
 std::unique_ptr<ast::Statement> Parser::varDeclaration() {
+	bool is_mutable = false;
+	if (match({Token::TokenType::TOKEN_MUT})) {
+		is_mutable = true;
+	}
 	Token name =
 	    consume(Token::TokenType::TOKEN_IDENTIFIER, "Expect variable name.");
 
@@ -193,7 +200,7 @@ std::unique_ptr<ast::Statement> Parser::varDeclaration() {
 
 	consume(Token::TokenType::TOKEN_SEMICOLON,
 	        "Expect ';' after variable declaration.");
-	ast::Var variable{name, type, std::move(initializer)};
+	ast::Var variable{name, type, is_mutable, std::move(initializer)};
 	return std::make_unique<ast::Var>(std::move(variable));
 }
 std::unique_ptr<ast::Statement> Parser::expressionStatement() {
@@ -487,7 +494,7 @@ Token Parser::consume(Token::TokenType type, std::string message) {
 }
 
 ParseException Parser::error(Token token, std::string message) {
-	ErrorBag::error(token, message);
+	errorBag.error(token, message);
 	return ParseException();
 }
 
