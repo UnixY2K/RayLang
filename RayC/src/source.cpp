@@ -7,6 +7,7 @@
 #include <ray/cli/options.hpp>
 #include <ray/cli/terminal.hpp>
 
+#include <ray/compiler/generators/c_source.hpp>
 #include <ray/compiler/generators/wasm_text.hpp>
 
 #include <ray/compiler/lexer/lexer.hpp>
@@ -64,8 +65,10 @@ int main(int argc, char **argv) {
 			opts.target = opts.defaultTarget;
 		}
 		std::string output;
+		bool handled = false;
 		switch (opts.target) {
 		case cli::Options::TargetEnum::WASM_TEXT: {
+			handled = true;
 			generator::WASMTextGenerator wasmTextGen;
 
 			wasmTextGen.resolve(statements);
@@ -76,9 +79,28 @@ int main(int argc, char **argv) {
 			}
 			output = wasmTextGen.getOutput();
 		}
+		case cli::Options::TargetEnum::C_SOURCE: {
+			handled = true;
+			generator::CSourceGenerator CSourceGen;
+
+			CSourceGen.resolve(statements);
+			if (CSourceGen.hasFailed()) {
+				std::cerr << std::format("{}: {}\n", "Error"_red,
+				                         "CSourceGen failed");
+				return 1;
+			}
+			output = CSourceGen.getOutput();
+		}
+		// both cases should never show
 		case cli::Options::TargetEnum::NONE:
 		case cli::Options::TargetEnum::ERROR:
 			break;
+		}
+		if (!handled) {
+			std::cerr << std::format(
+			    "{}: unhandled target option, this is a compiler bug\n",
+			    "COMPILER-ERROR"_red);
+			return -1;
 		}
 
 		std::ofstream outputFile(opts.output, std::ios::trunc);

@@ -140,7 +140,7 @@ def main():
              "ExpressionStmt= std::unique_ptr<Expression> expression",
              "Function		= bool publicVisibility, Token name, std::vector<Parameter> params, Block body, Type returnType",
              "If			= std::unique_ptr<Expression> condition, std::unique_ptr<Statement> thenBranch, std::optional<std::unique_ptr<Statement>> elseBranch",
-             "Jump			= Token keyword, std::unique_ptr<Expression> value",
+             "Jump			= Token keyword, std::optional<std::unique_ptr<Expression>> value",
              "Var			= Token name, Token type, bool is_mutable, std::optional<std::unique_ptr<Expression>> initializer",
              "While			= std::unique_ptr<Expression> condition, std::unique_ptr<Statement> body"
             ])

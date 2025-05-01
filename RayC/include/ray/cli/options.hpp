@@ -12,6 +12,9 @@ class Options {
 		NONE,
 		// output WebAssembly text format
 		WASM_TEXT,
+		// output a combination of c header and unit with the same name
+		C_SOURCE,
+		// used when there is no matching equivalent of the requested option
 		ERROR,
 	};
 
@@ -24,6 +27,7 @@ class Options {
 
 	static TargetEnum targetFromString(std::string_view str);
 	static constexpr TargetEnum defaultTarget = TargetEnum::WASM_TEXT;
+
   private:
 };
 } // namespace ray::compiler::cli

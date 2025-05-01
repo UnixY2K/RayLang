@@ -111,10 +111,10 @@ class If : public Statement {
 class Jump : public Statement {
   public:
 	Token keyword;
-	std::unique_ptr<Expression> value;
+	std::optional<std::unique_ptr<Expression>> value;
 
 	Jump(Token keyword,
-	        std::unique_ptr<Expression> value)
+	        std::optional<std::unique_ptr<Expression>> value)
 	    : keyword(std::move(keyword)), value(std::move(value)) {}
 
 	void visit(StatementVisitor& visitor) const override { visitor.visitJumpStatement(*this); }
