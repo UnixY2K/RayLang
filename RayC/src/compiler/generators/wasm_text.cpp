@@ -70,7 +70,8 @@ void WASMTextGenerator::visitFunctionStatement(const ast::Function &function) {
 	ident--;
 	output << std::format("{})\n", identTabs);
 	if (function.publicVisibility) {
-		output << std::format("{}(export \"{}\" (func ${}))\n", identTabs, functionName, functionName);
+		output << std::format("{}(export \"{}\" (func ${}))\n", identTabs,
+		                      functionName, functionName);
 	}
 }
 void WASMTextGenerator::visitIfStatement(const ast::If &ifStatement) {
@@ -125,7 +126,8 @@ void WASMTextGenerator::visitVarStatement(const ast::Var &var) {
 			output << "))\n";
 		} else {
 			initializer->visit(*this);
-			output << std::format("{}local.tee ${}\n", identTab, var.name.lexeme);
+			output << std::format("{}local.tee ${}\n", identTab,
+			                      var.name.lexeme);
 		}
 		output << std::format("{}drop\n", identTab);
 	}
@@ -226,8 +228,9 @@ void WASMTextGenerator::visitLiteralExpression(const ast::Literal &literal) {
 		break;
 	}
 	default:
-		std::cerr << std::format("'{}' is not a supported literal type\n",
-		                         literal.kind.getLexeme());
+		std::cerr << std::format("'{}' ({}) is not a supported literal type\n",
+		                         literal.kind.getLexeme(),
+		                         Token::glyph(literal.kind.type));
 		break;
 	}
 	if (ident != 0) {
