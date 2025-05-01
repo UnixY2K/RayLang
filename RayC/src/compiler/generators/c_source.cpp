@@ -214,8 +214,8 @@ void CSourceGenerator::visitLiteralExpression(const ast::Literal &literal) {
 	case Token::TokenType::TOKEN_TRUE:
 	case Token::TokenType::TOKEN_FALSE:
 		output << std::format(
-		    "{}i32.const {}", currentIdent(),
-		    literal.kind.type == Token::TokenType::TOKEN_TRUE ? 1 : 0);
+		    "{}{}", currentIdent(),
+		    literal.kind.type == Token::TokenType::TOKEN_TRUE ? "true" : "false");
 		break;
 	case Token::TokenType::TOKEN_NUMBER: {
 		std::string value = literal.value;
@@ -245,18 +245,10 @@ void CSourceGenerator::visitUnaryExpression(const ast::Unary &unary) {
 	unary.right->visit(*this);
 	switch (unary.op.type) {
 	case Token::TokenType::TOKEN_BANG:
-		output << std::format("{}i32.eqz\n", currentIdent());
-		break;
 	case Token::TokenType::TOKEN_MINUS:
-		output << std::format("{}i32.sub\n", currentIdent());
-		break;
 	case Token::TokenType::TOKEN_MINUS_MINUS:
-		output << std::format("{}i32.const -1\n", currentIdent());
-		output << std::format("{}i32.add\n", currentIdent());
-		break;
 	case Token::TokenType::TOKEN_PLUS_PLUS:
-		output << std::format("{}i32.const 1\n", currentIdent());
-		output << std::format("{}i32.sub\n", currentIdent());
+		output << std::format("{}{}\n", currentIdent(), unary.op.getLexeme());
 		break;
 	default:
 		std::cerr << std::format("'{}' is not a supported unary operation\n",
