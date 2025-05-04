@@ -1,5 +1,4 @@
 #pragma once
-#include <any>
 #include <memory>
 #include <vector>
 #include <ray/compiler/lexer/token.hpp>

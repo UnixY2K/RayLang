@@ -46,6 +46,9 @@ void CSourceGenerator::visitBlockStatement(const ast::Block &block) {
 		}
 	}
 }
+void CSourceGenerator::visitStructStatement(const ast::Struct &value) {
+	std::cerr << "visitStructStatement not implemented\n";
+}
 void CSourceGenerator::visitTerminalExprStatement(
     const ast::TerminalExpr &terminalExpr) {
 	if (terminalExpr.expression.has_value()) {
@@ -213,9 +216,10 @@ void CSourceGenerator::visitLiteralExpression(const ast::Literal &literal) {
 	switch (literal.kind.type) {
 	case Token::TokenType::TOKEN_TRUE:
 	case Token::TokenType::TOKEN_FALSE:
-		output << std::format(
-		    "{}{}", currentIdent(),
-		    literal.kind.type == Token::TokenType::TOKEN_TRUE ? "true" : "false");
+		output << std::format("{}{}", currentIdent(),
+		                      literal.kind.type == Token::TokenType::TOKEN_TRUE
+		                          ? "true"
+		                          : "false");
 		break;
 	case Token::TokenType::TOKEN_NUMBER: {
 		std::string value = literal.value;

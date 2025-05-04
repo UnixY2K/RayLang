@@ -8,6 +8,7 @@
 #include <ray/compiler/error_bag.hpp>
 #include <ray/compiler/lexer/token.hpp>
 #include <ray/compiler/parser/parser.hpp>
+#include <vector>
 
 namespace ray::compiler {
 
@@ -41,6 +42,10 @@ std::optional<std::unique_ptr<ast::Statement>> Parser::declaration() {
 		if (match({Token::TokenType::TOKEN_PUB})) {
 			pubToken = previous();
 		}
+		if (match({Token::TokenType::TOKEN_STRUCT})) {
+			return structDeclaration(pubToken.type ==
+			                         Token::TokenType::TOKEN_PUB);
+		}
 		if (match({Token::TokenType::TOKEN_FN})) {
 			return std::make_unique<ast::Function>(function(
 			    "function", pubToken.type == Token::TokenType::TOKEN_PUB));
@@ -50,7 +55,7 @@ std::optional<std::unique_ptr<ast::Statement>> Parser::declaration() {
 				error(pubToken,
 				      "pub token cannot be in a variable declaration");
 			}
-			return varDeclaration();
+			return std::make_unique<ast::Var>(varDeclaration("variable"));
 		}
 		return statement();
 	} catch (ParseException &e) {
@@ -58,6 +63,29 @@ std::optional<std::unique_ptr<ast::Statement>> Parser::declaration() {
 		return std::nullopt;
 	}
 }
+std::unique_ptr<ast::Statement>
+Parser::structDeclaration(bool publicVisibility) {
+	Token name =
+	    consume(Token::TokenType::TOKEN_IDENTIFIER, "Expect struct name.");
+	std::vector<ast::Var> members;
+	std::vector<bool> memberVisibility;
+
+	consume(Token::TokenType::TOKEN_LEFT_BRACE,
+	        "Expect '{' before class body.");
+	while (!check(Token::TokenType::TOKEN_RIGHT_BRACE) && !isAtEnd()) {
+		Token pubToken;
+		if (match({Token::TokenType::TOKEN_PUB})) {
+			pubToken = previous();
+		}
+		members.push_back(varDeclaration("member"));
+	}
+	consume(Token::TokenType::TOKEN_RIGHT_BRACE,
+	        "Expect '}' after class body.");
+
+	return std::make_unique<ast::Struct>(
+	    ast::Struct{name, publicVisibility, std::move(members), memberVisibility});
+}
+
 std::unique_ptr<ast::Statement> Parser::statement() {
 	if (match({Token::TokenType::TOKEN_FOR})) {
 		return forStatement();
@@ -89,7 +117,7 @@ std::unique_ptr<ast::Statement> Parser::forStatement() {
 	std::unique_ptr<ast::Statement> initializer;
 	if (!match({Token::TokenType::TOKEN_SEMICOLON})) {
 		if (match({Token::TokenType::TOKEN_LET})) {
-			initializer = varDeclaration();
+			initializer = std::make_unique<ast::Var>(varDeclaration("variable"));
 		} else {
 			initializer = expressionStatement();
 		}
@@ -179,13 +207,13 @@ std::unique_ptr<ast::Statement> Parser::whileStatement() {
 	return std::make_unique<ast::While>(
 	    ast::While(std::move(condition), std::move(body)));
 }
-std::unique_ptr<ast::Statement> Parser::varDeclaration() {
+ast::Var Parser::varDeclaration(std::string kind) {
 	bool is_mutable = false;
 	if (match({Token::TokenType::TOKEN_MUT})) {
 		is_mutable = true;
 	}
-	Token name =
-	    consume(Token::TokenType::TOKEN_IDENTIFIER, "Expect variable name.");
+	Token name = consume(Token::TokenType::TOKEN_IDENTIFIER,
+	                     std::format("Expect {} name.", kind));
 
 	Token type = Token{Token::TokenType::TOKEN_UNINITIALIZED};
 	if (match({Token::TokenType::TOKEN_COLON})) {
@@ -199,9 +227,9 @@ std::unique_ptr<ast::Statement> Parser::varDeclaration() {
 	}
 
 	consume(Token::TokenType::TOKEN_SEMICOLON,
-	        "Expect ';' after variable declaration.");
+	        std::format("Expect ';' after {} declaration.", kind));
 	ast::Var variable{name, type, is_mutable, std::move(initializer)};
-	return std::make_unique<ast::Var>(std::move(variable));
+	return ast::Var(std::move(variable));
 }
 std::unique_ptr<ast::Statement> Parser::expressionStatement() {
 	auto expr = expression();
@@ -250,7 +278,7 @@ ast::Function Parser::function(std::string kind, bool publicVisiblity) {
 	        std::format("Expect '{{' before {} body.", kind));
 	auto body =
 	    std::make_unique<std::vector<std::unique_ptr<ast::Statement>>>(block());
-	return {publicVisiblity, name, parameters, std::move(*body), returnType};
+	return {name, publicVisiblity, parameters, std::move(*body), returnType};
 }
 std::vector<std::unique_ptr<ast::Statement>> Parser::block() {
 	std::vector<std::unique_ptr<ast::Statement>> statements;

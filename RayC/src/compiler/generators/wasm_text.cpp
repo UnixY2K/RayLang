@@ -37,6 +37,11 @@ void WASMTextGenerator::visitBlockStatement(const ast::Block &block) {
 		}
 	}
 }
+
+void WASMTextGenerator::visitStructStatement(const ast::Struct &value) {
+	std::cerr << "visitStructStatement not implemented\n";
+}
+
 void WASMTextGenerator::visitTerminalExprStatement(
     const ast::TerminalExpr &terminalExpr) {
 	if (terminalExpr.expression.has_value()) {

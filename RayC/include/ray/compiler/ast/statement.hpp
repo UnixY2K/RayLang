@@ -15,6 +15,7 @@ class If;
 class Jump;
 class Var;
 class While;
+class Struct;
 
 class StatementVisitor {
   public:
@@ -26,6 +27,7 @@ class StatementVisitor {
 	virtual void visitJumpStatement(const Jump& value) = 0;
 	virtual void visitVarStatement(const Var& value) = 0;
 	virtual void visitWhileStatement(const While& value) = 0;
+	virtual void visitStructStatement(const Struct& value) = 0;
 	virtual ~StatementVisitor() = default;
 };
 
@@ -74,18 +76,18 @@ class ExpressionStmt : public Statement {
 };
 class Function : public Statement {
   public:
-	bool publicVisibility;
 	Token name;
+	bool publicVisibility;
 	std::vector<Parameter> params;
 	Block body;
 	Type returnType;
 
-	Function(bool publicVisibility,
-	        Token name,
+	Function(Token name,
+	        bool publicVisibility,
 	        std::vector<Parameter> params,
 	        Block body,
 	        Type returnType)
-	    : publicVisibility(std::move(publicVisibility)), name(std::move(name)), params(std::move(params)), body(std::move(body)), returnType(std::move(returnType)) {}
+	    : name(std::move(name)), publicVisibility(std::move(publicVisibility)), params(std::move(params)), body(std::move(body)), returnType(std::move(returnType)) {}
 
 	void visit(StatementVisitor& visitor) const override { visitor.visitFunctionStatement(*this); }
 
@@ -152,6 +154,24 @@ class While : public Statement {
 	void visit(StatementVisitor& visitor) const override { visitor.visitWhileStatement(*this); }
 
 	std::string variantName() const override { return "While"; }
+
+};
+class Struct : public Statement {
+  public:
+	Token name;
+	bool publicVisibility;
+	std::vector<Var> members;
+	std::vector<bool> memberVisibility;
+
+	Struct(Token name,
+	        bool publicVisibility,
+	        std::vector<Var> members,
+	        std::vector<bool> memberVisibility)
+	    : name(std::move(name)), publicVisibility(std::move(publicVisibility)), members(std::move(members)), memberVisibility(std::move(memberVisibility)) {}
+
+	void visit(StatementVisitor& visitor) const override { visitor.visitStructStatement(*this); }
+
+	std::string variantName() const override { return "Struct"; }
 
 };
 

@@ -24,6 +24,7 @@ class CSourceGenerator : public ast::StatementVisitor,
 
 	// Statement
 	void visitBlockStatement(const ast::Block &value) override;
+	void visitStructStatement(const ast::Struct &value) override;
 	void visitTerminalExprStatement(const ast::TerminalExpr &value) override;
 	void
 	visitExpressionStmtStatement(const ast::ExpressionStmt &value) override;
