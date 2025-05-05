@@ -82,8 +82,8 @@ Parser::structDeclaration(bool publicVisibility) {
 	consume(Token::TokenType::TOKEN_RIGHT_BRACE,
 	        "Expect '}' after class body.");
 
-	return std::make_unique<ast::Struct>(
-	    ast::Struct{name, publicVisibility, std::move(members), memberVisibility});
+	return std::make_unique<ast::Struct>(ast::Struct{
+	    name, publicVisibility, std::move(members), memberVisibility});
 }
 
 std::unique_ptr<ast::Statement> Parser::statement() {
@@ -117,7 +117,8 @@ std::unique_ptr<ast::Statement> Parser::forStatement() {
 	std::unique_ptr<ast::Statement> initializer;
 	if (!match({Token::TokenType::TOKEN_SEMICOLON})) {
 		if (match({Token::TokenType::TOKEN_LET})) {
-			initializer = std::make_unique<ast::Var>(varDeclaration("variable"));
+			initializer =
+			    std::make_unique<ast::Var>(varDeclaration("variable"));
 		} else {
 			initializer = expressionStatement();
 		}
@@ -217,8 +218,23 @@ ast::Var Parser::varDeclaration(std::string kind) {
 
 	Token type = Token{Token::TokenType::TOKEN_UNINITIALIZED};
 	if (match({Token::TokenType::TOKEN_COLON})) {
-		consume(Token::TokenType::TOKEN_IDENTIFIER, "Expect type signature");
-		type = previous();
+		// array type
+		if (!match({Token::TokenType::TOKEN_LEFT_SQUARE_BRACE})) {
+			type = consume(Token::TokenType::TOKEN_IDENTIFIER,
+			        "Expect type signature");
+		} else {
+			auto arrayStartToken = previous();
+			auto arrayTypeToken = consume(Token::TokenType::TOKEN_IDENTIFIER,
+			                              "Expect type signature");
+			consume(Token::TokenType::TOKEN_SEMICOLON,
+			        "Expect ';' after type.");
+			consume(Token::TokenType::TOKEN_RIGHT_SQUARE_BRACE,
+			        "Expect ']' after array type.");
+			type = Token{Token::TokenType::TOKEN_LEFT_SQUARE_BRACE,
+			             std::format("[{}]", arrayStartToken.lexeme +
+			                                     arrayTypeToken.lexeme),
+			             arrayStartToken.line, arrayStartToken.column};
+		}
 	}
 
 	std::optional<std::unique_ptr<ast::Expression>> initializer = std::nullopt;
