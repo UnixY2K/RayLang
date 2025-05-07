@@ -255,9 +255,9 @@ void CSourceGenerator::visitLiteralExpression(const ast::Literal &literal) {
 		output << "(const u8[]){";
 		for (const char c : literal.value) {
 			output << std::format("0x{:X}, ", c);
-
 		}
 		output << "0x00}";
+		output << std::format("/*\"{}\"*/", literal.value);
 		break;
 	default:
 		std::cerr << std::format("'{}' ({}) is not a supported literal type\n",
@@ -294,7 +294,7 @@ void CSourceGenerator::visitVariableExpression(const ast::Variable &variable) {
 	output << std::format("{}{}", identTab, variable.name.lexeme);
 }
 void CSourceGenerator::visitTypeExpression(const ast::Type &type) {
-	if(type.isConst){
+	if (type.isConst) {
 		output << "const ";
 	}
 	if (type.name.lexeme.starts_with("[")) {
