@@ -24,6 +24,7 @@ void CSourceGenerator::resolve(
 	output << "#endif\n";
 	output << "#include <stdint.h>\n";
 	output << "#define i8 int8_t\n";
+	output << "#define u8 uint8_t\n";
 	output << "#define i32 int32_t\n";
 	output << "#define isize size_t\n";
 	output << "#define RAY_MACRO_ARRAY(T, X) T *X\n";
@@ -85,8 +86,12 @@ void CSourceGenerator::visitFunctionStatement(const ast::Function &function) {
 		output << std::format("void ");
 	}
 	output << std::format("{}(", functionName);
-	for (auto &parameter : function.params) {
+	for (auto const &[index, parameter] :
+	     function.params | std::views::enumerate) {
 		parameter.visit(*this);
+		if (index < function.params.size() - 1) {
+			output << ", ";
+		}
 	}
 	output << ") {\n";
 	ident++;
@@ -247,7 +252,12 @@ void CSourceGenerator::visitLiteralExpression(const ast::Literal &literal) {
 		break;
 	}
 	case Token::TokenType::TOKEN_STRING:
-		output << std::format("\"{}\"", literal.value);
+		output << "(const u8[]){";
+		for (const char c : literal.value) {
+			output << std::format("0x{:X}, ", c);
+
+		}
+		output << "0x00}";
 		break;
 	default:
 		std::cerr << std::format("'{}' ({}) is not a supported literal type\n",
@@ -284,6 +294,9 @@ void CSourceGenerator::visitVariableExpression(const ast::Variable &variable) {
 	output << std::format("{}{}", identTab, variable.name.lexeme);
 }
 void CSourceGenerator::visitTypeExpression(const ast::Type &type) {
+	if(type.isConst){
+		output << "const ";
+	}
 	if (type.name.lexeme.starts_with("[")) {
 		output << std::format(
 		    "RAY_MACRO_ARRAY({}, ",
@@ -299,7 +312,6 @@ void CSourceGenerator::visitParameterExpression(const ast::Parameter &param) {
 	if (param.type.name.lexeme.starts_with("[")) {
 		output << ")";
 	}
-	std::cerr << "visitParameterExpression not implemented\n";
 }
 
 } // namespace ray::compiler::generator

@@ -189,9 +189,11 @@ class Variable : public Expression {
 class Type : public Expression {
   public:
 	Token name;
+	bool isConst;
 
-	Type(Token name)
-	    : name(std::move(name)) {}
+	Type(Token name,
+	        bool isConst)
+	    : name(std::move(name)), isConst(std::move(isConst)) {}
 
 	void visit(ExpressionVisitor& visitor) const override { visitor.visitTypeExpression(*this); }
 

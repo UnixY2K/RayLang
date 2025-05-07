@@ -124,7 +124,7 @@ def main():
              "Set			= std::unique_ptr<Expression> object, Token name, std::unique_ptr<Expression> value",
              "Unary			= Token op, std::unique_ptr<Expression> right",
              "Variable		= Token name",
-             "Type          = Token name",
+             "Type          = Token name, bool isConst",
              "Parameter	    = Token name, Type type",
             ])
     defineAst(outputDir, "Statement",

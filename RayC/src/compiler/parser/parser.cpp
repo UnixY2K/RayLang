@@ -216,7 +216,8 @@ ast::Var Parser::varDeclaration(std::string kind) {
 	Token name = consume(Token::TokenType::TOKEN_IDENTIFIER,
 	                     std::format("Expect {} name.", kind));
 
-	ast::Type type = ast::Type{Token{Token::TokenType::TOKEN_UNINITIALIZED}};
+	ast::Type type =
+	    ast::Type{Token{Token::TokenType::TOKEN_UNINITIALIZED}, true};
 	if (match({Token::TokenType::TOKEN_COLON})) {
 		// array type
 		type = typeExpression();
@@ -266,12 +267,13 @@ ast::Function Parser::function(std::string kind, bool publicVisiblity) {
 	auto previousToken = previous();
 
 	ast::Type returnType(
-	    types::makeUnitTypeToken(previous().line, previous().column));
+	    types::makeUnitTypeToken(previous().line, previous().column), true);
 
 	if (match({Token::TokenType::TOKEN_ARROW})) {
+		bool is_mutable = match({Token::TokenType::TOKEN_MUT});
 		auto returnTypeToken =
 		    consume(Token::TokenType::TOKEN_IDENTIFIER, "Expect return type.");
-		returnType = ast::Type(returnTypeToken);
+		returnType = ast::Type(returnTypeToken, !is_mutable);
 	}
 
 	consume(Token::TokenType::TOKEN_LEFT_BRACE,
@@ -420,6 +422,7 @@ std::unique_ptr<ast::Expression> Parser::unaryExpression() {
 	return call();
 }
 ast::Type Parser::typeExpression() {
+	bool is_mutable = match({Token::TokenType::TOKEN_MUT});
 	if (match({Token::TokenType::TOKEN_LEFT_SQUARE_BRACE})) {
 		auto arrayStartToken = previous();
 		auto arrayTypeToken = consume(Token::TokenType::TOKEN_IDENTIFIER,
@@ -427,13 +430,15 @@ ast::Type Parser::typeExpression() {
 		consume(Token::TokenType::TOKEN_SEMICOLON, "Expect ';' after type.");
 		consume(Token::TokenType::TOKEN_RIGHT_SQUARE_BRACE,
 		        "Expect ']' after array type.");
-		return Token{
-		    Token::TokenType::TOKEN_LEFT_SQUARE_BRACE,
-		    std::format("[{}]", arrayStartToken.lexeme + arrayTypeToken.lexeme),
-		    arrayStartToken.line, arrayStartToken.column};
+		return ast::Type{Token{Token::TokenType::TOKEN_LEFT_SQUARE_BRACE,
+		                       std::format("[{}]", arrayStartToken.lexeme +
+		                                               arrayTypeToken.lexeme),
+		                       arrayStartToken.line, arrayStartToken.column},
+		                 !is_mutable};
 	}
 	return ast::Type{
-	    consume(Token::TokenType::TOKEN_IDENTIFIER, "Expect type signature")};
+	    consume(Token::TokenType::TOKEN_IDENTIFIER, "Expect type signature"),
+	    !is_mutable};
 }
 std::unique_ptr<ast::Expression>
 Parser::finishCall(std::unique_ptr<ast::Expression> callee) {
