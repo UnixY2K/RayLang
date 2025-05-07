@@ -216,25 +216,10 @@ ast::Var Parser::varDeclaration(std::string kind) {
 	Token name = consume(Token::TokenType::TOKEN_IDENTIFIER,
 	                     std::format("Expect {} name.", kind));
 
-	Token type = Token{Token::TokenType::TOKEN_UNINITIALIZED};
+	ast::Type type = ast::Type{Token{Token::TokenType::TOKEN_UNINITIALIZED}};
 	if (match({Token::TokenType::TOKEN_COLON})) {
 		// array type
-		if (!match({Token::TokenType::TOKEN_LEFT_SQUARE_BRACE})) {
-			type = consume(Token::TokenType::TOKEN_IDENTIFIER,
-			        "Expect type signature");
-		} else {
-			auto arrayStartToken = previous();
-			auto arrayTypeToken = consume(Token::TokenType::TOKEN_IDENTIFIER,
-			                              "Expect type signature");
-			consume(Token::TokenType::TOKEN_SEMICOLON,
-			        "Expect ';' after type.");
-			consume(Token::TokenType::TOKEN_RIGHT_SQUARE_BRACE,
-			        "Expect ']' after array type.");
-			type = Token{Token::TokenType::TOKEN_LEFT_SQUARE_BRACE,
-			             std::format("[{}]", arrayStartToken.lexeme +
-			                                     arrayTypeToken.lexeme),
-			             arrayStartToken.line, arrayStartToken.column};
-		}
+		type = typeExpression();
 	}
 
 	std::optional<std::unique_ptr<ast::Expression>> initializer = std::nullopt;
@@ -269,8 +254,7 @@ ast::Function Parser::function(std::string kind, bool publicVisiblity) {
 			                             "Expect parameter name.");
 			consume(Token::TokenType::TOKEN_COLON,
 			        "Expect ':' after parameter name.");
-			auto parameterType = consume(Token::TokenType::TOKEN_IDENTIFIER,
-			                             "Expect parameter type.");
+			ast::Type parameterType = typeExpression();
 			auto parameter = ast::Parameter(parameterName, parameterType);
 
 			parameters.push_back(parameter);
@@ -434,6 +418,22 @@ std::unique_ptr<ast::Expression> Parser::unaryExpression() {
 		return std::make_unique<ast::Unary>(ast::Unary(op, std::move(right)));
 	}
 	return call();
+}
+ast::Type Parser::typeExpression() {
+	if (match({Token::TokenType::TOKEN_LEFT_SQUARE_BRACE})) {
+		auto arrayStartToken = previous();
+		auto arrayTypeToken = consume(Token::TokenType::TOKEN_IDENTIFIER,
+		                              "Expect type signature");
+		consume(Token::TokenType::TOKEN_SEMICOLON, "Expect ';' after type.");
+		consume(Token::TokenType::TOKEN_RIGHT_SQUARE_BRACE,
+		        "Expect ']' after array type.");
+		return Token{
+		    Token::TokenType::TOKEN_LEFT_SQUARE_BRACE,
+		    std::format("[{}]", arrayStartToken.lexeme + arrayTypeToken.lexeme),
+		    arrayStartToken.line, arrayStartToken.column};
+	}
+	return ast::Type{
+	    consume(Token::TokenType::TOKEN_IDENTIFIER, "Expect type signature")};
 }
 std::unique_ptr<ast::Expression>
 Parser::finishCall(std::unique_ptr<ast::Expression> callee) {

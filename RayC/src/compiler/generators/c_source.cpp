@@ -145,13 +145,14 @@ void CSourceGenerator::visitJumpStatement(const ast::Jump &jump) {
 void CSourceGenerator::visitVarStatement(const ast::Var &var) {
 	std::string identTab = currentIdent();
 
-	if (var.type.lexeme.starts_with("[")) {
+	if (var.type.name.lexeme.starts_with("[")) {
 		output << std::format(
 		    "{}RAY_MACRO_ARRAY({}, {})", identTab,
-		    var.type.lexeme.substr(1, var.type.lexeme.find_last_of("]") - 1),
+		    var.type.name.lexeme.substr(
+		        1, var.type.name.lexeme.find_last_of("]") - 1),
 		    var.name.lexeme);
 	} else {
-		output << std::format("{}{} {}", identTab, var.type.lexeme,
+		output << std::format("{}{} {}", identTab, var.type.name.lexeme,
 		                      var.name.lexeme);
 	}
 	if (var.initializer.has_value()) {
@@ -283,7 +284,6 @@ void CSourceGenerator::visitVariableExpression(const ast::Variable &variable) {
 	output << std::format("{}{}", identTab, variable.name.lexeme);
 }
 void CSourceGenerator::visitTypeExpression(const ast::Type &type) {
-	std::cerr << "visitTypeExpression not implemented\n";
 	if (type.name.lexeme.starts_with("[")) {
 		output << std::format(
 		    "RAY_MACRO_ARRAY({}, ",

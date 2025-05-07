@@ -127,12 +127,12 @@ class Jump : public Statement {
 class Var : public Statement {
   public:
 	Token name;
-	Token type;
+	Type type;
 	bool is_mutable;
 	std::optional<std::unique_ptr<Expression>> initializer;
 
 	Var(Token name,
-	        Token type,
+	        Type type,
 	        bool is_mutable,
 	        std::optional<std::unique_ptr<Expression>> initializer)
 	    : name(std::move(name)), type(std::move(type)), is_mutable(std::move(is_mutable)), initializer(std::move(initializer)) {}
