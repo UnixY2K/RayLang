@@ -1,5 +1,6 @@
 #include <cctype>
 #include <cstddef>
+#include <format>
 #include <string_view>
 #include <vector>
 
@@ -244,12 +245,43 @@ bool Lexer::match(char expected) {
 }
 
 void Lexer::string() {
+	std::string value;
 	while (peek() != '"' && !isAtEnd()) {
+		// escape characters starting with backslash
+		if (peek() == '\\') {
+			advance();
+			if (isAtEnd()) {
+				Token errorToken{Token::TokenType::TOKEN_STRING, value, line,
+				                 column};
+				errors.push_back(
+				    {.category = LexerError::ErrorCategory::UnterminatedString,
+				     .token = errorToken,
+				     .message = "Unterminated string"});
+			}
+			switch (peek()) {
+			case 'n': {
+				value.push_back('\n');
+				break;
+			}
+			default: {
+				Token errorToken{Token::TokenType::TOKEN_STRING, value, line,
+				                 column};
+				errors.push_back(
+				    {.category = LexerError::ErrorCategory::UnterminatedString,
+				     .token = errorToken,
+				     .message = std::format("Unknown escape sequence '\\{}'",
+				                            peek())});
+				return;
+			}
+			}
+			advance();
+			continue;
+		}
+		value.push_back(peek());
 		advance();
 	}
 
 	if (isAtEnd()) {
-		std::string value = std::string{source.substr(start, current - start)};
 		Token errorToken{Token::TokenType::TOKEN_STRING, value, line, column};
 		errors.push_back(
 		    {.category = LexerError::ErrorCategory::UnterminatedString,
@@ -260,8 +292,6 @@ void Lexer::string() {
 
 	advance();
 
-	std::string value =
-	    std::string{source.substr(start + 1, current - start - 2)};
 	addToken(Token::TokenType::TOKEN_STRING, value);
 }
 

@@ -254,10 +254,46 @@ void CSourceGenerator::visitLiteralExpression(const ast::Literal &literal) {
 	case Token::TokenType::TOKEN_STRING:
 		output << "(const u8[]){";
 		for (const char c : literal.value) {
-			output << std::format("0x{:X}, ", c);
+			output << std::format("{:#04X}, ", c);
 		}
-		output << "0x00}";
-		output << std::format("/*\"{}\"*/", literal.value);
+		output << "0x00}/*\"";
+		for (const char c : literal.value) {
+			switch (c) {
+			case '\a':
+				output << "\\a";
+				break;
+			case '\b':
+				output << "\\b";
+				break;
+			case '\e':
+				output << "\\e";
+				break;
+			case '\f':
+				output << "\\f";
+				break;
+			case '\n':
+				output << "\\n";
+				break;
+			case '\r':
+				output << "\\r";
+				break;
+			case '\v':
+				output << "\\v";
+				break;
+			case '\'':
+				output << "'";
+				break;
+			case '"':
+				output << '"';
+				break;
+			case '?':
+				output << '?';
+				break;
+			default:
+				output << c;
+			}
+		}
+		output << "\"*/";
 		break;
 	default:
 		std::cerr << std::format("'{}' ({}) is not a supported literal type\n",
