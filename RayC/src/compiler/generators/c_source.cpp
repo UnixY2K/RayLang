@@ -29,7 +29,6 @@ void CSourceGenerator::resolve(
 	output << "#define isize intmax_t\n";
 	output << "#define usize uintmax_t\n";
 	output << "#define c_char char\n";
-	output << "#define RAY_MACRO_ARRAY(T, X) T *X\n";
 	output << "#define RAY_MACRO_ARRAY_FIXED(T, X, N) T X[N]\n";
 	// ident++;
 	for (const auto &stmt : statement) {
@@ -170,7 +169,7 @@ void CSourceGenerator::visitVarStatement(const ast::Var &var) {
 
 	if (var.type.name.lexeme.starts_with("[")) {
 		output << std::format(
-		    "{}RAY_MACRO_ARRAY({}, {})", identTab,
+		    "{}{} *{}", identTab,
 		    var.type.name.lexeme.substr(
 		        1, var.type.name.lexeme.find_last_of("]") - 1),
 		    var.name.lexeme);
@@ -329,7 +328,7 @@ void CSourceGenerator::visitLiteralExpression(const ast::Literal &literal) {
 		break;
 	}
 	case Token::TokenType::TOKEN_CHAR: {
-		output << std::format("(const u8[]){{0x{:02X}}}", literal.value[0]);
+		output << std::format("(const u8){{0x{:02X}}}", literal.value[0]);
 		break;
 	}
 	default:
@@ -383,19 +382,23 @@ void CSourceGenerator::visitTypeExpression(const ast::Type &type) {
 	}
 	if (type.name.lexeme.starts_with("[")) {
 		output << std::format(
-		    "RAY_MACRO_ARRAY({}, ",
+		    "{} *",
 		    type.name.lexeme.substr(1, type.name.lexeme.find_last_of("]") - 1),
 		    type.name.lexeme);
 	} else {
 		output << std::format("{} ", type.name.lexeme);
 	}
 }
+void CSourceGenerator::visitCastExpression(const ast::Cast &value) {
+	output << "(";
+	value.type.visit(*this);
+	output << ")(";
+	value.expression->visit(*this);
+	output << ")";
+}
 void CSourceGenerator::visitParameterExpression(const ast::Parameter &param) {
 	param.type.visit(*this);
 	output << std::format("{}", param.name.lexeme);
-	if (param.type.name.lexeme.starts_with("[")) {
-		output << ")";
-	}
 }
 
 } // namespace ray::compiler::generator

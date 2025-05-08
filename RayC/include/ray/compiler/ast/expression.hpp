@@ -17,6 +17,7 @@ class Unary;
 class ArrayAccess;
 class Variable;
 class Type;
+class Cast;
 class Parameter;
 
 class ExpressionVisitor {
@@ -33,6 +34,7 @@ class ExpressionVisitor {
 	virtual void visitArrayAccessExpression(const ArrayAccess& value) = 0;
 	virtual void visitVariableExpression(const Variable& value) = 0;
 	virtual void visitTypeExpression(const Type& value) = 0;
+	virtual void visitCastExpression(const Cast& value) = 0;
 	virtual void visitParameterExpression(const Parameter& value) = 0;
 	virtual ~ExpressionVisitor() = default;
 };
@@ -222,6 +224,20 @@ class Type : public Expression {
 	void visit(ExpressionVisitor& visitor) const override { visitor.visitTypeExpression(*this); }
 
 	std::string variantName() const override { return "Type"; }
+
+};
+class Cast : public Expression {
+  public:
+	std::unique_ptr<Expression> expression;
+	Type type;
+
+	Cast(std::unique_ptr<Expression> expression,
+	        Type type)
+	    : expression(std::move(expression)), type(std::move(type)) {}
+
+	void visit(ExpressionVisitor& visitor) const override { visitor.visitCastExpression(*this); }
+
+	std::string variantName() const override { return "Cast"; }
 
 };
 class Parameter : public Expression {

@@ -437,7 +437,12 @@ std::unique_ptr<ast::Expression> Parser::unaryExpression() {
 		return std::make_unique<ast::Unary>(
 		    ast::Unary(op, true, std::move(right)));
 	}
-	return call();
+	auto expr = call();
+	if (match({Token::TokenType::TOKEN_AS})) {
+		auto type = typeExpression();
+		expr = std::make_unique<ast::Cast>(ast::Cast{std::move(expr), type});
+	}
+	return expr;
 }
 ast::Type Parser::typeExpression() {
 	bool is_mutable = match({Token::TokenType::TOKEN_MUT});
@@ -530,8 +535,8 @@ std::unique_ptr<ast::Expression> Parser::primaryExpresion() {
 		return std::make_unique<ast::Literal>(ast::Literal(kind, "true"));
 	}
 
-	if (match(
-	        {Token::TokenType::TOKEN_NUMBER, Token::TokenType::TOKEN_STRING, Token::TokenType::TOKEN_CHAR})) {
+	if (match({Token::TokenType::TOKEN_NUMBER, Token::TokenType::TOKEN_STRING,
+	           Token::TokenType::TOKEN_CHAR})) {
 		return std::make_unique<ast::Literal>(
 		    ast::Literal(kind, previous().lexeme));
 	}

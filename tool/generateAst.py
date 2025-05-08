@@ -126,6 +126,7 @@ def main():
              "ArrayAccess   = std::unique_ptr<Expression> array, std::unique_ptr<Expression> index",
              "Variable		= Token name",
              "Type          = Token name, bool isConst, bool isPointer",
+             "Cast          = std::unique_ptr<Expression> expression, Type type",
              "Parameter     = Token name, Type type",
             ])
     defineAst(outputDir, "Statement",

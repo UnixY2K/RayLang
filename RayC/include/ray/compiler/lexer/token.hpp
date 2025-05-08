@@ -80,6 +80,7 @@ struct Token {
 		TOKEN_PUB,      // pub
 		TOKEN_MUT,      // mut
 		TOKEN_STRUCT,   // struct
+		TOKEN_AS,        // as, ex: 2 as isize
 		// token types
 		TOKEN_TYPE_UNIT, // unit aka '()'
 		// other

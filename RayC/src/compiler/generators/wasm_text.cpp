@@ -287,6 +287,9 @@ void WASMTextGenerator::visitVariableExpression(const ast::Variable &variable) {
 void WASMTextGenerator::visitTypeExpression(const ast::Type &value) {
 	std::cerr << "visitTypeExpression not implemented\n";
 }
+void WASMTextGenerator::visitCastExpression(const ast::Cast &value) {
+	std::cerr << "WASMTextGenerator not implemented\n";
+}
 void WASMTextGenerator::visitParameterExpression(const ast::Parameter &value) {
 	std::cerr << "visitParameterExpression not implemented\n";
 }

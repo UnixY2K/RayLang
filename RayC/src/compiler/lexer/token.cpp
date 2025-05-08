@@ -90,6 +90,7 @@ Token::TokenType Token::fromString(std::string_view str) {
 	    {"pub", Token::TokenType::TOKEN_PUB},           // pub
 	    {"mut", Token::TokenType::TOKEN_MUT},           // mut
 	    {"struct", Token::TokenType::TOKEN_STRUCT},     // struct
+	    {"as", Token::TokenType::TOKEN_AS},             // struct
 	    // Token Types
 	    {"()", Token::TokenType::TOKEN_TYPE_UNIT}, // ()
 	};
@@ -235,6 +236,8 @@ std::string_view Token::toString(TokenType token) {
 		return "TOKEN_MUT";
 	case TokenType::TOKEN_STRUCT:
 		return "TOKEN_STRUCT";
+	case TokenType::TOKEN_AS:
+		return "TOKEN_AS";
 	// token types
 	case TokenType::TOKEN_TYPE_UNIT:
 		return "TOKEN_TYPE_UNIT";
@@ -384,6 +387,8 @@ std::string_view Token::glyph(TokenType token) {
 		return "mut";
 	case TokenType::TOKEN_STRUCT:
 		return "struct";
+	case TokenType::TOKEN_AS:
+		return "as";
 	// token types
 	case TokenType::TOKEN_TYPE_UNIT:
 		return "()";
