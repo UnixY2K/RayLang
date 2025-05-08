@@ -272,6 +272,10 @@ void WASMTextGenerator::visitUnaryExpression(const ast::Unary &unary) {
 		                         unary.op.getLexeme());
 	}
 }
+void WASMTextGenerator::visitArrayAccessExpression(
+    const ast::ArrayAccess &value) {
+	std::cerr << "visitArrayAccessExpression not implemented\n";
+}
 void WASMTextGenerator::visitVariableExpression(const ast::Variable &variable) {
 	std::string identTab = currentIdent();
 	output << std::format("{}local.get ${}\n", identTab, variable.name.lexeme);

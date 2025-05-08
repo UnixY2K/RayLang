@@ -43,6 +43,7 @@ class CSourceGenerator : public ast::StatementVisitor,
 	void visitLogicalExpression(const ast::Logical &value) override;
 	void visitSetExpression(const ast::Set &value) override;
 	void visitUnaryExpression(const ast::Unary &value) override;
+	void visitArrayAccessExpression(const ast::ArrayAccess& value) override;
 	void visitVariableExpression(const ast::Variable &value) override;
 	void visitTypeExpression(const ast::Type &value) override;
 	void visitParameterExpression(const ast::Parameter &value) override;

@@ -14,6 +14,7 @@ class Literal;
 class Logical;
 class Set;
 class Unary;
+class ArrayAccess;
 class Variable;
 class Type;
 class Parameter;
@@ -29,6 +30,7 @@ class ExpressionVisitor {
 	virtual void visitLogicalExpression(const Logical& value) = 0;
 	virtual void visitSetExpression(const Set& value) = 0;
 	virtual void visitUnaryExpression(const Unary& value) = 0;
+	virtual void visitArrayAccessExpression(const ArrayAccess& value) = 0;
 	virtual void visitVariableExpression(const Variable& value) = 0;
 	virtual void visitTypeExpression(const Type& value) = 0;
 	virtual void visitParameterExpression(const Parameter& value) = 0;
@@ -148,12 +150,14 @@ class Set : public Expression {
   public:
 	std::unique_ptr<Expression> object;
 	Token name;
+	Token assignment;
 	std::unique_ptr<Expression> value;
 
 	Set(std::unique_ptr<Expression> object,
 	        Token name,
+	        Token assignment,
 	        std::unique_ptr<Expression> value)
-	    : object(std::move(object)), name(std::move(name)), value(std::move(value)) {}
+	    : object(std::move(object)), name(std::move(name)), assignment(std::move(assignment)), value(std::move(value)) {}
 
 	void visit(ExpressionVisitor& visitor) const override { visitor.visitSetExpression(*this); }
 
@@ -172,6 +176,20 @@ class Unary : public Expression {
 	void visit(ExpressionVisitor& visitor) const override { visitor.visitUnaryExpression(*this); }
 
 	std::string variantName() const override { return "Unary"; }
+
+};
+class ArrayAccess : public Expression {
+  public:
+	std::unique_ptr<Expression> array;
+	std::unique_ptr<Expression> index;
+
+	ArrayAccess(std::unique_ptr<Expression> array,
+	        std::unique_ptr<Expression> index)
+	    : array(std::move(array)), index(std::move(index)) {}
+
+	void visit(ExpressionVisitor& visitor) const override { visitor.visitArrayAccessExpression(*this); }
+
+	std::string variantName() const override { return "ArrayAccess"; }
 
 };
 class Variable : public Expression {

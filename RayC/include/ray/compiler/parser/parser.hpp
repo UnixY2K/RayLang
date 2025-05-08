@@ -53,6 +53,8 @@ class Parser {
 	std::unique_ptr<ast::Expression> unaryExpression();
 	ast::Type typeExpression();
 	std::unique_ptr<ast::Expression>
+	finishArrayAccess(std::unique_ptr<ast::Expression> callee);
+	std::unique_ptr<ast::Expression>
 	finishCall(std::unique_ptr<ast::Expression> callee);
 	std::unique_ptr<ast::Expression> call();
 	std::unique_ptr<ast::Expression> primaryExpresion();

@@ -192,6 +192,9 @@ void Lexer::scanToken() {
 		if (std::isdigit(next)) {
 			number();
 		}
+		else{
+			addToken(Token::TokenType::TOKEN_DOT);
+		}
 		break;
 	}
 	// not expected character

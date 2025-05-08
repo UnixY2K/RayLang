@@ -2,13 +2,13 @@
 #include <memory>
 #include <optional>
 #include <utility>
+#include <vector>
 
 #include <ray/compiler/ast/expression.hpp>
 #include <ray/compiler/ast/statement.hpp>
 #include <ray/compiler/error_bag.hpp>
 #include <ray/compiler/lexer/token.hpp>
 #include <ray/compiler/parser/parser.hpp>
-#include <vector>
 
 namespace ray::compiler {
 
@@ -199,9 +199,7 @@ std::unique_ptr<ast::Statement> Parser::breakStatement() {
 	return std::make_unique<ast::Jump>(ast::Jump(keyword, nullptr));
 }
 std::unique_ptr<ast::Statement> Parser::whileStatement() {
-	consume(Token::TokenType::TOKEN_LEFT_PAREN, "Expect '(' after 'while'.");
 	auto condition = expression();
-	consume(Token::TokenType::TOKEN_RIGHT_PAREN, "Expect ')' after condition.");
 
 	auto body = statement();
 
@@ -318,7 +316,8 @@ std::unique_ptr<ast::Expression> Parser::comma() {
 std::unique_ptr<ast::Expression> Parser::assignment() {
 	auto expr = orExpression();
 
-	if (match({Token::TokenType::TOKEN_EQUAL})) {
+	if (match({Token::TokenType::TOKEN_EQUAL,
+	           Token::TokenType::TOKEN_PLUS_EQUAL})) {
 		Token equals = previous();
 		auto value = assignment();
 		if (auto variable = dynamic_cast<ast::Variable *>(expr.get())) {
@@ -326,8 +325,8 @@ std::unique_ptr<ast::Expression> Parser::assignment() {
 			return std::make_unique<ast::Assign>(
 			    ast::Assign(name, std::move(value)));
 		} else if (auto get = dynamic_cast<ast::Get *>(expr.get())) {
-			return std::make_unique<ast::Set>(
-			    ast::Set(std::move(get->object), get->name, std::move(value)));
+			return std::make_unique<ast::Set>(ast::Set{
+			    std::move(get->object), get->name, equals, std::move(value)});
 		}
 		error(equals, "Invalid assignment target.");
 	}
@@ -440,6 +439,15 @@ ast::Type Parser::typeExpression() {
 	    consume(Token::TokenType::TOKEN_IDENTIFIER, "Expect type signature"),
 	    !is_mutable};
 }
+
+std::unique_ptr<ast::Expression>
+Parser::finishArrayAccess(std::unique_ptr<ast::Expression> callee) {
+	auto index = expression();
+	auto paren = consume(Token::TokenType::TOKEN_RIGHT_SQUARE_BRACE,
+	                     "Expect ']' after array access");
+	return std::make_unique<ast::ArrayAccess>(
+	    ast::ArrayAccess{std::move(callee), std::move(index)});
+}
 std::unique_ptr<ast::Expression>
 Parser::finishCall(std::unique_ptr<ast::Expression> callee) {
 	std::vector<std::unique_ptr<ast::Expression>> arguments;
@@ -468,10 +476,15 @@ Parser::finishCall(std::unique_ptr<ast::Expression> callee) {
 }
 std::unique_ptr<ast::Expression> Parser::call() {
 	auto expr = primaryExpresion();
-
 	while (true) {
 		if (match({Token::TokenType::TOKEN_LEFT_PAREN})) {
 			expr = finishCall(std::move(expr));
+		} else if (match({Token::TokenType::TOKEN_DOT})) {
+			Token name = consume(Token::TokenType::TOKEN_IDENTIFIER,
+			                     "Expect property name after '.'.");
+			expr = std::make_unique<ast::Get>(ast::Get{std::move(expr), name});
+		} else if (match({Token::TokenType::TOKEN_LEFT_SQUARE_BRACE})) {
+			expr = finishArrayAccess(std::move(expr));
 		} else {
 			break;
 		}
@@ -479,6 +492,7 @@ std::unique_ptr<ast::Expression> Parser::call() {
 
 	return expr;
 }
+
 std::unique_ptr<ast::Expression> Parser::primaryExpresion() {
 	Token kind = peek();
 	if (match({Token::TokenType::TOKEN_FALSE})) {

@@ -27,6 +27,7 @@ void CSourceGenerator::resolve(
 	output << "#define u8 uint8_t\n";
 	output << "#define i32 int32_t\n";
 	output << "#define isize size_t\n";
+	output << "#define c_char char\n";
 	output << "#define RAY_MACRO_ARRAY(T, X) T *X\n";
 	output << "#define RAY_MACRO_ARRAY_FIXED(T, X, N) T X[N]\n";
 	// ident++;
@@ -52,14 +53,14 @@ void CSourceGenerator::visitBlockStatement(const ast::Block &block) {
 	}
 }
 void CSourceGenerator::visitStructStatement(const ast::Struct &value) {
-	output << std::format("{}struct {} {{\n", currentIdent(),
+	output << std::format("{}typedef struct {} {{\n", currentIdent(),
 	                      value.name.lexeme);
 	ident++;
 	for (auto &member : value.members) {
 		member.visit(*this);
 	}
 	ident--;
-	output << std::format("{}}};\n", currentIdent());
+	output << std::format("{}}} {};\n", currentIdent(), value.name.lexeme);
 }
 void CSourceGenerator::visitTerminalExprStatement(
     const ast::TerminalExpr &terminalExpr) {
@@ -70,6 +71,7 @@ void CSourceGenerator::visitTerminalExprStatement(
 }
 void CSourceGenerator::visitExpressionStmtStatement(
     const ast::ExpressionStmt &expression) {
+	output << currentIdent();
 	expression.expression->visit(*this);
 	output << std::format(";\n", currentIdent());
 }
@@ -171,13 +173,22 @@ void CSourceGenerator::visitVarStatement(const ast::Var &var) {
 	output << ";\n";
 }
 void CSourceGenerator::visitWhileStatement(const ast::While &value) {
-	std::cerr << "visitWhileStatement not implemented\n";
+	auto identTab = currentIdent();
+	output << std::format("{}while (", identTab);
+	auto currentIdent = ident;
+	ident = 0;
+	value.condition->visit(*this);
+	ident = currentIdent;
+	output << ") {\n";
+	ident++;
+	value.body->visit(*this);
+	ident--;
+	output << std::format("{}}}\n", identTab);
 }
 // Expression
 void CSourceGenerator::visitAssignExpression(const ast::Assign &value) {
-	std::string identTab = currentIdent();
+	output << std::format("{} = ", value.name.lexeme);
 	value.value->visit(*this);
-	output << std::format("{}local.tee ${}\n", identTab, value.name.lexeme);
 }
 void CSourceGenerator::visitBinaryExpression(
     const ast::Binary &binaryExpression) {
@@ -196,6 +207,8 @@ void CSourceGenerator::visitBinaryExpression(
 	case Token::TokenType::TOKEN_CARET:
 	case Token::TokenType::TOKEN_LESS_LESS:
 	case Token::TokenType::TOKEN_GREAT_GREAT:
+	case Token::TokenType::TOKEN_EQUAL_EQUAL:
+	case Token::TokenType::TOKEN_BANG_EQUAL:
 	case Token::TokenType::TOKEN_LESS:
 	case Token::TokenType::TOKEN_GREAT:
 	case Token::TokenType::TOKEN_LESS_EQUAL:
@@ -213,7 +226,7 @@ void CSourceGenerator::visitCallExpression(const ast::Call &callable) {
 	// check if the callable contains a function
 	if (ast::Variable *var =
 	        dynamic_cast<ast::Variable *>(callable.callee.get())) {
-		output << std::format("{}{}(", currentIdent(), var->name.lexeme);
+		output << std::format("{}(", var->name.lexeme);
 
 		for (auto const &[index, argument] :
 		     callable.arguments | std::views::enumerate) {
@@ -232,7 +245,8 @@ void CSourceGenerator::visitCallExpression(const ast::Call &callable) {
 	}
 }
 void CSourceGenerator::visitGetExpression(const ast::Get &value) {
-	std::cerr << "visitGetExpression not implemented\n";
+	value.object->visit(*this);
+	output << std::format(".{}", value.name.lexeme);
 }
 void CSourceGenerator::visitGroupingExpression(const ast::Grouping &grouping) {
 	grouping.expression->visit(*this);
@@ -241,14 +255,13 @@ void CSourceGenerator::visitLiteralExpression(const ast::Literal &literal) {
 	switch (literal.kind.type) {
 	case Token::TokenType::TOKEN_TRUE:
 	case Token::TokenType::TOKEN_FALSE:
-		output << std::format("{}{}", currentIdent(),
-		                      literal.kind.type == Token::TokenType::TOKEN_TRUE
-		                          ? "true"
-		                          : "false");
+		output << std::format(
+		    "{}", literal.kind.type == Token::TokenType::TOKEN_TRUE ? "true"
+		                                                            : "false");
 		break;
 	case Token::TokenType::TOKEN_NUMBER: {
 		std::string value = literal.value;
-		output << std::format("{}{}", currentIdent(), value);
+		output << std::format("{}", value);
 		break;
 	}
 	case Token::TokenType::TOKEN_STRING:
@@ -301,15 +314,15 @@ void CSourceGenerator::visitLiteralExpression(const ast::Literal &literal) {
 		                         Token::glyph(literal.kind.type));
 		break;
 	}
-	if (ident != 0) {
-		output << "\n";
-	}
 }
 void CSourceGenerator::visitLogicalExpression(const ast::Logical &value) {
 	std::cerr << "visitLogicalExpression not implemented\n";
 }
 void CSourceGenerator::visitSetExpression(const ast::Set &value) {
-	std::cerr << "visitSetExpression not implemented\n";
+	value.object->visit(*this);
+	output << std::format(".{} {} ", value.name.lexeme,
+	                      Token::glyph(value.assignment.type));
+	value.value->visit(*this);
 }
 void CSourceGenerator::visitUnaryExpression(const ast::Unary &unary) {
 	unary.right->visit(*this);
@@ -325,9 +338,15 @@ void CSourceGenerator::visitUnaryExpression(const ast::Unary &unary) {
 		                         unary.op.getLexeme());
 	}
 }
+void CSourceGenerator::visitArrayAccessExpression(
+    const ast::ArrayAccess &value) {
+	value.array->visit(*this);
+	output << "[";
+	value.index->visit(*this);
+	output << "]";
+}
 void CSourceGenerator::visitVariableExpression(const ast::Variable &variable) {
-	std::string identTab = currentIdent();
-	output << std::format("{}{}", identTab, variable.name.lexeme);
+	output << std::format("{}", variable.name.lexeme);
 }
 void CSourceGenerator::visitTypeExpression(const ast::Type &type) {
 	if (type.isConst) {
