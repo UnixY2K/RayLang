@@ -3,6 +3,7 @@
 #include <rayvmapp/terminal.hpp>
 
 #include <cstddef>
+#include <format>
 #include <string_view>
 #include <unordered_map>
 #include <unordered_set>

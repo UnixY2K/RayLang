@@ -7,6 +7,7 @@
 #ifndef _MSC_VER
 #include <cstddef>
 #endif
+#include <format>
 #include <string_view>
 #include <unordered_map>
 #include <unordered_set>

@@ -92,8 +92,8 @@ void CSourceGenerator::visitFunctionStatement(const ast::Function &function) {
 		output << std::format("void ");
 	}
 	output << std::format("{}(", functionName);
-	for (auto const &[index, parameter] :
-	     function.params | std::views::enumerate) {
+	for (size_t index = 0; index < function.params.size(); ++index) {
+		const auto &parameter = function.params[index];
 		parameter.visit(*this);
 		if (index < function.params.size() - 1) {
 			output << ", ";
@@ -114,7 +114,7 @@ void CSourceGenerator::visitFunctionStatement(const ast::Function &function) {
 		}
 		output << std::format("{}}}\n", identTabs);
 		if (function.publicVisibility) {
-			std::cerr << "pub semantics not implemented for function";
+			std::cerr << "pub semantics not implemented for function.\n";
 		}
 	} else {
 		output << ";\n";
@@ -244,8 +244,8 @@ void CSourceGenerator::visitCallExpression(const ast::Call &callable) {
 	        dynamic_cast<ast::Variable *>(callable.callee.get())) {
 		output << std::format("{}(", var->name.lexeme);
 
-		for (auto const &[index, argument] :
-		     callable.arguments | std::views::enumerate) {
+		for (size_t index = 0; index < callable.arguments.size(); ++index) {
+			auto const &argument = callable.arguments[index];
 			auto currentIdent = ident;
 			ident = 0;
 			argument->visit(*this);
