@@ -319,8 +319,19 @@ std::unique_ptr<ast::Expression> Parser::comma() {
 std::unique_ptr<ast::Expression> Parser::assignment() {
 	auto lhs_expr = orExpression();
 
-	if (match({Token::TokenType::TOKEN_EQUAL,
-	           Token::TokenType::TOKEN_PLUS_EQUAL})) {
+	if (match({
+	        Token::TokenType::TOKEN_EQUAL,             // =
+	        Token::TokenType::TOKEN_PLUS_EQUAL,        // +=
+	        Token::TokenType::TOKEN_MINUS_EQUAL,       // -=
+	        Token::TokenType::TOKEN_STAR_EQUAL,        // *=
+	        Token::TokenType::TOKEN_SLASH_EQUAL,       // /=
+	        Token::TokenType::TOKEN_PERCENT_EQUAL,     // *=
+	        Token::TokenType::TOKEN_AMPERSAND_EQUAL,   // &=
+	        Token::TokenType::TOKEN_PIPE_EQUAL,        // |=
+	        Token::TokenType::TOKEN_CARET_EQUAL,       // ^=
+	        Token::TokenType::TOKEN_LESS_LESS_EQUAL,   // <<=
+	        Token::TokenType::TOKEN_GREAT_GREAT_EQUAL, // >>=
+	    })) {
 		Token assignmentOp = previous();
 		auto rhs_expr = assignment();
 		if (dynamic_cast<ast::Variable *>(lhs_expr.get())) {
@@ -407,8 +418,8 @@ std::unique_ptr<ast::Expression> Parser::terminalExpression() {
 std::unique_ptr<ast::Expression> Parser::factorExpression() {
 	auto expr = unaryExpression();
 
-	while (
-	    match({Token::TokenType::TOKEN_SLASH, Token::TokenType::TOKEN_STAR})) {
+	while (match({Token::TokenType::TOKEN_SLASH, Token::TokenType::TOKEN_STAR,
+	              Token::TokenType::TOKEN_PERCENT})) {
 		Token op = previous();
 		auto right = unaryExpression();
 		expr = std::make_unique<ast::Binary>(
@@ -520,7 +531,7 @@ std::unique_ptr<ast::Expression> Parser::primaryExpresion() {
 	}
 
 	if (match(
-	        {Token::TokenType::TOKEN_NUMBER, Token::TokenType::TOKEN_STRING})) {
+	        {Token::TokenType::TOKEN_NUMBER, Token::TokenType::TOKEN_STRING, Token::TokenType::TOKEN_CHAR})) {
 		return std::make_unique<ast::Literal>(
 		    ast::Literal(kind, previous().lexeme));
 	}
