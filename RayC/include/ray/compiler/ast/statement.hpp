@@ -79,13 +79,13 @@ class Function : public Statement {
 	Token name;
 	bool publicVisibility;
 	std::vector<Parameter> params;
-	Block body;
+	std::optional<Block> body;
 	Type returnType;
 
 	Function(Token name,
 	        bool publicVisibility,
 	        std::vector<Parameter> params,
-	        Block body,
+	        std::optional<Block> body,
 	        Type returnType)
 	    : name(std::move(name)), publicVisibility(std::move(publicVisibility)), params(std::move(params)), body(std::move(body)), returnType(std::move(returnType)) {}
 
@@ -160,14 +160,16 @@ class Struct : public Statement {
   public:
 	Token name;
 	bool publicVisibility;
+	bool declaration;
 	std::vector<Var> members;
 	std::vector<bool> memberVisibility;
 
 	Struct(Token name,
 	        bool publicVisibility,
+	        bool declaration,
 	        std::vector<Var> members,
 	        std::vector<bool> memberVisibility)
-	    : name(std::move(name)), publicVisibility(std::move(publicVisibility)), members(std::move(members)), memberVisibility(std::move(memberVisibility)) {}
+	    : name(std::move(name)), publicVisibility(std::move(publicVisibility)), declaration(std::move(declaration)), members(std::move(members)), memberVisibility(std::move(memberVisibility)) {}
 
 	void visit(StatementVisitor& visitor) const override { visitor.visitStructStatement(*this); }
 

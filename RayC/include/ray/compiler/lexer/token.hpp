@@ -40,7 +40,7 @@ struct Token {
 		TOKEN_AMPERSAND,   // &
 		TOKEN_PIPE,        // |
 		TOKEN_CARET,       // ^
-		TOKEN_LESS_LESS,  // <<
+		TOKEN_LESS_LESS,   // <<
 		TOKEN_GREAT_GREAT, // >>
 		// logical
 		TOKEN_BANG,                // !
@@ -64,6 +64,7 @@ struct Token {
 		TOKEN_IDENTIFIER, // ex: foo, bar, baz, etc.
 		TOKEN_STRING,     // ex: "Hello, world"
 		TOKEN_NUMBER,     // ex: 0x01, 10, 10.2, -2
+		TOKEN_CHAR,       // ex: 'a', 'b', 'c'
 		// Keywords.
 		TOKEN_IF,       // if
 		TOKEN_ELSE,     // else
@@ -76,9 +77,9 @@ struct Token {
 		TOKEN_RETURN,   // return
 		TOKEN_CONTINUE, // continue
 		TOKEN_BREAK,    // break
-		TOKEN_PUB,		// pub
-		TOKEN_MUT,		// mut
-		TOKEN_STRUCT,	// struct
+		TOKEN_PUB,      // pub
+		TOKEN_MUT,      // mut
+		TOKEN_STRUCT,   // struct
 		// token types
 		TOKEN_TYPE_UNIT, // unit aka '()'
 		// other

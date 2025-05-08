@@ -74,6 +74,7 @@ Token::TokenType Token::fromString(std::string_view str) {
 	    //{"", Token::TokenType::TOKEN_STRING},     // ex: "Hello, world"
 	    //{"", Token::TokenType::TOKEN_NUMBER},     // ex: 0x01, 10, 10.2, -2,
 	    //.1
+	    //{"", Token::TokenType::TOKEN_CHAR},     	// ex: 'A', 'B'
 	    // keywords
 	    {"if", Token::TokenType::TOKEN_IF},             // if
 	    {"else", Token::TokenType::TOKEN_ELSE},         // else
@@ -203,6 +204,8 @@ std::string_view Token::toString(TokenType token) {
 		return "TOKEN_STRING";
 	case TokenType::TOKEN_NUMBER:
 		return "TOKEN_NUMBER";
+	case TokenType::TOKEN_CHAR:
+		return "TOKEN_CHAR";
 	// keywords
 	case TokenType::TOKEN_IF:
 		return "TOKEN_IF";
@@ -350,6 +353,8 @@ std::string_view Token::glyph(TokenType token) {
 		return "<string>";
 	case TokenType::TOKEN_NUMBER:
 		return "<number>";
+	case TokenType::TOKEN_CHAR:
+		return "<char-literal>";
 	// keywords
 	case TokenType::TOKEN_IF:
 		return "if";

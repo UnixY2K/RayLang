@@ -9,6 +9,7 @@ class LexerError {
 	enum class ErrorCategory{
 		Undefined,
 		UnterminatedString,
+		UnterminatedCharLiteral,
 		UnexpectedCharacter,
 		Unknown,
 	};

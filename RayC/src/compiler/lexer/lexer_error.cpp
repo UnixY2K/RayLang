@@ -10,6 +10,9 @@ std::string LexerError::toString() const {
 	case ErrorCategory::UnterminatedString: {
 		return std::format("Unterminated string");
 	}
+	case ErrorCategory::UnterminatedCharLiteral: {
+		return std::format("Incomplete char literal: {}", message);
+	}
 	case ErrorCategory::UnexpectedCharacter:
 		return std::format("Unexpected character: '{}'", token.lexeme);
 	case ErrorCategory::Undefined:
@@ -25,8 +28,8 @@ std::string LexerError::positionString() const {
 		return std::format("{}:{}", token.line,
 		                   token.column + token.lexeme.length() - 1);
 	}
+	case ErrorCategory::UnterminatedCharLiteral:
 	case ErrorCategory::UnexpectedCharacter:
-		return std::format("{}:{}", token.line, token.column);
 	case ErrorCategory::Undefined:
 	case ErrorCategory::Unknown:
 		return std::format("{}:{}", token.line, token.column);
@@ -42,6 +45,8 @@ LexerError::ErrorCategoryName(LexerError::ErrorCategory error) {
 		return "Undefined";
 	case ErrorCategory::UnterminatedString:
 		return "UnterminatedString";
+	case ErrorCategory::UnterminatedCharLiteral:
+		return "UnterminatedCharLiteral";
 	case ErrorCategory::UnexpectedCharacter:
 		return "UnexpectedCharacter";
 	case ErrorCategory::Unknown:

@@ -34,6 +34,7 @@ class Lexer {
 	bool match(char expected);
 	void string();
 	void number();
+	void charLiteral();
 	void identifier();
 	void comment();
 	void multiLineComment();

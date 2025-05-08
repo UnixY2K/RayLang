@@ -69,21 +69,24 @@ Parser::structDeclaration(bool publicVisibility) {
 	    consume(Token::TokenType::TOKEN_IDENTIFIER, "Expect struct name.");
 	std::vector<ast::Var> members;
 	std::vector<bool> memberVisibility;
+	bool structDeclaration = match({Token::TokenType::TOKEN_SEMICOLON});
 
-	consume(Token::TokenType::TOKEN_LEFT_BRACE,
-	        "Expect '{' before class body.");
-	while (!check(Token::TokenType::TOKEN_RIGHT_BRACE) && !isAtEnd()) {
-		Token pubToken;
-		if (match({Token::TokenType::TOKEN_PUB})) {
-			pubToken = previous();
+	if (!structDeclaration) {
+		consume(Token::TokenType::TOKEN_LEFT_BRACE,
+		        "Expect '{' before struct body.");
+		while (!check(Token::TokenType::TOKEN_RIGHT_BRACE) && !isAtEnd()) {
+			Token pubToken;
+			if (match({Token::TokenType::TOKEN_PUB})) {
+				pubToken = previous();
+			}
+			members.push_back(varDeclaration("member"));
 		}
-		members.push_back(varDeclaration("member"));
+		consume(Token::TokenType::TOKEN_RIGHT_BRACE,
+		        "Expect '}' after struct body.");
 	}
-	consume(Token::TokenType::TOKEN_RIGHT_BRACE,
-	        "Expect '}' after class body.");
-
-	return std::make_unique<ast::Struct>(ast::Struct{
-	    name, publicVisibility, std::move(members), memberVisibility});
+	return std::make_unique<ast::Struct>(
+	    ast::Struct{name, publicVisibility, structDeclaration,
+	                std::move(members), memberVisibility});
 }
 
 std::unique_ptr<ast::Statement> Parser::statement() {
@@ -272,11 +275,13 @@ ast::Function Parser::function(std::string kind, bool publicVisiblity) {
 		returnType = typeExpression();
 	}
 
-	consume(Token::TokenType::TOKEN_LEFT_BRACE,
-	        std::format("Expect '{{' before {} body.", kind));
-	auto body =
-	    std::make_unique<std::vector<std::unique_ptr<ast::Statement>>>(block());
-	return {name, publicVisiblity, parameters, std::move(*body), returnType};
+	std::optional<ast::Block> body = std::nullopt;
+	if (!match({Token::TokenType::TOKEN_SEMICOLON})) {
+		consume(Token::TokenType::TOKEN_LEFT_BRACE,
+		        std::format("Expect '{{' before {} body.", kind));
+		body = {block()};
+	}
+	return {name, publicVisiblity, parameters, std::move(body), returnType};
 }
 std::vector<std::unique_ptr<ast::Statement>> Parser::block() {
 	std::vector<std::unique_ptr<ast::Statement>> statements;
@@ -494,7 +499,7 @@ std::unique_ptr<ast::Expression> Parser::call() {
 		} else if (match({Token::TokenType::TOKEN_LEFT_SQUARE_BRACE})) {
 			expr = finishArrayAccess(std::move(expr));
 		} else if (match({Token::TokenType::TOKEN_PLUS_PLUS,
-		                  Token::TokenType::TOKEN_MINUS})) {
+		                  Token::TokenType::TOKEN_MINUS_MINUS})) {
 			expr = std::make_unique<ast::Unary>(
 			    ast::Unary{previous(), false, std::move(expr)});
 		} else {

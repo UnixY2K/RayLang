@@ -71,7 +71,9 @@ void WASMTextGenerator::visitFunctionStatement(const ast::Function &function) {
 	}
 	output << "\n";
 	ident++;
-	function.body.visit(*this);
+	if (function.body.has_value()) {
+		function.body->visit(*this);
+	}
 	ident--;
 	output << std::format("{})\n", identTabs);
 	if (function.publicVisibility) {

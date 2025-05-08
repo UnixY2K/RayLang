@@ -23,11 +23,11 @@ void CSourceGenerator::resolve(
 	output << "extern \"C\" {\n";
 	output << "#endif\n";
 	output << "#include <stdint.h>\n";
-	output << "#include <stdio.h>\n";
 	output << "#define i8 int8_t\n";
 	output << "#define u8 uint8_t\n";
 	output << "#define i32 int32_t\n";
-	output << "#define isize size_t\n";
+	output << "#define isize intmax_t\n";
+	output << "#define usize uintmax_t\n";
 	output << "#define c_char char\n";
 	output << "#define RAY_MACRO_ARRAY(T, X) T *X\n";
 	output << "#define RAY_MACRO_ARRAY_FIXED(T, X, N) T X[N]\n";
@@ -54,14 +54,18 @@ void CSourceGenerator::visitBlockStatement(const ast::Block &block) {
 	}
 }
 void CSourceGenerator::visitStructStatement(const ast::Struct &value) {
-	output << std::format("{}typedef struct {} {{\n", currentIdent(),
+	output << std::format("{}typedef struct {}", currentIdent(),
 	                      value.name.lexeme);
-	ident++;
-	for (auto &member : value.members) {
-		member.visit(*this);
+	if (!value.declaration) {
+		output << " {\n";
+		ident++;
+		for (auto &member : value.members) {
+			member.visit(*this);
+		}
+		ident--;
+		output << std::format("{}}}", currentIdent());
 	}
-	ident--;
-	output << std::format("{}}} {};\n", currentIdent(), value.name.lexeme);
+	output << std::format(" {};\n", value.name.lexeme);
 }
 void CSourceGenerator::visitTerminalExprStatement(
     const ast::TerminalExpr &terminalExpr) {
@@ -96,21 +100,25 @@ void CSourceGenerator::visitFunctionStatement(const ast::Function &function) {
 			output << ", ";
 		}
 	}
-	output << ") {";
-	if (function.body.statements.size() > 1) {
-		auto statement = dynamic_cast<ast::TerminalExpr *>(
-		    function.body.statements[0].get());
-		if (!statement || statement->expression.has_value()) {
-			output << "\n";
-			ident++;
-			function.body.visit(*this);
-			ident--;
+	output << ")";
+	if (function.body.has_value()) {
+		output << " {";
+		if (function.body->statements.size() > 1) {
+			auto statement = dynamic_cast<ast::TerminalExpr *>(
+			    function.body->statements[0].get());
+			if (!statement || statement->expression.has_value()) {
+				output << "\n";
+				ident++;
+				function.body->visit(*this);
+				ident--;
+			}
 		}
-	}
-	output << std::format("{}}}\n", identTabs);
-	if (function.publicVisibility) {
-		output << std::format("{}(export \"{}\" (func ${}))\n", identTabs,
-		                      functionName, functionName);
+		output << std::format("{}}}\n", identTabs);
+		if (function.publicVisibility) {
+			std::cerr << "pub semantics not implemented for function";
+		}
+	} else {
+		output << ";\n";
 	}
 }
 void CSourceGenerator::visitIfStatement(const ast::If &ifStatement) {

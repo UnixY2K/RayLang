@@ -138,12 +138,12 @@ def main():
             ["Block			= std::vector<std::unique_ptr<Statement>> statements",
              "TerminalExpr	= std::optional<std::unique_ptr<Expression>> expression",
              "ExpressionStmt= std::unique_ptr<Expression> expression",
-             "Function		= Token name, bool publicVisibility, std::vector<Parameter> params, Block body, Type returnType",
+             "Function		= Token name, bool publicVisibility, std::vector<Parameter> params, std::optional<Block> body, Type returnType",
              "If			= std::unique_ptr<Expression> condition, std::unique_ptr<Statement> thenBranch, std::optional<std::unique_ptr<Statement>> elseBranch",
              "Jump			= Token keyword, std::optional<std::unique_ptr<Expression>> value",
              "Var			= Token name, Type type, bool is_mutable, std::optional<std::unique_ptr<Expression>> initializer",
              "While			= std::unique_ptr<Expression> condition, std::unique_ptr<Statement> body",
-             "Struct        = Token name, bool publicVisibility, std::vector<Var> members, std::vector<bool> memberVisibility"
+             "Struct        = Token name, bool publicVisibility, bool declaration, std::vector<Var> members, std::vector<bool> memberVisibility"
             ])
 
 

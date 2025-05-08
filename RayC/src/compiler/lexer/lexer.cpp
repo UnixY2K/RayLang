@@ -191,8 +191,7 @@ void Lexer::scanToken() {
 		char next = peekNext();
 		if (std::isdigit(next)) {
 			number();
-		}
-		else{
+		} else {
 			addToken(Token::TokenType::TOKEN_DOT);
 		}
 		break;
@@ -205,6 +204,8 @@ void Lexer::scanToken() {
 			number();
 		} else if (c == '"') {
 			string();
+		} else if (c == '\'') {
+			charLiteral();
 		} else if (c == ' ' || c == '\r' || c == '\t' || c == '\n') {
 		} else {
 			Token errorToken =
@@ -338,6 +339,42 @@ void Lexer::number() {
 	}
 
 	addToken(Token::TokenType::TOKEN_NUMBER, std::string{number_literal});
+}
+void Lexer::charLiteral() {
+	char character = '\0';
+	if (peek() != '\\') {
+		character = peek();
+		advance();
+	} else {
+		advance();
+		switch (peek()) {
+		case 'n': {
+			character = '\n';
+			break;
+		}
+		default: {
+			Token errorToken{
+			    Token::TokenType::TOKEN_STRING, {character}, line, column};
+			errors.push_back(
+			    {.category = LexerError::ErrorCategory::UnterminatedCharLiteral,
+			     .token = errorToken,
+			     .message =
+			         std::format("Unknown escape sequence '\\{}'", peek())});
+			return;
+		}
+		}
+	}
+
+	if (peek() != '\'') {
+		Token errorToken{
+		    Token::TokenType::TOKEN_CHAR, {character}, line, column};
+		errors.push_back(
+		    {.category = LexerError::ErrorCategory::UnterminatedCharLiteral,
+		     .token = errorToken,
+		     .message = "Expected ' after char literal"});
+	}
+	advance();
+	addToken(Token::TokenType::TOKEN_CHAR, {character});
 }
 
 void Lexer::identifier() {
