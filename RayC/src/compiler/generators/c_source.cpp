@@ -95,10 +95,17 @@ void CSourceGenerator::visitFunctionStatement(const ast::Function &function) {
 			output << ", ";
 		}
 	}
-	output << ") {\n";
-	ident++;
-	function.body.visit(*this);
-	ident--;
+	output << ") {";
+	if (function.body.statements.size() > 1) {
+		auto statement = dynamic_cast<ast::TerminalExpr *>(
+		    function.body.statements[0].get());
+		if (!statement || statement->expression.has_value()) {
+			output << "\n";
+			ident++;
+			function.body.visit(*this);
+			ident--;
+		}
+	}
 	output << std::format("{}}}\n", identTabs);
 	if (function.publicVisibility) {
 		output << std::format("{}(export \"{}\" (func ${}))\n", identTabs,
@@ -326,17 +333,22 @@ void CSourceGenerator::visitSetExpression(const ast::Set &value) {
 	value.value->visit(*this);
 }
 void CSourceGenerator::visitUnaryExpression(const ast::Unary &unary) {
-	unary.right->visit(*this);
+	if (!unary.isPrefix) {
+		unary.expr->visit(*this);
+	}
 	switch (unary.op.type) {
 	case Token::TokenType::TOKEN_BANG:
 	case Token::TokenType::TOKEN_MINUS:
 	case Token::TokenType::TOKEN_MINUS_MINUS:
 	case Token::TokenType::TOKEN_PLUS_PLUS:
-		output << std::format("{}{}\n", currentIdent(), unary.op.getLexeme());
+		output << std::format("{}{}", currentIdent(), unary.op.getLexeme());
 		break;
 	default:
 		std::cerr << std::format("'{}' is not a supported unary operation\n",
 		                         unary.op.getLexeme());
+	}
+	if (unary.isPrefix) {
+		unary.expr->visit(*this);
 	}
 }
 void CSourceGenerator::visitArrayAccessExpression(

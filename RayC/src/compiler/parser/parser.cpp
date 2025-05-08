@@ -215,7 +215,7 @@ ast::Var Parser::varDeclaration(std::string kind) {
 	                     std::format("Expect {} name.", kind));
 
 	ast::Type type =
-	    ast::Type{Token{Token::TokenType::TOKEN_UNINITIALIZED}, true};
+	    ast::Type{Token{Token::TokenType::TOKEN_UNINITIALIZED}, true, false};
 	if (match({Token::TokenType::TOKEN_COLON})) {
 		// array type
 		type = typeExpression();
@@ -265,13 +265,11 @@ ast::Function Parser::function(std::string kind, bool publicVisiblity) {
 	auto previousToken = previous();
 
 	ast::Type returnType(
-	    types::makeUnitTypeToken(previous().line, previous().column), true);
+	    types::makeUnitTypeToken(previous().line, previous().column), true,
+	    false);
 
 	if (match({Token::TokenType::TOKEN_ARROW})) {
-		bool is_mutable = match({Token::TokenType::TOKEN_MUT});
-		auto returnTypeToken =
-		    consume(Token::TokenType::TOKEN_IDENTIFIER, "Expect return type.");
-		returnType = ast::Type(returnTypeToken, !is_mutable);
+		returnType = typeExpression();
 	}
 
 	consume(Token::TokenType::TOKEN_LEFT_BRACE,
@@ -420,7 +418,8 @@ std::unique_ptr<ast::Expression> Parser::unaryExpression() {
 	           Token::TokenType::TOKEN_MINUS_MINUS})) {
 		auto op = previous();
 		auto right = unaryExpression();
-		return std::make_unique<ast::Unary>(ast::Unary(op, std::move(right)));
+		return std::make_unique<ast::Unary>(
+		    ast::Unary(op, true, std::move(right)));
 	}
 	return call();
 }
@@ -437,11 +436,16 @@ ast::Type Parser::typeExpression() {
 		                       std::format("[{}]", arrayStartToken.lexeme +
 		                                               arrayTypeToken.lexeme),
 		                       arrayStartToken.line, arrayStartToken.column},
-		                 !is_mutable};
+		                 !is_mutable, true};
 	}
-	return ast::Type{
-	    consume(Token::TokenType::TOKEN_IDENTIFIER, "Expect type signature"),
-	    !is_mutable};
+	auto typeToken =
+	    consume(Token::TokenType::TOKEN_IDENTIFIER, "Expect type signature");
+	bool isPointer = false;
+	while (match({Token::TokenType::TOKEN_STAR})) {
+		isPointer = true;
+		typeToken.lexeme += Token::glyph(previous().type);
+	}
+	return ast::Type{typeToken, !is_mutable, isPointer};
 }
 
 std::unique_ptr<ast::Expression>
@@ -489,6 +493,10 @@ std::unique_ptr<ast::Expression> Parser::call() {
 			expr = std::make_unique<ast::Get>(ast::Get{std::move(expr), name});
 		} else if (match({Token::TokenType::TOKEN_LEFT_SQUARE_BRACE})) {
 			expr = finishArrayAccess(std::move(expr));
+		} else if (match({Token::TokenType::TOKEN_PLUS_PLUS,
+		                  Token::TokenType::TOKEN_MINUS})) {
+			expr = std::make_unique<ast::Unary>(
+			    ast::Unary{previous(), false, std::move(expr)});
 		} else {
 			break;
 		}

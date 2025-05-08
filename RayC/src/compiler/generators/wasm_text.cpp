@@ -253,7 +253,7 @@ void WASMTextGenerator::visitSetExpression(const ast::Set &value) {
 	std::cerr << "visitSetExpression not implemented\n";
 }
 void WASMTextGenerator::visitUnaryExpression(const ast::Unary &unary) {
-	unary.right->visit(*this);
+	unary.expr->visit(*this);
 	switch (unary.op.type) {
 	case Token::TokenType::TOKEN_BANG:
 		output << std::format("{}i32.eqz\n", currentIdent());

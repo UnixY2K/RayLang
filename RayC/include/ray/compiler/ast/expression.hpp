@@ -169,11 +169,13 @@ class Set : public Expression {
 class Unary : public Expression {
   public:
 	Token op;
-	std::unique_ptr<Expression> right;
+	bool isPrefix;
+	std::unique_ptr<Expression> expr;
 
 	Unary(Token op,
-	        std::unique_ptr<Expression> right)
-	    : op(std::move(op)), right(std::move(right)) {}
+	        bool isPrefix,
+	        std::unique_ptr<Expression> expr)
+	    : op(std::move(op)), isPrefix(std::move(isPrefix)), expr(std::move(expr)) {}
 
 	void visit(ExpressionVisitor& visitor) const override { visitor.visitUnaryExpression(*this); }
 
@@ -210,10 +212,12 @@ class Type : public Expression {
   public:
 	Token name;
 	bool isConst;
+	bool isPointer;
 
 	Type(Token name,
-	        bool isConst)
-	    : name(std::move(name)), isConst(std::move(isConst)) {}
+	        bool isConst,
+	        bool isPointer)
+	    : name(std::move(name)), isConst(std::move(isConst)), isPointer(std::move(isPointer)) {}
 
 	void visit(ExpressionVisitor& visitor) const override { visitor.visitTypeExpression(*this); }
 

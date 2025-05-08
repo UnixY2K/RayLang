@@ -122,10 +122,10 @@ def main():
              "Literal		= Token kind, std::string value",
              "Logical		= std::unique_ptr<Expression> left, Token op, std::unique_ptr<Expression> right",
              "Set			= std::unique_ptr<Expression> object, Token name, Token assignmentOp, std::unique_ptr<Expression> value",
-             "Unary			= Token op, std::unique_ptr<Expression> right",
+             "Unary			= Token op, bool isPrefix, std::unique_ptr<Expression> expr",
              "ArrayAccess   = std::unique_ptr<Expression> array, std::unique_ptr<Expression> index",
              "Variable		= Token name",
-             "Type          = Token name, bool isConst",
+             "Type          = Token name, bool isConst, bool isPointer",
              "Parameter     = Token name, Type type",
             ])
     defineAst(outputDir, "Statement",
