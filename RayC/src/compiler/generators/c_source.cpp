@@ -276,17 +276,14 @@ void CSourceGenerator::visitLiteralExpression(const ast::Literal &literal) {
 		    "{}", literal.kind.type == Token::TokenType::TOKEN_TRUE ? "true"
 		                                                            : "false");
 		break;
-	case Token::TokenType::TOKEN_NUMBER: {
-		std::string value = literal.value;
-		output << std::format("{}", value);
-		break;
-	}
-	case Token::TokenType::TOKEN_STRING:
+	case Token::TokenType::TOKEN_STRING: {
 		output << "(const u8[]){";
 		for (const char c : literal.value) {
-			output << std::format("{:#04X}, ", c);
+			output << std::format("0x{:02X}, ", c);
 		}
-		output << "0x00}/*\"";
+		output << "0x00}";
+		// comment string literal
+		output << "/*\"";
 		for (const char c : literal.value) {
 			switch (c) {
 			case '\a':
@@ -325,6 +322,16 @@ void CSourceGenerator::visitLiteralExpression(const ast::Literal &literal) {
 		}
 		output << "\"*/";
 		break;
+	}
+	case Token::TokenType::TOKEN_NUMBER: {
+		std::string value = literal.value;
+		output << std::format("{}", value);
+		break;
+	}
+	case Token::TokenType::TOKEN_CHAR: {
+		output << std::format("(const u8[]){{0x{:02X}}}", literal.value[0]);
+		break;
+	}
 	default:
 		std::cerr << std::format("'{}' ({}) is not a supported literal type\n",
 		                         literal.kind.getLexeme(),
@@ -350,7 +357,7 @@ void CSourceGenerator::visitUnaryExpression(const ast::Unary &unary) {
 	case Token::TokenType::TOKEN_MINUS:
 	case Token::TokenType::TOKEN_MINUS_MINUS:
 	case Token::TokenType::TOKEN_PLUS_PLUS:
-		output << std::format("{}{}", currentIdent(), unary.op.getLexeme());
+		output << std::format("{}", unary.op.getLexeme());
 		break;
 	default:
 		std::cerr << std::format("'{}' is not a supported unary operation\n",
