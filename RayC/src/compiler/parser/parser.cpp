@@ -314,24 +314,28 @@ std::unique_ptr<ast::Expression> Parser::comma() {
 	return expr;
 }
 std::unique_ptr<ast::Expression> Parser::assignment() {
-	auto expr = orExpression();
+	auto lhs_expr = orExpression();
 
 	if (match({Token::TokenType::TOKEN_EQUAL,
 	           Token::TokenType::TOKEN_PLUS_EQUAL})) {
-		Token equals = previous();
-		auto value = assignment();
-		if (auto variable = dynamic_cast<ast::Variable *>(expr.get())) {
-			Token name = variable->name;
-			return std::make_unique<ast::Assign>(
-			    ast::Assign(name, std::move(value)));
-		} else if (auto get = dynamic_cast<ast::Get *>(expr.get())) {
-			return std::make_unique<ast::Set>(ast::Set{
-			    std::move(get->object), get->name, equals, std::move(value)});
+		Token assignmentOp = previous();
+		auto rhs_expr = assignment();
+		if (dynamic_cast<ast::Variable *>(lhs_expr.get())) {
+			return std::make_unique<ast::Assign>(ast::Assign(
+			    std::move(lhs_expr), assignmentOp, std::move(rhs_expr)));
+		} else if (auto get = dynamic_cast<ast::Get *>(lhs_expr.get())) {
+			return std::make_unique<ast::Set>(ast::Set{std::move(get->object),
+			                                           get->name, assignmentOp,
+			                                           std::move(rhs_expr)});
+		} else if (dynamic_cast<ast::ArrayAccess *>(lhs_expr.get())) {
+			return std::make_unique<ast::Assign>(ast::Assign(
+			    std::move(lhs_expr), assignmentOp, std::move(rhs_expr)));
 		}
-		error(equals, "Invalid assignment target.");
+		error(assignmentOp, std::format("Invalid assignment target '{}'.",
+		                                lhs_expr->variantName()));
 	}
 
-	return expr;
+	return lhs_expr;
 }
 std::unique_ptr<ast::Expression> Parser::orExpression() {
 	auto expr = andExpression();

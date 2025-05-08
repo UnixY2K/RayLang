@@ -145,8 +145,10 @@ void WASMTextGenerator::visitWhileStatement(const ast::While &value) {
 // Expression
 void WASMTextGenerator::visitAssignExpression(const ast::Assign &value) {
 	std::string identTab = currentIdent();
-	value.value->visit(*this);
-	output << std::format("{}local.tee ${}\n", identTab, value.name.lexeme);
+	value.lhs->visit(*this);
+	output << std::format("{}local.tee ", identTab);
+	value.rhs->visit(*this);
+	output << std::format("\n", identTab);
 }
 void WASMTextGenerator::visitBinaryExpression(
     const ast::Binary &binaryExpression) {

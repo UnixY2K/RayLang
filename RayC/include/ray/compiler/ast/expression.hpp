@@ -46,12 +46,14 @@ class Expression {
 
 class Assign : public Expression {
   public:
-	Token name;
-	std::unique_ptr<Expression> value;
+	std::unique_ptr<Expression> lhs;
+	Token assignmentOp;
+	std::unique_ptr<Expression> rhs;
 
-	Assign(Token name,
-	        std::unique_ptr<Expression> value)
-	    : name(std::move(name)), value(std::move(value)) {}
+	Assign(std::unique_ptr<Expression> lhs,
+	        Token assignmentOp,
+	        std::unique_ptr<Expression> rhs)
+	    : lhs(std::move(lhs)), assignmentOp(std::move(assignmentOp)), rhs(std::move(rhs)) {}
 
 	void visit(ExpressionVisitor& visitor) const override { visitor.visitAssignExpression(*this); }
 
@@ -150,14 +152,14 @@ class Set : public Expression {
   public:
 	std::unique_ptr<Expression> object;
 	Token name;
-	Token assignment;
+	Token assignmentOp;
 	std::unique_ptr<Expression> value;
 
 	Set(std::unique_ptr<Expression> object,
 	        Token name,
-	        Token assignment,
+	        Token assignmentOp,
 	        std::unique_ptr<Expression> value)
-	    : object(std::move(object)), name(std::move(name)), assignment(std::move(assignment)), value(std::move(value)) {}
+	    : object(std::move(object)), name(std::move(name)), assignmentOp(std::move(assignmentOp)), value(std::move(value)) {}
 
 	void visit(ExpressionVisitor& visitor) const override { visitor.visitSetExpression(*this); }
 

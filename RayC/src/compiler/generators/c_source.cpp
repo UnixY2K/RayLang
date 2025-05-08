@@ -187,8 +187,9 @@ void CSourceGenerator::visitWhileStatement(const ast::While &value) {
 }
 // Expression
 void CSourceGenerator::visitAssignExpression(const ast::Assign &value) {
-	output << std::format("{} = ", value.name.lexeme);
-	value.value->visit(*this);
+	value.lhs->visit(*this);
+	output << std::format(" {} ", Token::glyph(value.assignmentOp.type));
+	value.rhs->visit(*this);
 }
 void CSourceGenerator::visitBinaryExpression(
     const ast::Binary &binaryExpression) {
@@ -321,7 +322,7 @@ void CSourceGenerator::visitLogicalExpression(const ast::Logical &value) {
 void CSourceGenerator::visitSetExpression(const ast::Set &value) {
 	value.object->visit(*this);
 	output << std::format(".{} {} ", value.name.lexeme,
-	                      Token::glyph(value.assignment.type));
+	                      Token::glyph(value.assignmentOp.type));
 	value.value->visit(*this);
 }
 void CSourceGenerator::visitUnaryExpression(const ast::Unary &unary) {
