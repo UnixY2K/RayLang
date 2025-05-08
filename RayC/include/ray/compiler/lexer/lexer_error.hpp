@@ -10,13 +10,14 @@ class LexerError {
 		Undefined,
 		UnterminatedString,
 		UnexpectedCharacter,
-		Unkown,
+		Unknown,
 	};
 	ErrorCategory category;
 	Token token;
 	std::string message;
 
 	std::string toString() const;
+	std::string positionString() const;
 
 	static std::string_view ErrorCategoryName(ErrorCategory error);
 };

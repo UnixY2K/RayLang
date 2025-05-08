@@ -50,8 +50,9 @@ int main(int argc, char **argv) {
 		auto tokens = lexer.scanTokens();
 		if (lexer.getErrors().size() > 0) {
 			for (auto &error : lexer.getErrors()) {
-				std::cerr << std::format("{}: {}\n", "LexerError"_red,
-				                         error.toString());
+				std::cerr << std::format(
+				    "{}: [{}:{}] {}\n", "LexerError"_red, opts.input.string(),
+				    error.positionString(), error.toString());
 			}
 			return 1;
 		}

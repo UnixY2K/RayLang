@@ -8,19 +8,30 @@ namespace ray::compiler {
 std::string LexerError::toString() const {
 	switch (category) {
 	case ErrorCategory::UnterminatedString: {
-		return std::format("[{}, {}] Unterminated string", token.line,
+		return std::format("Unterminated string");
+	}
+	case ErrorCategory::UnexpectedCharacter:
+		return std::format("Unexpected character: '{}'", token.lexeme);
+	case ErrorCategory::Undefined:
+	case ErrorCategory::Unknown:
+		return std::format("|Unknown/Undefined|: {} ", message);
+	default:
+		return std::format("|UNHANDLED-CAT| {}", message);
+	}
+}
+std::string LexerError::positionString() const {
+	switch (category) {
+	case ErrorCategory::UnterminatedString: {
+		return std::format("{}:{}", token.line,
 		                   token.column + token.lexeme.length() - 1);
 	}
 	case ErrorCategory::UnexpectedCharacter:
-		return std::format("[{}, {}] Unexpected character: '{}'", token.line,
-		                   token.column, token.lexeme);
+		return std::format("{}:{}", token.line, token.column);
 	case ErrorCategory::Undefined:
-	case ErrorCategory::Unkown:
-		return std::format("[{}, {}] |Unknown/Undefined|: {} ", token.line,
-		                   token.column, message);
+	case ErrorCategory::Unknown:
+		return std::format("{}:{}", token.line, token.column);
 	default:
-		return std::format("[{}, {}] |UNHANDLED-CAT| {}", token.line,
-		                   token.column, message);
+		return std::format("{}:{}", token.line, token.column);
 	}
 }
 
@@ -33,7 +44,7 @@ LexerError::ErrorCategoryName(LexerError::ErrorCategory error) {
 		return "UnterminatedString";
 	case ErrorCategory::UnexpectedCharacter:
 		return "UnexpectedCharacter";
-	case ErrorCategory::Unkown:
+	case ErrorCategory::Unknown:
 		return "Unknown";
 	}
 	// should never show, if it does is a bug in the switch bellow

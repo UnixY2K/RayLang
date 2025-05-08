@@ -23,6 +23,7 @@ void CSourceGenerator::resolve(
 	output << "extern \"C\" {\n";
 	output << "#endif\n";
 	output << "#include <stdint.h>\n";
+	output << "#include <stdio.h>\n";
 	output << "#define i8 int8_t\n";
 	output << "#define u8 uint8_t\n";
 	output << "#define i32 int32_t\n";
