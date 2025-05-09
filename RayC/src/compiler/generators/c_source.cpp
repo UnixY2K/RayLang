@@ -6,7 +6,6 @@
 
 #include <format>
 #include <iostream>
-#include <ranges>
 #include <string>
 
 namespace ray::compiler::generator {
@@ -82,16 +81,13 @@ void CSourceGenerator::visitExpressionStmtStatement(
 void CSourceGenerator::visitFunctionStatement(const ast::Function &function) {
 
 	std::string identTabs = currentIdent();
-	std::string functionName;
-	functionName.reserve(function.name.lexeme.size() + 12);
-	functionName = function.name.lexeme;
 	output << identTabs;
 	if (function.returnType.name.type != Token::TokenType::TOKEN_TYPE_UNIT) {
 		output << std::format("{} ", function.returnType.name.lexeme);
 	} else {
 		output << std::format("void ");
 	}
-	output << std::format("{}(", functionName);
+	output << std::format("{}(", function.name.lexeme);
 	for (size_t index = 0; index < function.params.size(); ++index) {
 		const auto &parameter = function.params[index];
 		parameter.visit(*this);
@@ -121,22 +117,20 @@ void CSourceGenerator::visitFunctionStatement(const ast::Function &function) {
 	}
 }
 void CSourceGenerator::visitIfStatement(const ast::If &ifStatement) {
+	output << std::format("{}if (", currentIdent());
 	ifStatement.condition->visit(*this);
-	output << std::format("{}(if\n", currentIdent());
-	ident++;
-	output << std::format("{}(then\n", currentIdent());
+	output << ") {\n";
 	ident++;
 	ifStatement.thenBranch->visit(*this);
 	ident--;
-	output << std::format("{})\n", currentIdent());
+	output << std::format("{}}}\n", currentIdent());
 	if (ifStatement.elseBranch.has_value()) {
-		output << std::format("{}else\n", currentIdent());
+		output << std::format("{}else{{\n", currentIdent());
 		ident++;
 		ifStatement.elseBranch->get()->visit(*this);
 		ident--;
+		output << std::format("{}}}\n", currentIdent());
 	}
-	ident--;
-	output << std::format("{})\n", currentIdent());
 }
 void CSourceGenerator::visitJumpStatement(const ast::Jump &jump) {
 	std::string identTab = currentIdent();
