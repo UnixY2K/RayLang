@@ -122,7 +122,7 @@ void WASMTextGenerator::visitJumpStatement(const ast::Jump &jump) {
 }
 void WASMTextGenerator::visitVarStatement(const ast::Var &var) {
 	std::string identTab = currentIdent();
-	output << std::format("{}(local ${} i32)\n", identTab, var.name.lexeme);
+	output << std::format("{}(local ${} s32)\n", identTab, var.name.lexeme);
 	if (var.initializer.has_value()) {
 		auto initializer = var.initializer->get();
 		if (dynamic_cast<ast::Literal *>(initializer)) {
@@ -160,46 +160,46 @@ void WASMTextGenerator::visitBinaryExpression(
 	auto op = binaryExpression.op;
 	switch (op.type) {
 	case Token::TokenType::TOKEN_PLUS:
-		output << std::format("{}i32.add\n", identTab);
+		output << std::format("{}s32.add\n", identTab);
 		break;
 	case Token::TokenType::TOKEN_MINUS:
-		output << std::format("{}i32.sub\n", identTab);
+		output << std::format("{}s32.sub\n", identTab);
 		break;
 	case Token::TokenType::TOKEN_STAR:
-		output << std::format("{}i32.mul\n", identTab);
+		output << std::format("{}s32.mul\n", identTab);
 		break;
 	case Token::TokenType::TOKEN_SLASH:
-		output << std::format("{}i32.div_s\n", identTab);
+		output << std::format("{}s32.div_s\n", identTab);
 		break;
 	case Token::TokenType::TOKEN_PERCENT:
-		output << std::format("{}i32.rem_s\n", identTab);
+		output << std::format("{}s32.rem_s\n", identTab);
 		break;
 	case Token::TokenType::TOKEN_AMPERSAND:
-		output << std::format("{}i32.and\n", identTab);
+		output << std::format("{}s32.and\n", identTab);
 		break;
 	case Token::TokenType::TOKEN_PIPE:
-		output << std::format("{}i32.or\n", identTab);
+		output << std::format("{}s32.or\n", identTab);
 		break;
 	case Token::TokenType::TOKEN_CARET:
-		output << std::format("{}i32.xor\n", identTab);
+		output << std::format("{}s32.xor\n", identTab);
 		break;
 	case Token::TokenType::TOKEN_LESS_LESS:
-		output << std::format("{}i32.shl\n", identTab);
+		output << std::format("{}s32.shl\n", identTab);
 		break;
 	case Token::TokenType::TOKEN_GREAT_GREAT:
-		output << std::format("{}i32.shr\n", identTab);
+		output << std::format("{}s32.shr\n", identTab);
 		break;
 	case Token::TokenType::TOKEN_LESS:
-		output << std::format("{}i32.lt_s\n", identTab);
+		output << std::format("{}s32.lt_s\n", identTab);
 		break;
 	case Token::TokenType::TOKEN_GREAT:
-		output << std::format("{}i32.gt_s\n", identTab);
+		output << std::format("{}s32.gt_s\n", identTab);
 		break;
 	case Token::TokenType::TOKEN_LESS_EQUAL:
-		output << std::format("{}i32.le_s\n", identTab);
+		output << std::format("{}s32.le_s\n", identTab);
 		break;
 	case Token::TokenType::TOKEN_GREAT_EQUAL:
-		output << std::format("{}i32.ge_s\n", identTab);
+		output << std::format("{}s32.ge_s\n", identTab);
 		break;
 	default:
 		std::cerr << std::format("'{}' is not a supported binary operation\n",
@@ -230,12 +230,12 @@ void WASMTextGenerator::visitLiteralExpression(const ast::Literal &literal) {
 	case Token::TokenType::TOKEN_TRUE:
 	case Token::TokenType::TOKEN_FALSE:
 		output << std::format(
-		    "{}i32.const {}", currentIdent(),
+		    "{}s32.const {}", currentIdent(),
 		    literal.kind.type == Token::TokenType::TOKEN_TRUE ? 1 : 0);
 		break;
 	case Token::TokenType::TOKEN_NUMBER: {
 		std::string value = literal.value;
-		output << std::format("{}i32.const {}", currentIdent(), value);
+		output << std::format("{}s32.const {}", currentIdent(), value);
 		break;
 	}
 	default:
@@ -258,18 +258,18 @@ void WASMTextGenerator::visitUnaryExpression(const ast::Unary &unary) {
 	unary.expr->visit(*this);
 	switch (unary.op.type) {
 	case Token::TokenType::TOKEN_BANG:
-		output << std::format("{}i32.eqz\n", currentIdent());
+		output << std::format("{}s32.eqz\n", currentIdent());
 		break;
 	case Token::TokenType::TOKEN_MINUS:
-		output << std::format("{}i32.sub\n", currentIdent());
+		output << std::format("{}s32.sub\n", currentIdent());
 		break;
 	case Token::TokenType::TOKEN_MINUS_MINUS:
-		output << std::format("{}i32.const -1\n", currentIdent());
-		output << std::format("{}i32.add\n", currentIdent());
+		output << std::format("{}s32.const -1\n", currentIdent());
+		output << std::format("{}s32.add\n", currentIdent());
 		break;
 	case Token::TokenType::TOKEN_PLUS_PLUS:
-		output << std::format("{}i32.const 1\n", currentIdent());
-		output << std::format("{}i32.sub\n", currentIdent());
+		output << std::format("{}s32.const 1\n", currentIdent());
+		output << std::format("{}s32.sub\n", currentIdent());
 		break;
 	default:
 		std::cerr << std::format("'{}' is not a supported unary operation\n",

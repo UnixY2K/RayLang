@@ -4,7 +4,7 @@ This is a work in progress of RayLang, a programming language with RustLike synt
 Currently only basic syntax is implemented like the one bellow:
 
 ```rust
-fn fib(n: i32) -> i32{
+fn fib(n: s32) -> s32{
 	if n <= 1 {
 		return n;
 	}
@@ -55,14 +55,14 @@ struct FILE;
 fn fwrite(buffer: void*, elementSize: usize, elementCount: usize, stream: mut FILE*) -> usize;
 fn malloc(size: usize) -> void*;
 fn get_stdout() -> mut FILE*;
-fn getNumberDigits(digits: i32) -> usize;
+fn getNumberDigits(digits: s32) -> usize;
 
 fn print(str: String){
 	fwrite(str.array, sizeof(u8), str.element_count, get_stdout());
 }
 
-fn itos(num: i32) -> String{
-	let mut n: i32 = num;
+fn itos(num: s32) -> String{
+	let mut n: s32 = num;
 	let mut size: usize = getNumberDigits(n);
 	let mut array: [u8;] = malloc(size) as mut [u8;];
 	let i: usize = (size - 1);
@@ -106,10 +106,10 @@ fn from_c_string(array: [u8;]) -> String{
 	return from_string(array, c_strlen(array));
 }
 
-fn RayMain() -> i32{
-	let a: i32 = 2;
-	let b: i32= 5;
-	let result: i32 = a + b;
+fn RayMain() -> s32{
+	let a: s32 = 2;
+	let b: s32= 5;
+	let result: s32 = a + b;
 	print(itos(a));
 	print(from_c_string(" + "));
 	print(itos(b));
@@ -141,7 +141,7 @@ extern "C" {
 #include <stdint.h>
 #define i8 int8_t
 #define u8 uint8_t
-#define i32 int32_t
+#define s32 int32_t
 #define isize intmax_t
 #define usize uintmax_t
 #define c_char char
@@ -155,12 +155,12 @@ typedef struct FILE FILE;
 usize fwrite(const void* buffer, const usize elementSize, const usize elementCount, FILE* stream);
 void* malloc(const usize size);
 FILE* get_stdout();
-usize getNumberDigits(const i32 digits);
+usize getNumberDigits(const s32 digits);
 void print(const String str) {
 	fwrite(str.array, sizeof(u8), str.element_count, get_stdout());
 }
-String itos(const i32 num) {
-	i32 n = num;
+String itos(const s32 num) {
+	s32 n = num;
 	usize size = getNumberDigits(n);
 	u8 *array = (u8 *)(malloc(size));
 	usize i = size - 1;
@@ -198,10 +198,10 @@ usize c_strlen(const u8 *array) {
 String from_c_string(const u8 *array) {
 	return from_string(array, c_strlen(array));
 }
-i32 RayMain() {
-	i32 a = 2;
-	i32 b = 5;
-	i32 result = a + b;
+s32 RayMain() {
+	s32 a = 2;
+	s32 b = 5;
+	s32 result = a + b;
 	print(itos(a));
 	print(from_c_string((const u8[]){0x20, 0x2B, 0x20, 0x00}/*" + "*/));
 	print(itos(b));

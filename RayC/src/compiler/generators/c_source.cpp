@@ -24,7 +24,7 @@ void CSourceGenerator::resolve(
 	output << "#include <stdint.h>\n";
 	output << "#define i8 int8_t\n";
 	output << "#define u8 uint8_t\n";
-	output << "#define i32 int32_t\n";
+	output << "#define s32 int32_t\n";
 	output << "#define isize intmax_t\n";
 	output << "#define usize uintmax_t\n";
 	output << "#define c_char char\n";
