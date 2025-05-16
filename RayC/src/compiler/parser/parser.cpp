@@ -18,16 +18,7 @@ Parser::Parser(std::string filepath, std::vector<Token> tokens)
 std::vector<std::unique_ptr<ast::Statement>> Parser::parse() {
 	current = 0;
 	try {
-		std::vector<std::unique_ptr<ast::Statement>> statements;
-
-		while (!isAtEnd()) {
-			auto result = declaration();
-			if (result.has_value()) {
-				statements.push_back(std::move(result.value()));
-			}
-		}
-
-		return statements;
+		return NamespaceStatement(true);
 	} catch (ParseException &e) {
 		return {};
 	}
@@ -35,6 +26,43 @@ std::vector<std::unique_ptr<ast::Statement>> Parser::parse() {
 
 bool Parser::failed() const { return errorBag.failed(); }
 
+std::vector<std::unique_ptr<ast::Statement>>
+Parser::NamespaceStatement(bool root) {
+	// if no namespace is defined then define it as a global namespace starting
+	// in the current line at column 0
+	Token name{Token::TokenType::TOKEN_IDENTIFIER, "", peek().line, 0};
+	std::vector<std::unique_ptr<ast::Statement>> statements;
+	if (match({Token::TokenType::TOKEN_NAMESPACE})) {
+		name = consume(Token::TokenType::TOKEN_IDENTIFIER,
+		               "expected namespace identifier");
+		consume(Token::TokenType::TOKEN_LEFT_BRACE,
+		        "expected '{' after namespace identifier");
+		statements = NamespaceStatement(false);
+		consume(Token::TokenType::TOKEN_RIGHT_BRACE,
+		        "expected '}' to close namespace");
+		std::vector<std::unique_ptr<ast::Statement>> nsStatements{};
+		nsStatements.push_back(
+		    std::make_unique<ast::Namespace>(name, std::move(statements)));
+		return nsStatements;
+	}
+
+	while ((root || !check(Token::TokenType::TOKEN_RIGHT_BRACE)) &&
+	       !isAtEnd()) {
+
+		if (!check(Token::TokenType::TOKEN_NAMESPACE)) {
+			auto result = declaration();
+			if (result.has_value()) {
+				statements.push_back(std::move(result.value()));
+			}
+		} else {
+			auto nsStatements = NamespaceStatement(false);
+			statements.insert(statements.end(),
+			                  std::make_move_iterator(nsStatements.begin()),
+			                  std::make_move_iterator(nsStatements.end()));
+		}
+	}
+	return statements;
+}
 std::unique_ptr<ast::Expression> Parser::expression() { return comma(); }
 std::optional<std::unique_ptr<ast::Statement>> Parser::declaration() {
 	try {

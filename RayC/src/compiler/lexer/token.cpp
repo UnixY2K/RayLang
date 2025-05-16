@@ -76,21 +76,22 @@ Token::TokenType Token::fromString(std::string_view str) {
 	    //.1
 	    //{"", Token::TokenType::TOKEN_CHAR},     	// ex: 'A', 'B'
 	    // keywords
-	    {"if", Token::TokenType::TOKEN_IF},             // if
-	    {"else", Token::TokenType::TOKEN_ELSE},         // else
-	    {"true", Token::TokenType::TOKEN_TRUE},         // true
-	    {"false", Token::TokenType::TOKEN_FALSE},       // false
-	    {"for", Token::TokenType::TOKEN_FOR},           // for
-	    {"while", Token::TokenType::TOKEN_WHILE},       // while
-	    {"fn", Token::TokenType::TOKEN_FN},             // fn
-	    {"let", Token::TokenType::TOKEN_LET},           // let
-	    {"return", Token::TokenType::TOKEN_RETURN},     // return
-	    {"continue", Token::TokenType::TOKEN_CONTINUE}, // continue
-	    {"break", Token::TokenType::TOKEN_BREAK},       // break
-	    {"pub", Token::TokenType::TOKEN_PUB},           // pub
-	    {"mut", Token::TokenType::TOKEN_MUT},           // mut
-	    {"struct", Token::TokenType::TOKEN_STRUCT},     // struct
-	    {"as", Token::TokenType::TOKEN_AS},             // struct
+	    {"if", Token::TokenType::TOKEN_IF},               // if
+	    {"else", Token::TokenType::TOKEN_ELSE},           // else
+	    {"true", Token::TokenType::TOKEN_TRUE},           // true
+	    {"false", Token::TokenType::TOKEN_FALSE},         // false
+	    {"for", Token::TokenType::TOKEN_FOR},             // for
+	    {"while", Token::TokenType::TOKEN_WHILE},         // while
+	    {"fn", Token::TokenType::TOKEN_FN},               // fn
+	    {"let", Token::TokenType::TOKEN_LET},             // let
+	    {"return", Token::TokenType::TOKEN_RETURN},       // return
+	    {"continue", Token::TokenType::TOKEN_CONTINUE},   // continue
+	    {"break", Token::TokenType::TOKEN_BREAK},         // break
+	    {"pub", Token::TokenType::TOKEN_PUB},             // pub
+	    {"mut", Token::TokenType::TOKEN_MUT},             // mut
+	    {"struct", Token::TokenType::TOKEN_STRUCT},       // struct
+	    {"as", Token::TokenType::TOKEN_AS},               // as
+	    {"namespace", Token::TokenType::TOKEN_NAMESPACE}, // namespace
 	    // Token Types
 	    {"()", Token::TokenType::TOKEN_TYPE_UNIT}, // ()
 	};
@@ -238,6 +239,8 @@ std::string_view Token::toString(TokenType token) {
 		return "TOKEN_STRUCT";
 	case TokenType::TOKEN_AS:
 		return "TOKEN_AS";
+	case TokenType::TOKEN_NAMESPACE:
+		return "TOKEN_NAMESPACE";
 	// token types
 	case TokenType::TOKEN_TYPE_UNIT:
 		return "TOKEN_TYPE_UNIT";
@@ -389,6 +392,8 @@ std::string_view Token::glyph(TokenType token) {
 		return "struct";
 	case TokenType::TOKEN_AS:
 		return "as";
+	case TokenType::TOKEN_NAMESPACE:
+		return "namespace";
 	// token types
 	case TokenType::TOKEN_TYPE_UNIT:
 		return "()";

@@ -24,7 +24,6 @@ class CSourceGenerator : public ast::StatementVisitor,
 
 	// Statement
 	void visitBlockStatement(const ast::Block &value) override;
-	void visitStructStatement(const ast::Struct &value) override;
 	void visitTerminalExprStatement(const ast::TerminalExpr &value) override;
 	void
 	visitExpressionStmtStatement(const ast::ExpressionStmt &value) override;
@@ -33,6 +32,8 @@ class CSourceGenerator : public ast::StatementVisitor,
 	void visitJumpStatement(const ast::Jump &value) override;
 	void visitVarStatement(const ast::Var &value) override;
 	void visitWhileStatement(const ast::While &value) override;
+	void visitStructStatement(const ast::Struct &value) override;
+	void visitNamespaceStatement(const ast::Namespace& value) override;
 	// Expression
 	void visitAssignExpression(const ast::Assign &value) override;
 	void visitBinaryExpression(const ast::Binary &value) override;

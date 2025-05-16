@@ -123,11 +123,11 @@ def main():
              "Logical		= std::unique_ptr<Expression> left, Token op, std::unique_ptr<Expression> right",
              "Set			= std::unique_ptr<Expression> object, Token name, Token assignmentOp, std::unique_ptr<Expression> value",
              "Unary			= Token op, bool isPrefix, std::unique_ptr<Expression> expr",
-             "ArrayAccess   = std::unique_ptr<Expression> array, std::unique_ptr<Expression> index",
+             "ArrayAccess	= std::unique_ptr<Expression> array, std::unique_ptr<Expression> index",
              "Variable		= Token name",
-             "Type          = Token name, bool isConst, bool isPointer",
-             "Cast          = std::unique_ptr<Expression> expression, Type type",
-             "Parameter     = Token name, Type type",
+             "Type			= Token name, bool isConst, bool isPointer",
+             "Cast			= std::unique_ptr<Expression> expression, Type type",
+             "Parameter		= Token name, Type type",
             ])
     defineAst(outputDir, "Statement",
             ["memory",
@@ -144,7 +144,8 @@ def main():
              "Jump			= Token keyword, std::optional<std::unique_ptr<Expression>> value",
              "Var			= Token name, Type type, bool is_mutable, std::optional<std::unique_ptr<Expression>> initializer",
              "While			= std::unique_ptr<Expression> condition, std::unique_ptr<Statement> body",
-             "Struct        = Token name, bool publicVisibility, bool declaration, std::vector<Var> members, std::vector<bool> memberVisibility"
+             "Struct		= Token name, bool publicVisibility, bool declaration, std::vector<Var> members, std::vector<bool> memberVisibility",
+             "Namespace		= Token name, std::vector<std::unique_ptr<Statement>> statements"
             ])
 
 

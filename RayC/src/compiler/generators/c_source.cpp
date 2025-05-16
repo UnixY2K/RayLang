@@ -21,10 +21,18 @@ void CSourceGenerator::resolve(
 	output << "#ifdef __cplusplus\n";
 	output << "extern \"C\" {\n";
 	output << "#endif\n";
+	// some of the definitions are technically UB as they may not be exactly 32
+	// or 64 bit implementations but generally they use the IEEE 754 format,
+	// assuming that is true
 	output << "#include <stdint.h>\n";
 	output << "#define i8 int8_t\n";
 	output << "#define u8 uint8_t\n";
+	output << "#define u32 uint32_t\n";
 	output << "#define s32 int32_t\n";
+	output << "#define u64 uint64_t\n";
+	output << "#define s64 int64_t\n";
+	output << "#define f32 float\n";
+	output << "#define f64 double\n";
 	output << "#define isize intmax_t\n";
 	output << "#define usize uintmax_t\n";
 	output << "#define c_char char\n";
@@ -50,20 +58,6 @@ void CSourceGenerator::visitBlockStatement(const ast::Block &block) {
 			statement->visit(*this);
 		}
 	}
-}
-void CSourceGenerator::visitStructStatement(const ast::Struct &value) {
-	output << std::format("{}typedef struct {}", currentIdent(),
-	                      value.name.lexeme);
-	if (!value.declaration) {
-		output << " {\n";
-		ident++;
-		for (auto &member : value.members) {
-			member.visit(*this);
-		}
-		ident--;
-		output << std::format("{}}}", currentIdent());
-	}
-	output << std::format(" {};\n", value.name.lexeme);
 }
 void CSourceGenerator::visitTerminalExprStatement(
     const ast::TerminalExpr &terminalExpr) {
@@ -193,6 +187,26 @@ void CSourceGenerator::visitWhileStatement(const ast::While &value) {
 	value.body->visit(*this);
 	ident--;
 	output << std::format("{}}}\n", identTab);
+}
+void CSourceGenerator::visitStructStatement(const ast::Struct &value) {
+	output << std::format("{}typedef struct {}", currentIdent(),
+	                      value.name.lexeme);
+	if (!value.declaration) {
+		output << " {\n";
+		ident++;
+		for (auto &member : value.members) {
+			member.visit(*this);
+		}
+		ident--;
+		output << std::format("{}}}", currentIdent());
+	}
+	output << std::format(" {};\n", value.name.lexeme);
+}
+void CSourceGenerator::visitNamespaceStatement(const ast::Namespace &ns) {
+	std::cerr << "namespace semantics not implemented yet\n";
+	for (auto &value : ns.statements) {
+		value->visit(*this);
+	}
 }
 // Expression
 void CSourceGenerator::visitAssignExpression(const ast::Assign &value) {

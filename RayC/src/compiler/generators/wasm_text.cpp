@@ -37,11 +37,6 @@ void WASMTextGenerator::visitBlockStatement(const ast::Block &block) {
 		}
 	}
 }
-
-void WASMTextGenerator::visitStructStatement(const ast::Struct &value) {
-	std::cerr << "visitStructStatement not implemented\n";
-}
-
 void WASMTextGenerator::visitTerminalExprStatement(
     const ast::TerminalExpr &terminalExpr) {
 	if (terminalExpr.expression.has_value()) {
@@ -143,6 +138,12 @@ void WASMTextGenerator::visitVarStatement(const ast::Var &var) {
 }
 void WASMTextGenerator::visitWhileStatement(const ast::While &value) {
 	std::cerr << "visitWhileStatement not implemented\n";
+}
+void WASMTextGenerator::visitStructStatement(const ast::Struct &value) {
+	std::cerr << "visitStructStatement not implemented\n";
+}
+void WASMTextGenerator::visitNamespaceStatement(const ast::Namespace &value) {
+	std::cerr << "visitNamespaceStatement not implemented\n";
 }
 // Expression
 void WASMTextGenerator::visitAssignExpression(const ast::Assign &value) {

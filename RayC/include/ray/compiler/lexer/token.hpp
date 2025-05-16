@@ -66,21 +66,22 @@ struct Token {
 		TOKEN_NUMBER,     // ex: 0x01, 10, 10.2, -2
 		TOKEN_CHAR,       // ex: 'a', 'b', 'c'
 		// Keywords.
-		TOKEN_IF,       // if
-		TOKEN_ELSE,     // else
-		TOKEN_TRUE,     // true
-		TOKEN_FALSE,    // false
-		TOKEN_FOR,      // for
-		TOKEN_WHILE,    // while
-		TOKEN_FN,       // fn
-		TOKEN_LET,      // let
-		TOKEN_RETURN,   // return
-		TOKEN_CONTINUE, // continue
-		TOKEN_BREAK,    // break
-		TOKEN_PUB,      // pub
-		TOKEN_MUT,      // mut
-		TOKEN_STRUCT,   // struct
+		TOKEN_IF,        // if
+		TOKEN_ELSE,      // else
+		TOKEN_TRUE,      // true
+		TOKEN_FALSE,     // false
+		TOKEN_FOR,       // for
+		TOKEN_WHILE,     // while
+		TOKEN_FN,        // fn
+		TOKEN_LET,       // let
+		TOKEN_RETURN,    // return
+		TOKEN_CONTINUE,  // continue
+		TOKEN_BREAK,     // break
+		TOKEN_PUB,       // pub
+		TOKEN_MUT,       // mut
+		TOKEN_STRUCT,    // struct
 		TOKEN_AS,        // as, ex: 2 as isize
+		TOKEN_NAMESPACE, // namespace ex: namespace test
 		// token types
 		TOKEN_TYPE_UNIT, // unit aka '()'
 		// other
