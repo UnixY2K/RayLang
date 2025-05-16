@@ -82,6 +82,7 @@ struct Token {
 		TOKEN_STRUCT,    // struct
 		TOKEN_AS,        // as, ex: 2 as isize
 		TOKEN_NAMESPACE, // namespace ex: namespace test
+		TOKEN_EXTERN,    // extern ex: extern "C"
 		// token types
 		TOKEN_TYPE_UNIT, // unit aka '()'
 		// other

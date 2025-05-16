@@ -18,7 +18,14 @@ Parser::Parser(std::string filepath, std::vector<Token> tokens)
 std::vector<std::unique_ptr<ast::Statement>> Parser::parse() {
 	current = 0;
 	try {
-		return NamespaceStatement(true);
+		std::vector<std::unique_ptr<ast::Statement>> statements{};
+		while (!isAtEnd()) {
+			auto stmts = NamespaceStatement(true);
+			statements.insert(statements.end(),
+			                  std::make_move_iterator(stmts.begin()),
+			                  std::make_move_iterator(stmts.end()));
+		}
+		return statements;
 	} catch (ParseException &e) {
 		return {};
 	}
@@ -44,6 +51,19 @@ Parser::NamespaceStatement(bool root) {
 		nsStatements.push_back(
 		    std::make_unique<ast::Namespace>(name, std::move(statements)));
 		return nsStatements;
+	}
+	if (match({Token::TokenType::TOKEN_EXTERN})) {
+		name = consume(Token::TokenType::TOKEN_STRING,
+		               "expected extern identifier");
+		consume(Token::TokenType::TOKEN_LEFT_BRACE,
+		        "expected '{' after extern identifier");
+		statements = NamespaceStatement(false);
+		consume(Token::TokenType::TOKEN_RIGHT_BRACE,
+		        "expected '}' to close extern");
+		std::vector<std::unique_ptr<ast::Statement>> extStatements{};
+		extStatements.push_back(
+		    std::make_unique<ast::Extern>(name, std::move(statements)));
+		return extStatements;
 	}
 
 	while ((root || !check(Token::TokenType::TOKEN_RIGHT_BRACE)) &&

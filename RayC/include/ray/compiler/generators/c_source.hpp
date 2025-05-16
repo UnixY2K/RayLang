@@ -34,6 +34,7 @@ class CSourceGenerator : public ast::StatementVisitor,
 	void visitWhileStatement(const ast::While &value) override;
 	void visitStructStatement(const ast::Struct &value) override;
 	void visitNamespaceStatement(const ast::Namespace& value) override;
+	void visitExternStatement(const ast::Extern& value) override;
 	// Expression
 	void visitAssignExpression(const ast::Assign &value) override;
 	void visitBinaryExpression(const ast::Binary &value) override;

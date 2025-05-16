@@ -145,6 +145,9 @@ void WASMTextGenerator::visitStructStatement(const ast::Struct &value) {
 void WASMTextGenerator::visitNamespaceStatement(const ast::Namespace &value) {
 	std::cerr << "visitNamespaceStatement not implemented\n";
 }
+void WASMTextGenerator::visitExternStatement(const ast::Extern &value) {
+	std::cerr << "visitExternStatement not implemented\n";
+}
 // Expression
 void WASMTextGenerator::visitAssignExpression(const ast::Assign &value) {
 	std::string identTab = currentIdent();

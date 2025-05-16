@@ -17,6 +17,7 @@ class Var;
 class While;
 class Struct;
 class Namespace;
+class Extern;
 
 class StatementVisitor {
   public:
@@ -30,6 +31,7 @@ class StatementVisitor {
 	virtual void visitWhileStatement(const While& value) = 0;
 	virtual void visitStructStatement(const Struct& value) = 0;
 	virtual void visitNamespaceStatement(const Namespace& value) = 0;
+	virtual void visitExternStatement(const Extern& value) = 0;
 	virtual ~StatementVisitor() = default;
 };
 
@@ -190,6 +192,20 @@ class Namespace : public Statement {
 	void visit(StatementVisitor& visitor) const override { visitor.visitNamespaceStatement(*this); }
 
 	std::string variantName() const override { return "Namespace"; }
+
+};
+class Extern : public Statement {
+  public:
+	Token name;
+	std::vector<std::unique_ptr<Statement>> statements;
+
+	Extern(Token name,
+	        std::vector<std::unique_ptr<Statement>> statements)
+	    : name(std::move(name)), statements(std::move(statements)) {}
+
+	void visit(StatementVisitor& visitor) const override { visitor.visitExternStatement(*this); }
+
+	std::string variantName() const override { return "Extern"; }
 
 };
 

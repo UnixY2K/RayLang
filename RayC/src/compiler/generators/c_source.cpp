@@ -208,6 +208,12 @@ void CSourceGenerator::visitNamespaceStatement(const ast::Namespace &ns) {
 		value->visit(*this);
 	}
 }
+void CSourceGenerator::visitExternStatement(const ast::Extern &ext) {
+	std::cerr << "extern semantics not implemented yet\n";
+	for (auto &value : ext.statements) {
+		value->visit(*this);
+	}
+}
 // Expression
 void CSourceGenerator::visitAssignExpression(const ast::Assign &value) {
 	value.lhs->visit(*this);
