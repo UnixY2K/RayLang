@@ -267,6 +267,10 @@ void Lexer::string() {
 				value.push_back('\n');
 				break;
 			}
+			case '0': {
+				value.push_back('\0');
+				break;
+			}
 			default: {
 				Token errorToken{Token::TokenType::TOKEN_STRING, value, line,
 				                 column};
@@ -352,6 +356,9 @@ void Lexer::charLiteral() {
 			character = '\n';
 			break;
 		}
+		case '0':
+			character = '\0';
+			break;
 		default: {
 			Token errorToken{
 			    Token::TokenType::TOKEN_STRING, {character}, line, column};
@@ -363,6 +370,7 @@ void Lexer::charLiteral() {
 			return;
 		}
 		}
+		advance();
 	}
 
 	if (peek() != '\'') {

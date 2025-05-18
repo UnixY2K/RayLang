@@ -1,8 +1,9 @@
-
+// requires to link against libc and math
+// requires libs/c/stdio.c for the get_stdout function
 
 extern "C"{
 struct FILE;
-let extern stdout: FILE*;
+fn extern get_stdout() -> mut FILE*;
 fn extern atoi(buffer: [c_char;]) -> mut c_int;
 fn extern fwrite(buffer: c_voidptr, size: mut c_size, count: mut c_size, stream: mut FILE*) -> mut c_size;
 fn extern strlen(buffer: [c_char;]) -> mut c_size;
@@ -13,7 +14,7 @@ fn extern free(size: mut c_voidptr);
 }
 
 fn print(buffer: [u8;]){
-	fwrite(buffer as c_voidptr, sizeof(c_char), strlen(buffer as c_char*), stdout);
+	fwrite(buffer as mut c_voidptr, sizeof(c_char), strlen(buffer as c_char*), get_stdout());
 }
 
 fn s32toString(num: s32) -> mut [u8;]{
@@ -21,6 +22,7 @@ fn s32toString(num: s32) -> mut [u8;]{
 	let mut n: s32 = num;
 	let mut array: [u8;] = malloc(size + 1) as mut [u8;];
 	let i: usize = (size - 1);
+	array[size] = '\0';
 	while n != 0 {
 		array[i--] = (n % 10) + '0';
 		n /= 10;

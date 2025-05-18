@@ -15,7 +15,7 @@
 			"label": "Meson: Build RayC/rayc:executable"
 		},
 		{
-			"label": "Compile current ray file to C source",
+			"label": "Compile current Ray file to C source",
 			"type": "shell",
 			"command": "builddir/RayC/rayc",
 			"args": [
@@ -33,11 +33,12 @@
 			]
 		},
 		{
-			"label": "Compile ray c source file to binary",
+			"label": "Compile Ray c source file to binary",
 			"type": "shell",
 			"command": "clang",
 			"args": [
 				"${relativeFileDirname}/${fileBasenameNoExtension}.c",
+				"${workspaceFolder}/libs/c/stdio.c",
 				"-lm",
 				"-g",
 				"-o",
@@ -47,8 +48,17 @@
 				"$meson-gcc"
 			],
 			"dependsOn": [
-				"Compile current ray file to C source"
-			]
+				"Compile current Ray file to C source"
+			],
+			"windows": {
+				"args": [
+					"${relativeFileDirname}\\${fileBasenameNoExtension}.c",
+					"${workspaceFolder}\\libs\\c\\stdio.c",
+					"-g",
+					"-o",
+					"${relativeFileDirname}\\${fileBasenameNoExtension}.exe"
+				]
+			}
 		}
 	]
 }

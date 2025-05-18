@@ -4,8 +4,9 @@
 	// Para más información, visite: https://go.microsoft.com/fwlink/?linkid=830387
 	"version": "0.2.0",
 	"configurations": [
+		// GNU/Linux
 		{
-			"name": "(gdb) compile Ray file(C)",
+			"name": "(gdb) Compile Ray file(C)",
 			"type": "cppdbg",
 			"request": "launch",
 			"program": "${workspaceFolder}/builddir/RayC/rayc",
@@ -36,7 +37,7 @@
 			"preLaunchTask": "Meson: Build RayC/rayc:executable"
 		},
 		{
-			"name": "(gdb) debug ray file(C)",
+			"name": "(gdb) Debug Ray file(C)",
 			"type": "cppdbg",
 			"request": "launch",
 			"program": "${fileDirname}/${fileBasenameNoExtension}",
@@ -63,7 +64,38 @@
 					"ignoreFailures": true
 				}
 			],
-			"preLaunchTask": "Compile ray c source file to binary"
+			"preLaunchTask": "Compile Ray c source file to binary"
+		},
+		// Windows debug configurations
+		{
+			"name": "(Windows) Compile Ray file(C)",
+			"type": "cppvsdbg",
+			"request": "launch",
+			"program": "${workspaceFolder}/builddir/RayC/rayc",
+			"args": [
+				"${relativeFileDirname}/${fileBasename}",
+				"-o",
+				"${relativeFileDirname}/${fileBasenameNoExtension}.c",
+				"-t",
+				"c_source"
+			],
+			"stopAtEntry": false,
+			"cwd": "${workspaceFolder}",
+			"environment": [],
+			"console": "integratedTerminal",
+			"preLaunchTask": "Meson: Build RayC/rayc:executable"
+		},
+		{
+			"name": "(Windows) Debug Ray file(C)",
+			"type": "cppvsdbg",
+			"request": "launch",
+			"program": "${fileDirname}/${fileBasenameNoExtension}.exe",
+			"args": "${input:programArgs}",
+			"stopAtEntry": false,
+			"cwd": "${fileDirname}",
+			"environment": [],
+			"console": "integratedTerminal",
+			"preLaunchTask": "Compile Ray c source file to binary"
 		}
 	],
 	"inputs": [
