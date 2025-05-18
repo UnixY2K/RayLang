@@ -60,6 +60,7 @@ struct Token {
 		TOKEN_COLON,     // :
 		TOKEN_SEMICOLON, // ;
 		TOKEN_ARROW,     // ->
+		TOKEN_POUND,     // #
 		// Literals.
 		TOKEN_IDENTIFIER, // ex: foo, bar, baz, etc.
 		TOKEN_STRING,     // ex: "Hello, world"

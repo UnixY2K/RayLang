@@ -9,11 +9,13 @@ def preprocessTypes(baseName: str, types: list[str]):
         (className, fieldLines) = [x.strip() for x in Type.split("=")]
         fields = list[dict]()
         for field in fieldLines.split(","):
-            (fieldType, name) = field.strip().split(" ")
-            fields.append({
-                "Type": fieldType.strip(),
-                "Name": name.strip()
-            })
+            value = field.strip().split(" ")
+            if len(value) == 2:
+                (fieldType, name) = value
+                fields.append({
+                    "Type": fieldType.strip(),
+                    "Name": name.strip()
+                })
         processedClass = {
             "Name": className,
             "Fields": fields
@@ -79,14 +81,16 @@ def defineType(baseName: str, clazz: dict[str]):
             f"{field["Type"]} {field["Name"]}")
 
     stringList.append(f",\n\t{" " * 8}".join(constructorParams))
-    stringList.append(f")\n\t{" " * 4}: ")
-    initializerList = list[str]()
-    for field in clazz["Fields"]:
-        initializerList.append(f"{field["Name"]}(std::move({field["Name"]}))")
-
-    stringList.append(", ".join(initializerList))
+    if (len(clazz["Fields"]) > 0):
+        stringList.append(f"):\n\t\t")
+        initializerList = list[str]()
+        for field in clazz["Fields"]:
+            initializerList.append(f"{field["Name"]}(std::move({field["Name"]}))")
+        stringList.append(",\n\t\t".join(initializerList))
+    else:
+        stringList.append(")")
     stringList.append(" {}\n\n")
-    stringList.append(f"\tvoid visit({baseName}Visitor& visitor) const override {{ visitor.visit{clazz["Name"]}{baseName}(*this); }}\n\n")
+    stringList.append(f"\tvoid visit({baseName}Visitor& visitor) const override {{\n\t\tvisitor.visit{clazz["Name"]}{baseName}(*this);\n\t}}\n\n")
     stringList.append(f"\tstd::string variantName() const override {{ return \"{clazz["Name"]}\"; }}\n\n")
 
     stringList.append("};")
@@ -146,7 +150,8 @@ def main():
              "While			= std::unique_ptr<Expression> condition, std::unique_ptr<Statement> body",
              "Struct		= Token name, bool publicVisibility, bool declaration, std::vector<Var> members, std::vector<bool> memberVisibility",
              "Namespace		= Token name, std::vector<std::unique_ptr<Statement>> statements",
-             "Extern		= Token name, std::vector<std::unique_ptr<Statement>> statements"
+             "Extern		= Token name, std::vector<std::unique_ptr<Statement>> statements",
+             "CompDirective	= ",
             ])
 
 

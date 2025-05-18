@@ -148,6 +148,10 @@ void WASMTextGenerator::visitNamespaceStatement(const ast::Namespace &value) {
 void WASMTextGenerator::visitExternStatement(const ast::Extern &value) {
 	std::cerr << "visitExternStatement not implemented\n";
 }
+void WASMTextGenerator::visitCompDirectiveStatement(
+    const ast::CompDirective &value) {
+	std::cerr << "visitCompDirectiveStatement not implemented\n";
+}
 // Expression
 void WASMTextGenerator::visitAssignExpression(const ast::Assign &value) {
 	std::string identTab = currentIdent();

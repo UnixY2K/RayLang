@@ -253,6 +253,10 @@ void CTranspilerGenerator::visitExternStatement(const ast::Extern &ext) {
 		value->visit(*this);
 	}
 }
+void CTranspilerGenerator::visitCompDirectiveStatement(
+    const ast::CompDirective &value) {
+	std::cerr << "visitCompDirectiveStatement not implemented\n";
+}
 // Expression
 void CTranspilerGenerator::visitAssignExpression(const ast::Assign &value) {
 	value.lhs->visit(*this);
@@ -464,4 +468,4 @@ void CTranspilerGenerator::visitParameterExpression(
 	output << std::format("{}", param.name.lexeme);
 }
 
-} // namespace ray::compiler::generator
+} // namespace ray::compiler::generator::c

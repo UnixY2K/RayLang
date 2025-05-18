@@ -70,6 +70,7 @@ Token::TokenType Token::fromString(std::string_view str) {
 	    {":", Token::TokenType::TOKEN_COLON},     // :
 	    {";", Token::TokenType::TOKEN_SEMICOLON}, // ;
 	    {"->", Token::TokenType::TOKEN_ARROW},    // ->
+	    {"#", Token::TokenType::TOKEN_POUND},     // #
 	    // literals
 	    //{"", Token::TokenType::TOKEN_IDENTIFIER}, // ex: foo, bar, baz, etc.
 	    //{"", Token::TokenType::TOKEN_STRING},     // ex: "Hello, world"
@@ -201,6 +202,8 @@ std::string_view Token::toString(TokenType token) {
 		return "TOKEN_SEMICOLON";
 	case TokenType::TOKEN_ARROW:
 		return "TOKEN_ARROW";
+	case TokenType::TOKEN_POUND:
+		return "TOKEN_POUND";
 	// Literals.
 	case TokenType::TOKEN_IDENTIFIER:
 		return "TOKEN_IDENTIFIER";
@@ -356,6 +359,8 @@ std::string_view Token::glyph(TokenType token) {
 		return ";";
 	case TokenType::TOKEN_ARROW:
 		return "->";
+	case TokenType::TOKEN_POUND:
+		return "#";
 	// Literals.
 	case TokenType::TOKEN_IDENTIFIER:
 		return "<identifier>";
