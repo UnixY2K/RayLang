@@ -1,4 +1,5 @@
 
+#include <ray/cli/terminal.hpp>
 #include <ray/compiler/ast/expression.hpp>
 #include <ray/compiler/ast/statement.hpp>
 #include <ray/compiler/generators/c_source.hpp>
@@ -9,6 +10,8 @@
 #include <string>
 
 namespace ray::compiler::generator {
+
+using namespace terminal::literals;
 
 std::string CSourceGenerator::currentIdent() const {
 	return std::string(ident, '\t');
@@ -82,11 +85,7 @@ void CSourceGenerator::visitFunctionStatement(const ast::Function &function) {
 	if (!function.publicVisibility) {
 		output << "static ";
 	}
-	if (function.returnType.name.type != Token::TokenType::TOKEN_TYPE_UNIT) {
-		output << std::format("{} ", function.returnType.name.lexeme);
-	} else {
-		output << std::format("void ");
-	}
+	function.returnType.visit(*this);
 	output << std::format("{}(", function.name.lexeme);
 	for (size_t index = 0; index < function.params.size(); ++index) {
 		const auto &parameter = function.params[index];
@@ -156,17 +155,20 @@ void CSourceGenerator::visitJumpStatement(const ast::Jump &jump) {
 	}
 }
 void CSourceGenerator::visitVarStatement(const ast::Var &var) {
-	std::string identTab = currentIdent();
+	output << currentIdent();
+
+	if (var.is_external) {
+		output << "extern ";
+	}
 
 	if (var.type.name.lexeme.starts_with("[")) {
 		output << std::format(
-		    "{}{} *{}", identTab,
+		    "{} *{}",
 		    var.type.name.lexeme.substr(
 		        1, var.type.name.lexeme.find_last_of("]") - 1),
 		    var.name.lexeme);
 	} else {
-		output << std::format("{}{} {}", identTab, var.type.name.lexeme,
-		                      var.name.lexeme);
+		output << std::format("{} {}", var.type.name.lexeme, var.name.lexeme);
 	}
 	if (var.initializer.has_value()) {
 		output << " = ";
@@ -206,13 +208,15 @@ void CSourceGenerator::visitStructStatement(const ast::Struct &value) {
 	output << std::format(" {};\n", value.name.lexeme);
 }
 void CSourceGenerator::visitNamespaceStatement(const ast::Namespace &ns) {
-	std::cerr << "namespace semantics not implemented yet\n";
+	std::cerr << std::format("{}: namespace semantics not implemented yet.\n",
+	                         "WARNING"_yellow);
 	for (auto &value : ns.statements) {
 		value->visit(*this);
 	}
 }
 void CSourceGenerator::visitExternStatement(const ast::Extern &ext) {
-	std::cerr << "extern semantics not implemented yet\n";
+	std::cerr << std::format("{}: extern semantics not implemented yet.\n",
+	                         "WARNING"_yellow);
 	for (auto &value : ext.statements) {
 		value->visit(*this);
 	}
@@ -220,7 +224,7 @@ void CSourceGenerator::visitExternStatement(const ast::Extern &ext) {
 // Expression
 void CSourceGenerator::visitAssignExpression(const ast::Assign &value) {
 	value.lhs->visit(*this);
-	output << std::format(" {} ", Token::glyph(value.assignmentOp.type));
+	output << std::format(" {} ", value.assignmentOp.getGlyph());
 	value.rhs->visit(*this);
 }
 void CSourceGenerator::visitBinaryExpression(
@@ -246,7 +250,7 @@ void CSourceGenerator::visitBinaryExpression(
 	case Token::TokenType::TOKEN_GREAT:
 	case Token::TokenType::TOKEN_LESS_EQUAL:
 	case Token::TokenType::TOKEN_GREAT_EQUAL:
-		output << std::format(" {} ", Token::glyph(op.type));
+		output << std::format(" {} ", op.getGlyph());
 		break;
 	default:
 		std::cerr << std::format("'{}' is not a supported binary operation\n",
@@ -351,17 +355,21 @@ void CSourceGenerator::visitLiteralExpression(const ast::Literal &literal) {
 	default:
 		std::cerr << std::format("'{}' ({}) is not a supported literal type\n",
 		                         literal.kind.getLexeme(),
-		                         Token::glyph(literal.kind.type));
+		                         literal.kind.getGlyph());
 		break;
 	}
 }
-void CSourceGenerator::visitLogicalExpression(const ast::Logical &value) {
-	std::cerr << "visitLogicalExpression not implemented\n";
+void CSourceGenerator::visitLogicalExpression(const ast::Logical &logicalExpr) {
+	output << "(bool)(";
+	logicalExpr.left->visit(*this);
+	output << std::format(" {} ", logicalExpr.op.getGlyph());
+	logicalExpr.right->visit(*this);
+	output << ")";
 }
 void CSourceGenerator::visitSetExpression(const ast::Set &value) {
 	value.object->visit(*this);
 	output << std::format(".{} {} ", value.name.lexeme,
-	                      Token::glyph(value.assignmentOp.type));
+	                      value.assignmentOp.getGlyph());
 	value.value->visit(*this);
 }
 void CSourceGenerator::visitUnaryExpression(const ast::Unary &unary) {
@@ -394,10 +402,12 @@ void CSourceGenerator::visitVariableExpression(const ast::Variable &variable) {
 	output << std::format("{}", variable.name.lexeme);
 }
 void CSourceGenerator::visitTypeExpression(const ast::Type &type) {
-	if (type.isConst) {
+	if (type.isConst && type.name.type != Token::TokenType::TOKEN_TYPE_UNIT) {
 		output << "const ";
 	}
-	if (type.name.lexeme.starts_with("[")) {
+	if (type.name.type == Token::TokenType::TOKEN_TYPE_UNIT) {
+		output << "void ";
+	} else if (type.name.lexeme.starts_with("[")) {
 		output << std::format(
 		    "{} *",
 		    type.name.lexeme.substr(1, type.name.lexeme.find_last_of("]") - 1),

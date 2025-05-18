@@ -97,6 +97,7 @@ struct Token {
 
 	std::string toString() const;
 	std::string_view getLexeme() const;
+	std::string_view getGlyph() const;
 
 	static TokenType fromChar(const char c);
 	static TokenType fromString(std::string_view str);

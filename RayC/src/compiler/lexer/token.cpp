@@ -14,6 +14,7 @@ std::string Token::toString() const {
 std::string_view Token::getLexeme() const {
 	return lexeme.empty() ? glyph(type) : lexeme;
 }
+std::string_view Token::getGlyph() const { return glyph(type); }
 
 Token::TokenType Token::fromChar(const char c) { return fromString({&c, 1}); }
 Token::TokenType Token::fromString(std::string_view str) {

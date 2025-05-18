@@ -259,8 +259,14 @@ std::unique_ptr<ast::Statement> Parser::whileStatement() {
 }
 ast::Var Parser::varDeclaration(std::string kind) {
 	bool is_mutable = false;
+	// maybe this should be in a compiler directive?, ex:
+	// #[linkage(storage=external, lifetime=static)]
+	bool is_external = false;
 	if (match({Token::TokenType::TOKEN_MUT})) {
 		is_mutable = true;
+	}
+	if (match({Token::TokenType::TOKEN_EXTERN})) {
+		is_external = true;
 	}
 	Token name = consume(Token::TokenType::TOKEN_IDENTIFIER,
 	                     std::format("Expect {} name.", kind));
@@ -279,7 +285,8 @@ ast::Var Parser::varDeclaration(std::string kind) {
 
 	consume(Token::TokenType::TOKEN_SEMICOLON,
 	        std::format("Expect ';' after {} declaration.", kind));
-	ast::Var variable{name, type, is_mutable, std::move(initializer)};
+	ast::Var variable{name, type, is_mutable, is_external,
+	                  std::move(initializer)};
 	return ast::Var(std::move(variable));
 }
 std::unique_ptr<ast::Statement> Parser::expressionStatement() {
@@ -512,7 +519,7 @@ ast::Type Parser::typeExpression() {
 	bool isPointer = false;
 	while (match({Token::TokenType::TOKEN_STAR})) {
 		isPointer = true;
-		typeToken.lexeme += Token::glyph(previous().type);
+		typeToken.lexeme += previous().getGlyph();
 	}
 	return ast::Type{typeToken, !is_mutable, isPointer};
 }

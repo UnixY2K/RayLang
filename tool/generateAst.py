@@ -142,7 +142,7 @@ def main():
              "Function		= Token name, bool publicVisibility, std::vector<Parameter> params, std::optional<Block> body, Type returnType",
              "If			= std::unique_ptr<Expression> condition, std::unique_ptr<Statement> thenBranch, std::optional<std::unique_ptr<Statement>> elseBranch",
              "Jump			= Token keyword, std::optional<std::unique_ptr<Expression>> value",
-             "Var			= Token name, Type type, bool is_mutable, std::optional<std::unique_ptr<Expression>> initializer",
+             "Var			= Token name, Type type, bool is_mutable, bool is_external, std::optional<std::unique_ptr<Expression>> initializer",
              "While			= std::unique_ptr<Expression> condition, std::unique_ptr<Statement> body",
              "Struct		= Token name, bool publicVisibility, bool declaration, std::vector<Var> members, std::vector<bool> memberVisibility",
              "Namespace		= Token name, std::vector<std::unique_ptr<Statement>> statements",

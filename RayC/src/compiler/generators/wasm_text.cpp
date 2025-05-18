@@ -245,7 +245,7 @@ void WASMTextGenerator::visitLiteralExpression(const ast::Literal &literal) {
 	default:
 		std::cerr << std::format("'{}' ({}) is not a supported literal type\n",
 		                         literal.kind.getLexeme(),
-		                         Token::glyph(literal.kind.type));
+		                         literal.kind.getGlyph());
 		break;
 	}
 	if (ident != 0) {
