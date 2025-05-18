@@ -138,14 +138,22 @@ this will output the following C code:
 #ifdef __cplusplus
 extern "C" {
 #endif
+#include <stddef.h>
 #include <stdint.h>
 #define i8 int8_t
 #define u8 uint8_t
+#define u32 uint32_t
 #define s32 int32_t
-#define isize intmax_t
+#define u64 uint64_t
+#define s64 int64_t
+#define f32 float
+#define f64 double
+#define ssize intmax_t
 #define usize uintmax_t
 #define c_char char
-#define RAY_MACRO_ARRAY_FIXED(T, X, N) T X[N]
+#define c_int int
+#define c_size size_t
+#define c_voidptr void *
 typedef struct String {
 	usize array_size;
 	usize element_count;

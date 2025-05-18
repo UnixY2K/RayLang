@@ -24,6 +24,7 @@ void CSourceGenerator::resolve(
 	// some of the definitions are technically UB as they may not be exactly 32
 	// or 64 bit implementations but generally they use the IEEE 754 format,
 	// assuming that is true
+	output << "#include <stddef.h>\n";
 	output << "#include <stdint.h>\n";
 	output << "#define i8 int8_t\n";
 	output << "#define u8 uint8_t\n";
@@ -33,10 +34,12 @@ void CSourceGenerator::resolve(
 	output << "#define s64 int64_t\n";
 	output << "#define f32 float\n";
 	output << "#define f64 double\n";
-	output << "#define isize intmax_t\n";
+	output << "#define ssize intmax_t\n";
 	output << "#define usize uintmax_t\n";
 	output << "#define c_char char\n";
-	output << "#define RAY_MACRO_ARRAY_FIXED(T, X, N) T X[N]\n";
+	output << "#define c_int int\n";
+	output << "#define c_size size_t\n";
+	output << "#define c_voidptr void *\n";
 	// ident++;
 	for (const auto &stmt : statement) {
 		stmt->visit(*this);
@@ -76,6 +79,9 @@ void CSourceGenerator::visitFunctionStatement(const ast::Function &function) {
 
 	std::string identTabs = currentIdent();
 	output << identTabs;
+	if (!function.publicVisibility) {
+		output << "static ";
+	}
 	if (function.returnType.name.type != Token::TokenType::TOKEN_TYPE_UNIT) {
 		output << std::format("{} ", function.returnType.name.lexeme);
 	} else {
@@ -103,9 +109,6 @@ void CSourceGenerator::visitFunctionStatement(const ast::Function &function) {
 			}
 		}
 		output << std::format("{}}}\n", identTabs);
-		if (function.publicVisibility) {
-			std::cerr << "pub semantics not implemented for function.\n";
-		}
 	} else {
 		output << ";\n";
 	}
