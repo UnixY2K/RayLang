@@ -69,7 +69,8 @@ Parser::NamespaceStatement(bool root) {
 	while ((root || !check(Token::TokenType::TOKEN_RIGHT_BRACE)) &&
 	       !isAtEnd()) {
 
-		if (!check(Token::TokenType::TOKEN_NAMESPACE)) {
+		if (!(check(Token::TokenType::TOKEN_NAMESPACE) ||
+		      check(Token::TokenType::TOKEN_EXTERN))) {
 			auto result = declaration();
 			if (result.has_value()) {
 				statements.push_back(std::move(result.value()));
