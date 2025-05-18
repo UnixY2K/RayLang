@@ -1,0 +1,54 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"type": "meson",
+			"target": "RayC/rayc:executable",
+			"mode": "build",
+			"problemMatcher": [
+				"$meson-gcc"
+			],
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			},
+			"label": "Meson: Build RayC/rayc:executable"
+		},
+		{
+			"label": "Compile current ray file to C source",
+			"type": "shell",
+			"command": "builddir/RayC/rayc",
+			"args": [
+				"${relativeFileDirname}/${fileBasename}",
+				"-o",
+				"${relativeFileDirname}/${fileBasenameNoExtension}.c",
+				"-t",
+				"c_source"
+			],
+			"problemMatcher": [
+				"$meson-gcc"
+			],
+			"dependsOn": [
+				"Meson: Build RayC/rayc:executable"
+			]
+		},
+		{
+			"label": "Compile ray c source file to binary",
+			"type": "shell",
+			"command": "clang",
+			"args": [
+				"${relativeFileDirname}/${fileBasenameNoExtension}.c",
+				"-lm",
+				"-g",
+				"-o",
+				"${relativeFileDirname}/${fileBasenameNoExtension}"
+			],
+			"problemMatcher": [
+				"$meson-gcc"
+			],
+			"dependsOn": [
+				"Compile current ray file to C source"
+			]
+		}
+	]
+}
