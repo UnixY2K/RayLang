@@ -7,8 +7,8 @@
 #include <ray/cli/options.hpp>
 #include <ray/cli/terminal.hpp>
 
-#include <ray/compiler/generators/c_source.hpp>
-#include <ray/compiler/generators/wasm_text.hpp>
+#include <ray/compiler/generators/c/c_transpiler.hpp>
+#include <ray/compiler/generators/wasm/wasm_text.hpp>
 
 #include <ray/compiler/lexer/lexer.hpp>
 #include <ray/compiler/parser/parser.hpp>
@@ -82,7 +82,7 @@ int main(int argc, char **argv) {
 		}
 		case cli::Options::TargetEnum::C_SOURCE: {
 			handled = true;
-			generator::CSourceGenerator CSourceGen;
+			generator::CTranspilerGenerator CSourceGen;
 
 			CSourceGen.resolve(statements);
 			if (CSourceGen.hasFailed()) {

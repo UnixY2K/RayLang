@@ -8,7 +8,7 @@
 
 namespace ray::compiler::generator {
 
-class CSourceGenerator : public ast::StatementVisitor,
+class CTranspilerGenerator : public ast::StatementVisitor,
                          public ast::ExpressionVisitor {
 	std::stringstream output;
 	size_t ident = 0;

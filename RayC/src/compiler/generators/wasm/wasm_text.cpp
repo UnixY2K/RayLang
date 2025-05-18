@@ -1,6 +1,6 @@
 #include <ray/compiler/ast/expression.hpp>
 #include <ray/compiler/ast/statement.hpp>
-#include <ray/compiler/generators/wasm_text.hpp>
+#include <ray/compiler/generators/wasm/wasm_text.hpp>
 #include <ray/compiler/lexer/token.hpp>
 
 #include <format>
