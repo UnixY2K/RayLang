@@ -57,7 +57,7 @@ int main(int argc, char **argv) {
 			return 1;
 		}
 
-		auto parser = Parser(opts.input.string(), tokens);
+		auto parser = Parser(opts.input.relative_path().string(), tokens);
 		auto statements = parser.parse();
 		if (parser.failed()) {
 			return 1;

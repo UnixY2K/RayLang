@@ -82,16 +82,18 @@ class Function : public Statement {
   public:
 	Token name;
 	bool publicVisibility;
+	bool is_extern;
 	std::vector<Parameter> params;
 	std::optional<Block> body;
 	Type returnType;
 
 	Function(Token name,
 	        bool publicVisibility,
+	        bool is_extern,
 	        std::vector<Parameter> params,
 	        std::optional<Block> body,
 	        Type returnType)
-	    : name(std::move(name)), publicVisibility(std::move(publicVisibility)), params(std::move(params)), body(std::move(body)), returnType(std::move(returnType)) {}
+	    : name(std::move(name)), publicVisibility(std::move(publicVisibility)), is_extern(std::move(is_extern)), params(std::move(params)), body(std::move(body)), returnType(std::move(returnType)) {}
 
 	void visit(StatementVisitor& visitor) const override { visitor.visitFunctionStatement(*this); }
 
@@ -133,15 +135,15 @@ class Var : public Statement {
 	Token name;
 	Type type;
 	bool is_mutable;
-	bool is_external;
+	bool is_extern;
 	std::optional<std::unique_ptr<Expression>> initializer;
 
 	Var(Token name,
 	        Type type,
 	        bool is_mutable,
-	        bool is_external,
+	        bool is_extern,
 	        std::optional<std::unique_ptr<Expression>> initializer)
-	    : name(std::move(name)), type(std::move(type)), is_mutable(std::move(is_mutable)), is_external(std::move(is_external)), initializer(std::move(initializer)) {}
+	    : name(std::move(name)), type(std::move(type)), is_mutable(std::move(is_mutable)), is_extern(std::move(is_extern)), initializer(std::move(initializer)) {}
 
 	void visit(StatementVisitor& visitor) const override { visitor.visitVarStatement(*this); }
 

@@ -1,15 +1,15 @@
-// requires to link with c math and stdlib
+
 
 extern "C"{
 struct FILE;
 let extern stdout: FILE*;
-pub fn atoi(buffer: [c_char;]) -> mut c_int;
-pub fn fwrite(buffer: c_voidptr, size: mut c_size, count: mut c_size, stream: mut FILE*) -> mut c_size;
-pub fn strlen(buffer: [c_char;]) -> mut c_size;
-pub fn floor(number: mut f64) -> mut f64;
-pub fn log10(number: mut f64) -> mut f64;
-pub fn malloc(size: c_size) -> mut c_voidptr;
-pub fn free(size: mut c_voidptr);
+fn extern atoi(buffer: [c_char;]) -> mut c_int;
+fn extern fwrite(buffer: c_voidptr, size: mut c_size, count: mut c_size, stream: mut FILE*) -> mut c_size;
+fn extern strlen(buffer: [c_char;]) -> mut c_size;
+fn extern floor(number: mut f64) -> mut f64;
+fn extern log10(number: mut f64) -> mut f64;
+fn extern malloc(size: c_size) -> mut c_voidptr;
+fn extern free(size: mut c_voidptr);
 }
 
 fn print(buffer: [u8;]){
@@ -36,6 +36,7 @@ fn fib(n: s32) -> s32{
 	return fib(n-1) + fib(n-2);
 }
 
+extern "C"{
 
 pub fn main(argc: s32, argv: c_char**) -> mut s32 {
 	if(argc != 2){
@@ -44,11 +45,12 @@ pub fn main(argc: s32, argv: c_char**) -> mut s32 {
 		print(" number\n");
 		return -1;
 	}
-
 	let result: s32 = fib(atoi(argv[1]));
 	let resultStr: [u8;] = s32toString((result));
 	print(resultStr);
 	free(resultStr);
 	print("\n");
 	return 0;
+}
+
 }

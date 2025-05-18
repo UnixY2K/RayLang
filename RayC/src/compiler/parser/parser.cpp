@@ -259,16 +259,10 @@ std::unique_ptr<ast::Statement> Parser::whileStatement() {
 	    ast::While(std::move(condition), std::move(body)));
 }
 ast::Var Parser::varDeclaration(std::string kind) {
-	bool is_mutable = false;
+	bool is_mutable = match({Token::TokenType::TOKEN_MUT});
 	// maybe this should be in a compiler directive?, ex:
-	// #[linkage(storage=external, lifetime=static)]
-	bool is_external = false;
-	if (match({Token::TokenType::TOKEN_MUT})) {
-		is_mutable = true;
-	}
-	if (match({Token::TokenType::TOKEN_EXTERN})) {
-		is_external = true;
-	}
+	// #[linkage(storage=extern, lifetime=static)]
+	bool is_extern = match({Token::TokenType::TOKEN_EXTERN});
 	Token name = consume(Token::TokenType::TOKEN_IDENTIFIER,
 	                     std::format("Expect {} name.", kind));
 
@@ -286,7 +280,7 @@ ast::Var Parser::varDeclaration(std::string kind) {
 
 	consume(Token::TokenType::TOKEN_SEMICOLON,
 	        std::format("Expect ';' after {} declaration.", kind));
-	ast::Var variable{name, type, is_mutable, is_external,
+	ast::Var variable{name, type, is_mutable, is_extern,
 	                  std::move(initializer)};
 	return ast::Var(std::move(variable));
 }
@@ -300,6 +294,7 @@ std::unique_ptr<ast::Statement> Parser::expressionStatement() {
 	    ast::TerminalExpr(std::move(expr)));
 }
 ast::Function Parser::function(std::string kind, bool publicVisiblity) {
+	bool is_extern = match({Token::TokenType::TOKEN_EXTERN});
 	Token name = consume(Token::TokenType::TOKEN_IDENTIFIER,
 	                     std::format("Expect {} name.", kind));
 
@@ -337,7 +332,8 @@ ast::Function Parser::function(std::string kind, bool publicVisiblity) {
 		        std::format("Expect '{{' before {} body.", kind));
 		body = {block()};
 	}
-	return {name, publicVisiblity, parameters, std::move(body), returnType};
+	return {name,       publicVisiblity, is_extern,
+	        parameters, std::move(body), returnType};
 }
 std::vector<std::unique_ptr<ast::Statement>> Parser::block() {
 	std::vector<std::unique_ptr<ast::Statement>> statements;
@@ -665,6 +661,8 @@ void Parser::synchronize() {
 		case Token::TokenType::TOKEN_IF:
 		case Token::TokenType::TOKEN_WHILE:
 		case Token::TokenType::TOKEN_RETURN:
+		case Token::TokenType::TOKEN_STRUCT:
+		case Token::TokenType::TOKEN_NAMESPACE:
 			return;
 		default: {
 		}

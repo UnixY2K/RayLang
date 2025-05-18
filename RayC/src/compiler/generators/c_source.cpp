@@ -24,11 +24,11 @@ void CSourceGenerator::resolve(
 	output << "#ifdef __cplusplus\n";
 	output << "extern \"C\" {\n";
 	output << "#endif\n";
-	// some of the definitions are technically UB as they may not be exactly 32
-	// or 64 bit implementations but generally they use the IEEE 754 format,
-	// assuming that is true
 	output << "#include <stddef.h>\n";
 	output << "#include <stdint.h>\n";
+	// some of the definitions are technically UB as they may not be exactly 32
+	// or 64 bit,ex(float, double implementations but generally they use the
+	// IEEE 754 format) assuming that the following definitions are true
 	output << "#define i8 int8_t\n";
 	output << "#define u8 uint8_t\n";
 	output << "#define u32 uint32_t\n";
@@ -43,6 +43,27 @@ void CSourceGenerator::resolve(
 	output << "#define c_int int\n";
 	output << "#define c_size size_t\n";
 	output << "#define c_voidptr void *\n";
+	output
+	    << "#if defined(_WIN32) || defined (__CYGWIN__) || defined(_MSC_VER)\n";
+	output << "\t// Microsoft\n";
+	output << "\t#define RAYLANG_MACRO_DLL_IMPORT __declspec(dllimport)\n";
+	output << "\t#define RAYLANG_MACRO_DLL_EXPORT __declspec(dllexport)\n";
+	output << "\t#define RAYLANG_MACRO_DLL_LOCAL\n";
+	output << "#elif defined(__GNUC__) && __GNUC__ >= 4\n";
+	output << "\t// GCC\n";
+	output << "\t#define RAYLANG_MACRO_DLL_IMPORT __attribute__ ((visibility "
+	          "(\"default\")))\n";
+	output << "\t#define RAYLANG_MACRO_DLL_EXPORT __attribute__ ((visibility "
+	          "(\"default\")))\n";
+	output << "\t#define RAYLANG_MACRO_DLL_LOCAL  __attribute__ ((visibility "
+	          "(\"hidden\")))\n";
+	output << "#else\n";
+	output
+	    << "\t#pragma warning Unknown dynamic link import/export semantics.\n";
+	output << "\t#define RAYLANG_MACRO_DLL_IMPORT\n";
+	output << "\t#define RAYLANG_MACRO_DLL_EXPORT\n";
+	output << "\t#define RAYLANG_MACRO_DLL_LOCAL\n";
+	output << "#endif\n";
 	// ident++;
 	for (const auto &stmt : statement) {
 		stmt->visit(*this);
@@ -82,8 +103,18 @@ void CSourceGenerator::visitFunctionStatement(const ast::Function &function) {
 
 	std::string identTabs = currentIdent();
 	output << identTabs;
+
 	if (!function.publicVisibility) {
-		output << "static ";
+		if (!function.is_extern) {
+			output << "RAYLANG_MACRO_DLL_LOCAL ";
+			output << "static ";
+		}
+	} else if (function.body.has_value()) {
+		if (function.body.has_value()) {
+			output << "RAYLANG_MACRO_DLL_EXPORT ";
+		} else {
+			output << "RAYLANG_MACRO_DLL_IMPORT ";
+		}
 	}
 	function.returnType.visit(*this);
 	output << std::format("{}(", function.name.lexeme);
@@ -157,7 +188,7 @@ void CSourceGenerator::visitJumpStatement(const ast::Jump &jump) {
 void CSourceGenerator::visitVarStatement(const ast::Var &var) {
 	output << currentIdent();
 
-	if (var.is_external) {
+	if (var.is_extern) {
 		output << "extern ";
 	}
 
