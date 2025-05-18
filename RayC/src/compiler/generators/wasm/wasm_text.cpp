@@ -7,7 +7,7 @@
 #include <iostream>
 #include <string>
 
-namespace ray::compiler::generator {
+namespace ray::compiler::generator::wasm {
 
 std::string WASMTextGenerator::currentIdent() const {
 	return std::string(ident * 2, ' ');
@@ -298,4 +298,4 @@ void WASMTextGenerator::visitParameterExpression(const ast::Parameter &value) {
 	std::cerr << "visitParameterExpression not implemented\n";
 }
 
-} // namespace ray::compiler::generator
+} // namespace ray::compiler::generator::wasm

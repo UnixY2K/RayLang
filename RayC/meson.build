@@ -4,6 +4,7 @@ rayc_srcs = [
 	'src/cli/cli_args.cpp',
 	'src/cli/options.cpp',
 	'src/cli/terminal.cpp',
+	'src/compiler/generators/c/c_mangler.cpp',
 	'src/compiler/generators/c/c_transpiler.cpp',
 	'src/compiler/generators/wasm/wasm_text.cpp',
 	'src/compiler/lexer/lexer_error.cpp',

@@ -9,7 +9,7 @@
 #include <iostream>
 #include <string>
 
-namespace ray::compiler::generator {
+namespace ray::compiler::generator::c {
 
 using namespace terminal::literals;
 

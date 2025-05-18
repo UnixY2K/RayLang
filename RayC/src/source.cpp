@@ -70,7 +70,7 @@ int main(int argc, char **argv) {
 		switch (opts.target) {
 		case cli::Options::TargetEnum::WASM_TEXT: {
 			handled = true;
-			generator::WASMTextGenerator wasmTextGen;
+			generator::wasm::WASMTextGenerator wasmTextGen;
 
 			wasmTextGen.resolve(statements);
 			if (wasmTextGen.hasFailed()) {
@@ -82,15 +82,15 @@ int main(int argc, char **argv) {
 		}
 		case cli::Options::TargetEnum::C_SOURCE: {
 			handled = true;
-			generator::CTranspilerGenerator CSourceGen;
+			generator::c::CTranspilerGenerator CTranspilerGen;
 
-			CSourceGen.resolve(statements);
-			if (CSourceGen.hasFailed()) {
+			CTranspilerGen.resolve(statements);
+			if (CTranspilerGen.hasFailed()) {
 				std::cerr << std::format("{}: {}\n", "Error"_red,
 				                         "CSourceGen failed");
 				return 1;
 			}
-			output = CSourceGen.getOutput();
+			output = CTranspilerGen.getOutput();
 		}
 		// both cases should never show
 		case cli::Options::TargetEnum::NONE:

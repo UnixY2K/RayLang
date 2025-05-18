@@ -6,10 +6,10 @@
 #include <ray/compiler/ast/expression.hpp>
 #include <ray/compiler/ast/statement.hpp>
 
-namespace ray::compiler::generator {
+namespace ray::compiler::generator::c {
 
 class CTranspilerGenerator : public ast::StatementVisitor,
-                         public ast::ExpressionVisitor {
+                             public ast::ExpressionVisitor {
 	std::stringstream output;
 	size_t ident = 0;
 
@@ -33,8 +33,8 @@ class CTranspilerGenerator : public ast::StatementVisitor,
 	void visitVarStatement(const ast::Var &value) override;
 	void visitWhileStatement(const ast::While &value) override;
 	void visitStructStatement(const ast::Struct &value) override;
-	void visitNamespaceStatement(const ast::Namespace& value) override;
-	void visitExternStatement(const ast::Extern& value) override;
+	void visitNamespaceStatement(const ast::Namespace &value) override;
+	void visitExternStatement(const ast::Extern &value) override;
 	// Expression
 	void visitAssignExpression(const ast::Assign &value) override;
 	void visitBinaryExpression(const ast::Binary &value) override;
@@ -52,4 +52,4 @@ class CTranspilerGenerator : public ast::StatementVisitor,
 	void visitParameterExpression(const ast::Parameter &value) override;
 };
 
-} // namespace ray::compiler::generator
+} // namespace ray::compiler::generator::c

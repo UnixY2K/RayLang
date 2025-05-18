@@ -5,7 +5,7 @@
 #include <ray/compiler/ast/expression.hpp>
 #include <ray/compiler/ast/statement.hpp>
 
-namespace ray::compiler::generator {
+namespace ray::compiler::generator::wasm {
 
 class WASMTextGenerator : public ast::StatementVisitor,
                           public ast::ExpressionVisitor {
