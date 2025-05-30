@@ -8,7 +8,10 @@ namespace ray::compiler::generator::c {
 class NameMangler {
 
 	std::string mangleFunction(std::string_view module,
-	                           std::string namespacePath,
+	                           std::string_view namespacePath,
 	                           const ast::Function &function);
+	std::string mangleStruct(std::string_view module,
+	                         std::string_view namespacePath,
+	                         const ast::Struct &structDefinition);
 };
-} // namespace ray::compiler::generators::c
+} // namespace ray::compiler::generator::c

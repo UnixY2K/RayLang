@@ -60,7 +60,8 @@ void CTranspilerGenerator::resolve(
 	output << "#define RAYLANG_MACRO_DLL_LOCAL __attribute__((visibility"
 	          "(\"hidden\")))\n";
 	output << "#else\n";
-	output << "#pragma warning \"Unknown dynamic link import/export semantics.\"\n";
+	output << "#pragma warning \"Unknown dynamic link import/export "
+	          "semantics.\"\n";
 	output << "#define RAYLANG_MACRO_DLL_IMPORT\n";
 	output << "#define RAYLANG_MACRO_DLL_EXPORT\n";
 	output << "#define RAYLANG_MACRO_DLL_LOCAL\n";
