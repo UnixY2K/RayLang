@@ -1,4 +1,4 @@
 
-
+#[linkage(mangling = "c")]
 struct FILE;
 pub fn get_cstdout() -> mut FILE*;

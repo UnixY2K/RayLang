@@ -1,14 +1,14 @@
 #pragma once
-#include <ray/compiler/ast/expression.hpp>
-#include <ray/compiler/ast/statement.hpp>
-#include <ray/compiler/error_bag.hpp>
-#include <ray/compiler/lexer/token.hpp>
-
 #include <cstddef>
 #include <exception>
 #include <memory>
 #include <optional>
 #include <vector>
+
+#include <ray/compiler/ast/expression.hpp>
+#include <ray/compiler/ast/statement.hpp>
+#include <ray/compiler/error_bag.hpp>
+#include <ray/compiler/lexer/token.hpp>
 
 namespace ray::compiler {
 

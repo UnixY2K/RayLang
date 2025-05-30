@@ -1,6 +1,7 @@
 #include <format>
 #include <memory>
 #include <optional>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -64,6 +65,43 @@ Parser::NamespaceStatement(bool root) {
 		extStatements.push_back(
 		    std::make_unique<ast::Extern>(name, std::move(statements)));
 		return extStatements;
+	}
+
+	if (match({Token::TokenType::TOKEN_POUND})) {
+		consume(Token::TokenType::TOKEN_LEFT_SQUARE_BRACE,
+		        "expected '[' before compiler directive");
+		auto name = consume(Token::TokenType::TOKEN_IDENTIFIER,
+		                    "expected compiler directive name");
+		consume(Token::TokenType::TOKEN_LEFT_PAREN,
+		        "expected '(' before compiler directive attributes");
+		ast::CompDirectiveAttr attributes;
+		do {
+			auto attributeToken = consume(Token::TokenType::TOKEN_IDENTIFIER,
+			                              "Expect attribute name.");
+			std::string attributeName = std::string(attributeToken.getLexeme());
+			if (attributes.contains(std::string(attributeToken.getLexeme()))) {
+				error(attributeToken,
+				      std::format(
+				          "'{}' is a duplicated compiler directive attribute",
+				          attributeToken.getLexeme()));
+			}
+			std::string attributeValue;
+			if (match({Token::TokenType::TOKEN_EQUAL})) {
+				auto valueToken = consume(Token::TokenType::TOKEN_STRING,
+				                          "expected string literal value for "
+				                          "compiler directive attribute");
+				attributeValue = valueToken.getLexeme();
+			}
+			attributes[attributeName] = attributeValue;
+		} while (match({Token::TokenType::TOKEN_COMMA}));
+		consume(Token::TokenType::TOKEN_RIGHT_PAREN,
+		        "expected ')' after compiler directive attributes");
+		consume(Token::TokenType::TOKEN_RIGHT_SQUARE_BRACE,
+		        "expected ']' after compiler directive");
+		std::vector<std::unique_ptr<ast::Statement>> result;
+		result.push_back(
+		    std::make_unique<ast::CompDirective>(name, attributes));
+		return result;
 	}
 
 	while ((root || !check(Token::TokenType::TOKEN_RIGHT_BRACE)) &&
@@ -303,12 +341,12 @@ ast::Function Parser::function(std::string kind, bool publicVisiblity) {
 	std::vector<ast::Parameter> parameters;
 	if (!check(Token::TokenType::TOKEN_RIGHT_PAREN)) {
 		do {
-			auto parameterName = consume(Token::TokenType::TOKEN_IDENTIFIER,
-			                             "Expect parameter name.");
+			auto attributeToken = consume(Token::TokenType::TOKEN_IDENTIFIER,
+			                              "Expect parameter name.");
 			consume(Token::TokenType::TOKEN_COLON,
 			        "Expect ':' after parameter name.");
 			ast::Type parameterType = typeExpression();
-			auto parameter = ast::Parameter(parameterName, parameterType);
+			auto parameter = ast::Parameter(attributeToken, parameterType);
 
 			parameters.push_back(parameter);
 		} while (match({Token::TokenType::TOKEN_COMMA}));

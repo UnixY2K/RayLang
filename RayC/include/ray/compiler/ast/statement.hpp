@@ -1,11 +1,14 @@
 #pragma once
 #include <memory>
+#include <unordered_map>
 #include <vector>
 #include <optional>
 #include <ray/compiler/lexer/token.hpp>
 #include <ray/compiler/ast/expression.hpp>
 
 namespace ray::compiler::ast {
+
+using CompDirectiveAttr = std::unordered_map<std::string, std::string>;
 
 class Block;
 class TerminalExpr;
@@ -257,8 +260,13 @@ class Extern : public Statement {
 };
 class CompDirective : public Statement {
   public:
+	Token name;
+	CompDirectiveAttr values;
 
-	CompDirective() {}
+	CompDirective(Token name,
+	        CompDirectiveAttr values):
+		name(std::move(name)),
+		values(std::move(values)) {}
 
 	void visit(StatementVisitor& visitor) const override {
 		visitor.visitCompDirectiveStatement(*this);

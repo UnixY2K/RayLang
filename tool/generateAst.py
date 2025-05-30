@@ -24,7 +24,7 @@ def preprocessTypes(baseName: str, types: list[str]):
     return processedClasses
 
 
-def defineAst(outputDir: str, baseName: str, requiredHeaders: list[str], types: list[str]):
+def defineAst(outputDir: str, baseName: str, requiredHeaders: list[str], definitions: list[str], types: list[str]):
     filePath = os.path.join(outputDir, f"{baseName.lower()}.hpp")
     processedClasses = preprocessTypes(baseName, types)
     with open(filePath, "w") as headerFile:
@@ -34,6 +34,11 @@ def defineAst(outputDir: str, baseName: str, requiredHeaders: list[str], types: 
         headerFile.write("\n")
         headerFile.write("namespace ray::compiler::ast {\n")
         headerFile.write("\n")
+        for definition in definitions:
+            (name, value) = [x.strip() for x in definition.split("=")]
+            headerFile.write(f"using {name} = {value};\n")
+        if len(definitions) != 0:
+            headerFile.write("\n")
 
         for clazz in processedClasses:
             headerFile.write(f"class {clazz["Name"]};")
@@ -118,6 +123,7 @@ def main():
              "vector",
              "ray/compiler/lexer/token.hpp"
             ],
+            [],
             ["Assign		= std::unique_ptr<Expression> lhs, Token assignmentOp, std::unique_ptr<Expression> rhs",
              "Binary		= std::unique_ptr<Expression> left, Token op, std::unique_ptr<Expression> right",
              "Call			= std::unique_ptr<Expression> callee, Token paren, std::vector<std::unique_ptr<Expression>> arguments",
@@ -135,11 +141,13 @@ def main():
             ])
     defineAst(outputDir, "Statement",
             ["memory",
+             "unordered_map",
              "vector",
              "optional",
              "ray/compiler/lexer/token.hpp",
              "ray/compiler/ast/expression.hpp"
             ],
+            ["CompDirectiveAttr = std::unordered_map<std::string, std::string>"],
             ["Block			= std::vector<std::unique_ptr<Statement>> statements",
              "TerminalExpr	= std::optional<std::unique_ptr<Expression>> expression",
              "ExpressionStmt= std::unique_ptr<Expression> expression",
@@ -151,7 +159,7 @@ def main():
              "Struct		= Token name, bool publicVisibility, bool declaration, std::vector<Var> members, std::vector<bool> memberVisibility",
              "Namespace		= Token name, std::vector<std::unique_ptr<Statement>> statements",
              "Extern		= Token name, std::vector<std::unique_ptr<Statement>> statements",
-             "CompDirective	= ",
+             "CompDirective	= Token name, CompDirectiveAttr values",
             ])
 
 
