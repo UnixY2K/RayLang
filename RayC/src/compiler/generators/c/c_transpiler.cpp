@@ -25,7 +25,9 @@ void CTranspilerGenerator::resolve(
 	output << "extern \"C\" {\n";
 	output << "#endif\n";
 	output << "#include <stddef.h>\n";
+	output << "#ifndef __APPLE__\n";
 	output << "#include <stdint.h>\n";
+	output << "#endif\n";
 	// some of the definitions are technically UB as they may not be exactly 32
 	// or 64 bit,ex(float, double implementations but generally they use the
 	// IEEE 754 format) assuming that the following definitions are true
@@ -44,25 +46,24 @@ void CTranspilerGenerator::resolve(
 	output << "#define c_size size_t\n";
 	output << "#define c_voidptr void *\n";
 	output
-	    << "#if defined(_WIN32) || defined (__CYGWIN__) || defined(_MSC_VER)\n";
-	output << "\t// Microsoft\n";
-	output << "\t#define RAYLANG_MACRO_DLL_IMPORT __declspec(dllimport)\n";
-	output << "\t#define RAYLANG_MACRO_DLL_EXPORT __declspec(dllexport)\n";
-	output << "\t#define RAYLANG_MACRO_DLL_LOCAL\n";
+	    << "#if defined(_WIN32) || defined(__CYGWIN__) || defined(_MSC_VER)\n";
+	output << "// Microsoft\n";
+	output << "#define RAYLANG_MACRO_DLL_IMPORT __declspec(dllimport)\n";
+	output << "#define RAYLANG_MACRO_DLL_EXPORT __declspec(dllexport)\n";
+	output << "#define RAYLANG_MACRO_DLL_LOCAL\n";
 	output << "#elif defined(__GNUC__) && __GNUC__ >= 4\n";
-	output << "\t// GCC\n";
-	output << "\t#define RAYLANG_MACRO_DLL_IMPORT __attribute__ ((visibility "
+	output << "// GCC\n";
+	output << "#define RAYLANG_MACRO_DLL_IMPORT __attribute__((visibility"
 	          "(\"default\")))\n";
-	output << "\t#define RAYLANG_MACRO_DLL_EXPORT __attribute__ ((visibility "
+	output << "#define RAYLANG_MACRO_DLL_EXPORT __attribute__((visibility"
 	          "(\"default\")))\n";
-	output << "\t#define RAYLANG_MACRO_DLL_LOCAL  __attribute__ ((visibility "
+	output << "#define RAYLANG_MACRO_DLL_LOCAL __attribute__((visibility"
 	          "(\"hidden\")))\n";
 	output << "#else\n";
-	output
-	    << "\t#pragma warning Unknown dynamic link import/export semantics.\n";
-	output << "\t#define RAYLANG_MACRO_DLL_IMPORT\n";
-	output << "\t#define RAYLANG_MACRO_DLL_EXPORT\n";
-	output << "\t#define RAYLANG_MACRO_DLL_LOCAL\n";
+	output << "#pragma warning \"Unknown dynamic link import/export semantics.\"\n";
+	output << "#define RAYLANG_MACRO_DLL_IMPORT\n";
+	output << "#define RAYLANG_MACRO_DLL_EXPORT\n";
+	output << "#define RAYLANG_MACRO_DLL_LOCAL\n";
 	output << "#endif\n";
 	// ident++;
 	for (const auto &stmt : statement) {

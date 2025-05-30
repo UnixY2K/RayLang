@@ -1,0 +1,4 @@
+# ignore any c file at this level
+*.c
+# but allow the lower level c files
+!*/*.c
