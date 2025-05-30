@@ -4,6 +4,31 @@
 	// Para más información, visite: https://go.microsoft.com/fwlink/?linkid=830387
 	"version": "0.2.0",
 	"configurations": [
+		// MacOS
+		{
+			"type": "lldb",
+			"request": "launch",
+			"name": "(lldb) Compile Ray file(C)",
+			"program": "${workspaceFolder}/builddir/RayC/rayc",
+			"args": [
+				"${relativeFileDirname}/${fileBasename}",
+				"-o",
+				"${relativeFileDirname}/${fileBasenameNoExtension}.c",
+				"-t",
+				"c_source"
+			],
+			"cwd": "${workspaceFolder}",
+			"preLaunchTask": "Meson: Build RayC/rayc:executable"
+		},
+		{
+			"type": "lldb",
+			"request": "launch",
+			"name": "(lldb) Debug Ray file(C)",
+			"program": "${fileDirname}/${fileBasenameNoExtension}",
+			"args": [],
+			"cwd": "${fileDirname}",
+			"preLaunchTask": "Compile Ray c source file to binary"
+		},
 		// GNU/Linux
 		{
 			"name": "(gdb) Compile Ray file(C)",

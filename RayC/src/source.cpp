@@ -1,3 +1,4 @@
+#include <exception>
 #include <format>
 #include <fstream>
 #include <iostream>
@@ -23,93 +24,101 @@ int main(int argc, char **argv) {
 		return 1;
 	}
 
-	auto result = ray::compiler::cli::parse_args(argc, argv);
-	if (std::holds_alternative<std::vector<std::string>>(result)) {
-		for (const auto &error : std::get<std::vector<std::string>>(result)) {
-			std::cout << error << '\n';
-		}
-		return 1;
-	} else {
-		auto opts = std::get<ray::compiler::cli::Options>(result);
-		if (!opts.validate()) {
+	try {
+		auto result = ray::compiler::cli::parse_args(argc, argv);
+		if (std::holds_alternative<std::vector<std::string>>(result)) {
+			for (const auto &error :
+			     std::get<std::vector<std::string>>(result)) {
+				std::cout << error << '\n';
+			}
 			return 1;
-		}
+		} else {
+			auto opts = std::get<ray::compiler::cli::Options>(result);
+			if (!opts.validate()) {
+				return 1;
+			}
 
-		// read the contents of the file
-		std::ifstream input(opts.input);
-		if (!input) {
-			std::cerr << std::format("{}: could not open file: {}\n",
-			                         "Error"_red, opts.input.string());
-			return 1;
-		}
-		std::ostringstream oss{};
-		oss << input.rdbuf();
+			// read the contents of the file
+			std::ifstream input(opts.input);
+			if (!input) {
+				std::cerr << std::format("{}: could not open file: {}\n",
+				                         "Error"_red, opts.input.string());
+				return 1;
+			}
+			std::ostringstream oss{};
+			oss << input.rdbuf();
 
-		Lexer lexer(oss.view());
+			Lexer lexer(oss.view());
 
-		auto tokens = lexer.scanTokens();
-		if (lexer.getErrors().size() > 0) {
-			for (auto &error : lexer.getErrors()) {
+			auto tokens = lexer.scanTokens();
+			if (lexer.getErrors().size() > 0) {
+				for (auto &error : lexer.getErrors()) {
+					std::cerr << std::format(
+					    "{}: [{}:{}] {}\n", "LexerError"_red,
+					    opts.input.string(), error.positionString(),
+					    error.toString());
+				}
+				return 1;
+			}
+
+			auto parser = Parser(opts.input.relative_path().string(), tokens);
+			auto statements = parser.parse();
+			if (parser.failed()) {
+				return 1;
+			}
+			if (opts.target == ray::compiler::cli::Options::TargetEnum::NONE) {
+				opts.target = opts.defaultTarget;
+			}
+			std::string output;
+			bool handled = false;
+			switch (opts.target) {
+			case cli::Options::TargetEnum::WASM_TEXT: {
+				handled = true;
+				generator::wasm::WASMTextGenerator wasmTextGen;
+
+				wasmTextGen.resolve(statements);
+				if (wasmTextGen.hasFailed()) {
+					std::cerr << std::format("{}: {}\n", "Error"_red,
+					                         "WASMTextGenerator failed");
+					return 1;
+				}
+				output = wasmTextGen.getOutput();
+			}
+			case cli::Options::TargetEnum::C_SOURCE: {
+				handled = true;
+				generator::c::CTranspilerGenerator CTranspilerGen;
+
+				CTranspilerGen.resolve(statements);
+				if (CTranspilerGen.hasFailed()) {
+					std::cerr << std::format("{}: {}\n", "Error"_red,
+					                         "CSourceGen failed");
+					return 1;
+				}
+				output = CTranspilerGen.getOutput();
+			}
+			// both cases should never show
+			case cli::Options::TargetEnum::NONE:
+			case cli::Options::TargetEnum::ERROR:
+				break;
+			}
+			if (!handled) {
 				std::cerr << std::format(
-				    "{}: [{}:{}] {}\n", "LexerError"_red, opts.input.string(),
-				    error.positionString(), error.toString());
+				    "{}: unhandled target option, this is a compiler bug\n",
+				    "COMPILER-ERROR"_red);
+				return -1;
 			}
-			return 1;
-		}
 
-		auto parser = Parser(opts.input.relative_path().string(), tokens);
-		auto statements = parser.parse();
-		if (parser.failed()) {
-			return 1;
-		}
-		if (opts.target == ray::compiler::cli::Options::TargetEnum::NONE) {
-			opts.target = opts.defaultTarget;
-		}
-		std::string output;
-		bool handled = false;
-		switch (opts.target) {
-		case cli::Options::TargetEnum::WASM_TEXT: {
-			handled = true;
-			generator::wasm::WASMTextGenerator wasmTextGen;
-
-			wasmTextGen.resolve(statements);
-			if (wasmTextGen.hasFailed()) {
-				std::cerr << std::format("{}: {}\n", "Error"_red,
-				                         "WASMTextGenerator failed");
+			std::ofstream outputFile(opts.output, std::ios::trunc);
+			if (!outputFile) {
+				std::cerr << std::format("{}: could not open file: {}\n",
+				                         "Error"_red, opts.output.string());
 				return 1;
 			}
-			output = wasmTextGen.getOutput();
-		}
-		case cli::Options::TargetEnum::C_SOURCE: {
-			handled = true;
-			generator::c::CTranspilerGenerator CTranspilerGen;
-
-			CTranspilerGen.resolve(statements);
-			if (CTranspilerGen.hasFailed()) {
-				std::cerr << std::format("{}: {}\n", "Error"_red,
-				                         "CSourceGen failed");
-				return 1;
-			}
-			output = CTranspilerGen.getOutput();
-		}
-		// both cases should never show
-		case cli::Options::TargetEnum::NONE:
-		case cli::Options::TargetEnum::ERROR:
-			break;
-		}
-		if (!handled) {
-			std::cerr << std::format(
-			    "{}: unhandled target option, this is a compiler bug\n",
-			    "COMPILER-ERROR"_red);
-			return -1;
+			outputFile << output;
 		}
 
-		std::ofstream outputFile(opts.output, std::ios::trunc);
-		if (!outputFile) {
-			std::cerr << std::format("{}: could not open file: {}\n",
-			                         "Error"_red, opts.output.string());
-			return 1;
-		}
-		outputFile << output;
+	} catch (std::exception &ex) {
+		std::cerr << std::format("{}: {}", "ERROR"_red, ex.what());
+		return -1;
 	}
 }
