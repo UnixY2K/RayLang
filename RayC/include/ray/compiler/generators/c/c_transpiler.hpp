@@ -2,6 +2,8 @@
 
 #include <cstddef>
 #include <sstream>
+#include <string_view>
+#include <vector>
 
 #include <ray/compiler/ast/expression.hpp>
 #include <ray/compiler/ast/statement.hpp>
@@ -14,6 +16,8 @@ class CTranspilerGenerator : public ast::StatementVisitor,
 	size_t ident = 0;
 
 	std::string currentIdent() const;
+
+	std::vector<std::string_view> namespaceStack;
 
   public:
 	void resolve(const std::vector<std::unique_ptr<ast::Statement>> &statement);

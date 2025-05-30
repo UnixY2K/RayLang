@@ -43,6 +43,13 @@ Parser::NamespaceStatement(bool root) {
 	if (match({Token::TokenType::TOKEN_NAMESPACE})) {
 		name = consume(Token::TokenType::TOKEN_IDENTIFIER,
 		               "expected namespace identifier");
+		while (match({Token::TokenType::TOKEN_COLON})) {
+			consume(Token::TokenType::TOKEN_COLON,
+			        "expected ':' after first colon of nested namespace");
+			Token subNamespace = consume(Token::TokenType::TOKEN_IDENTIFIER,
+			                             "expected namespace identifier");
+			name.merge(subNamespace);
+		}
 		consume(Token::TokenType::TOKEN_LEFT_BRACE,
 		        "expected '{' after namespace identifier");
 		statements = NamespaceStatement(false);

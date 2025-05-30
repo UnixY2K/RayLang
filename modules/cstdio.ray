@@ -1,8 +1,6 @@
 
-namespace libc{
-	namespace stdio{
-		struct FILE;
-		#[linkage(mangling = "c", resolution="external", name="ray_libc_stdio_get_stdout")]
-		pub fn get_stdout() -> mut FILE*;
-	}
+namespace libc::stdio{
+	struct FILE;
+	#[linkage(mangling = "c", resolution="external", name="ray_libc_stdio_get_stdout")]
+	pub fn get_stdout() -> mut FILE*;
 }

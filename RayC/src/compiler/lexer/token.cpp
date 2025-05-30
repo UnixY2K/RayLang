@@ -16,6 +16,10 @@ std::string_view Token::getLexeme() const {
 }
 std::string_view Token::getGlyph() const { return glyph(type); }
 
+void Token::merge(Token other){
+	lexeme += other.lexeme;
+}
+
 Token::TokenType Token::fromChar(const char c) { return fromString({&c, 1}); }
 Token::TokenType Token::fromString(std::string_view str) {
 	static std::unordered_map<std::string, TokenType> map = {
