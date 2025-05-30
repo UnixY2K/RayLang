@@ -257,7 +257,8 @@ void CTranspilerGenerator::visitExternStatement(const ast::Extern &ext) {
 }
 void CTranspilerGenerator::visitCompDirectiveStatement(
     const ast::CompDirective &value) {
-	std::cerr << "visitCompDirectiveStatement not implemented\n";
+	std::cerr << std::format(
+	    "{}: visitCompDirectiveStatement not implemented.\n", "WARNING"_yellow);
 }
 // Expression
 void CTranspilerGenerator::visitAssignExpression(const ast::Assign &value) {
