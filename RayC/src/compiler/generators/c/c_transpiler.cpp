@@ -1,15 +1,17 @@
-
 #include <cstddef>
+#include <format>
+#include <iostream>
+#include <memory>
+#include <string>
+#include <string_view>
+
 #include <ray/cli/terminal.hpp>
 #include <ray/compiler/ast/expression.hpp>
 #include <ray/compiler/ast/statement.hpp>
+#include <ray/compiler/directives/compilerDirective.hpp>
+#include <ray/compiler/directives/linkageDirective.hpp>
 #include <ray/compiler/generators/c/c_transpiler.hpp>
 #include <ray/compiler/lexer/token.hpp>
-
-#include <format>
-#include <iostream>
-#include <string>
-#include <string_view>
 
 namespace ray::compiler::generator::c {
 
@@ -76,6 +78,14 @@ void CTranspilerGenerator::resolve(
 	output << "#ifdef __cplusplus\n";
 	output << "}\n";
 	output << "#endif\n";
+
+	if (!this->directivesStack.empty()) {
+		for (auto &directive : directivesStack) {
+			std::cerr << std::format("{}: unused compiler directive {}\n",
+			                         "WARNING"_yellow,
+			                         directive->directiveName());
+		}
+	}
 }
 
 bool CTranspilerGenerator::hasFailed() const { return false; }
@@ -272,8 +282,26 @@ void CTranspilerGenerator::visitExternStatement(const ast::Extern &ext) {
 }
 void CTranspilerGenerator::visitCompDirectiveStatement(
     const ast::CompDirective &value) {
-	std::cerr << std::format(
-	    "{}: visitCompDirectiveStatement not implemented.\n", "WARNING"_yellow);
+	auto directiveName = value.name.getLexeme();
+	if (directiveName == "Linkage") {
+		auto &attributes = value.values;
+		auto directive = directive::LinkageDirective(
+		    attributes.find("name") != attributes.end() ? attributes.at("name")
+		                                                : "",
+		    attributes.find("resolution") != attributes.end()
+		        ? attributes.at("resolution") == "external"
+		        : false,
+		    attributes.find("mangling") != attributes.end()
+		        ? attributes.at("mangling") == "c"
+		              ? directive::LinkageDirective::ManglingType::C
+		              : directive::LinkageDirective::ManglingType::Default
+		        : directive::LinkageDirective::ManglingType::Default);
+		directivesStack.push_back(
+		    std::make_unique<directive::LinkageDirective>(directive));
+	} else {
+		std::cerr << std::format("{}: Unknown compiler directive '{}'.\n",
+		                         "WARNING"_yellow, directiveName);
+	}
 }
 // Expression
 void CTranspilerGenerator::visitAssignExpression(const ast::Assign &value) {
