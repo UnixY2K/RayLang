@@ -3,7 +3,7 @@ extern "C" {
 #endif
 #include <stdio.h>
 
-FILE *get_cstdout() { return stdout; }
+FILE *ray_libc_stdio_get_stdout() { return stdout; }
 #ifdef __cplusplus
 }
 #endif
