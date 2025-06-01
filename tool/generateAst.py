@@ -159,7 +159,7 @@ def main():
              "Struct		= Token name, bool publicVisibility, bool declaration, std::vector<Var> members, std::vector<bool> memberVisibility",
              "Namespace		= Token name, std::vector<std::unique_ptr<Statement>> statements",
              "Extern		= Token name, std::vector<std::unique_ptr<Statement>> statements",
-             "CompDirective	= Token name, CompDirectiveAttr values",
+             "CompDirective	= Token name, CompDirectiveAttr values, std::unique_ptr<Statement> child",
             ])
 
 

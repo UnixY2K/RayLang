@@ -74,20 +74,12 @@ Parser::NamespaceStatement(bool root) {
 		return extStatements;
 	}
 
-	if (match({Token::TokenType::TOKEN_POUND})) {
-		std::vector<std::unique_ptr<ast::Statement>> result;
-		result.push_back(
-		    std::make_unique<ast::CompDirective>(CompilerDirective()));
-		return result;
-	}
-
 	while ((root || !check(Token::TokenType::TOKEN_RIGHT_BRACE)) &&
 	       !isAtEnd()) {
 
 		if (!(check(Token::TokenType::TOKEN_NAMESPACE) ||
-		      check(Token::TokenType::TOKEN_EXTERN) ||
-		      check(Token::TokenType::TOKEN_POUND))) {
-			auto result = declaration();
+		      check(Token::TokenType::TOKEN_EXTERN))) {
+			auto result = CompilerDirective();
 			if (result.has_value()) {
 				statements.push_back(std::move(result.value()));
 			}
@@ -100,38 +92,44 @@ Parser::NamespaceStatement(bool root) {
 	}
 	return statements;
 }
-ast::CompDirective Parser::CompilerDirective() {
-	consume(Token::TokenType::TOKEN_LEFT_SQUARE_BRACE,
-	        "expected '[' before compiler directive");
-	auto name = consume(Token::TokenType::TOKEN_IDENTIFIER,
-	                    "expected compiler directive name");
-	consume(Token::TokenType::TOKEN_LEFT_PAREN,
-	        "expected '(' before compiler directive attributes");
-	ast::CompDirectiveAttr attributes;
-	do {
-		auto attributeToken = consume(Token::TokenType::TOKEN_IDENTIFIER,
-		                              "Expect attribute name.");
-		std::string attributeName = std::string(attributeToken.getLexeme());
-		if (attributes.contains(std::string(attributeToken.getLexeme()))) {
-			error(
-			    attributeToken,
-			    std::format("'{}' is a duplicated compiler directive attribute",
-			                attributeToken.getLexeme()));
-		}
-		std::string attributeValue;
-		if (match({Token::TokenType::TOKEN_EQUAL})) {
-			auto valueToken = consume(Token::TokenType::TOKEN_STRING,
-			                          "expected string literal value for "
-			                          "compiler directive attribute");
-			attributeValue = valueToken.getLexeme();
-		}
-		attributes[attributeName] = attributeValue;
-	} while (match({Token::TokenType::TOKEN_COMMA}));
-	consume(Token::TokenType::TOKEN_RIGHT_PAREN,
-	        "expected ')' after compiler directive attributes");
-	consume(Token::TokenType::TOKEN_RIGHT_SQUARE_BRACE,
-	        "expected ']' after compiler directive");
-	return {name, attributes};
+std::optional<std::unique_ptr<ast::Statement>> Parser::CompilerDirective() {
+	if (match({Token::TokenType::TOKEN_POUND})) {
+		consume(Token::TokenType::TOKEN_LEFT_SQUARE_BRACE,
+		        "expected '[' before compiler directive");
+		auto name = consume(Token::TokenType::TOKEN_IDENTIFIER,
+		                    "expected compiler directive name");
+		consume(Token::TokenType::TOKEN_LEFT_PAREN,
+		        "expected '(' before compiler directive attributes");
+		ast::CompDirectiveAttr attributes;
+		do {
+			auto attributeToken = consume(Token::TokenType::TOKEN_IDENTIFIER,
+			                              "Expect attribute name.");
+			std::string attributeName = std::string(attributeToken.getLexeme());
+			if (attributes.contains(std::string(attributeToken.getLexeme()))) {
+				error(attributeToken,
+				      std::format(
+				          "'{}' is a duplicated compiler directive attribute",
+				          attributeToken.getLexeme()));
+			}
+			std::string attributeValue;
+			if (match({Token::TokenType::TOKEN_EQUAL})) {
+				auto valueToken = consume(Token::TokenType::TOKEN_STRING,
+				                          "expected string literal value for "
+				                          "compiler directive attribute");
+				attributeValue = valueToken.getLexeme();
+			}
+			attributes[attributeName] = attributeValue;
+		} while (match({Token::TokenType::TOKEN_COMMA}));
+		consume(Token::TokenType::TOKEN_RIGHT_PAREN,
+		        "expected ')' after compiler directive attributes");
+		auto end = consume(Token::TokenType::TOKEN_RIGHT_SQUARE_BRACE,
+		                   "expected ']' after compiler directive");
+		// all compiler directives expect a child statement
+		auto stmt = declaration();
+		return std::make_unique<ast::CompDirective>(
+		    name, attributes, stmt ? std::move(*stmt) : nullptr);
+	}
+	return declaration();
 }
 std::unique_ptr<ast::Expression> Parser::expression() { return comma(); }
 std::optional<std::unique_ptr<ast::Statement>> Parser::declaration() {

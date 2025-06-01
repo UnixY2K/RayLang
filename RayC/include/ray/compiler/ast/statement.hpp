@@ -262,11 +262,14 @@ class CompDirective : public Statement {
   public:
 	Token name;
 	CompDirectiveAttr values;
+	std::unique_ptr<Statement> child;
 
 	CompDirective(Token name,
-	        CompDirectiveAttr values):
+	        CompDirectiveAttr values,
+	        std::unique_ptr<Statement> child):
 		name(std::move(name)),
-		values(std::move(values)) {}
+		values(std::move(values)),
+		child(std::move(child)) {}
 
 	void visit(StatementVisitor& visitor) const override {
 		visitor.visitCompDirectiveStatement(*this);

@@ -2,6 +2,7 @@
 #include <format>
 #include <iostream>
 #include <memory>
+#include <optional>
 #include <string>
 #include <string_view>
 
@@ -10,6 +11,7 @@
 #include <ray/compiler/ast/statement.hpp>
 #include <ray/compiler/directives/compilerDirective.hpp>
 #include <ray/compiler/directives/linkageDirective.hpp>
+#include <ray/compiler/generators/c/c_mangler.hpp>
 #include <ray/compiler/generators/c/c_transpiler.hpp>
 #include <ray/compiler/lexer/token.hpp>
 
@@ -117,8 +119,27 @@ void CTranspilerGenerator::visitFunctionStatement(
     const ast::Function &function) {
 
 	std::string identTabs = currentIdent();
-	output << identTabs;
+	std::string currentNamespace;
+	std::string currentModule;
 
+	std::optional<directive::LinkageDirective> linkageDirective;
+
+	for (size_t i = directivesStack.size(); i > top; i--) {
+		auto &directive = directivesStack[i - i];
+		if (auto foundLinkDirective =
+		        dynamic_cast<directive::LinkageDirective *>(directive.get())) {
+			linkageDirective = *foundLinkDirective;
+		} else {
+			std::cout << std::format(
+			    "{}: unmatched compiler directive '{}' for function.\n",
+			    "WARNING"_yellow, directive->directiveName());
+		}
+		directivesStack.pop_back();
+	}
+	std::string functionName = NameMangler().mangleFunction(
+	    currentModule, currentNamespace, function, linkageDirective);
+
+	output << identTabs;
 	if (!function.publicVisibility) {
 		if (!function.is_extern) {
 			output << "RAYLANG_MACRO_DLL_LOCAL ";
@@ -132,7 +153,8 @@ void CTranspilerGenerator::visitFunctionStatement(
 		}
 	}
 	function.returnType.visit(*this);
-	output << std::format("{}(", function.name.lexeme);
+
+	output << std::format("{}(", functionName);
 	for (size_t index = 0; index < function.params.size(); ++index) {
 		const auto &parameter = function.params[index];
 		parameter.visit(*this);
@@ -296,8 +318,29 @@ void CTranspilerGenerator::visitCompDirectiveStatement(
 		              ? directive::LinkageDirective::ManglingType::C
 		              : directive::LinkageDirective::ManglingType::Default
 		        : directive::LinkageDirective::ManglingType::Default);
-		directivesStack.push_back(
-		    std::make_unique<directive::LinkageDirective>(directive));
+		if (value.child) {
+			if (dynamic_cast<ast::Function *>(value.child.get())) {
+				size_t startDirectives = directivesStack.size();
+				size_t originalTop = top + 1;
+				top = startDirectives;
+				directivesStack.push_back(
+				    std::make_unique<directive::LinkageDirective>(directive));
+				value.child->visit(*this);
+				if (directivesStack.size() != startDirectives) {
+					std::cerr << std::format(
+					    "{}: unprocressed compiler directives.\n",
+					    "COMPILER_BUG"_red, directive.directiveName());
+				}
+				top = originalTop;
+			} else {
+				std::cerr << std::format(
+				    "{}: {} child expression must be a function.\n",
+				    "ERROR"_red, directive.directiveName());
+			}
+		} else {
+			std::cerr << std::format("{}: {} must have a child expression.\n",
+			                         "ERROR"_red, directive.directiveName());
+		}
 	} else {
 		std::cerr << std::format("{}: Unknown compiler directive '{}'.\n",
 		                         "WARNING"_yellow, directiveName);

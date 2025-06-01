@@ -30,7 +30,7 @@ class Parser {
   private:
 	std::unique_ptr<ast::Expression> expression();
 	std::vector<std::unique_ptr<ast::Statement>> NamespaceStatement(bool root);
-	ast::CompDirective CompilerDirective();
+	std::optional<std::unique_ptr<ast::Statement>> CompilerDirective();
 	std::optional<std::unique_ptr<ast::Statement>> declaration();
 	std::unique_ptr<ast::Statement> structDeclaration(bool publicVisibility);
 	std::unique_ptr<ast::Statement> statement();

@@ -21,6 +21,7 @@ class CTranspilerGenerator : public ast::StatementVisitor,
 
 	std::vector<std::string_view> namespaceStack;
 	std::vector<std::unique_ptr<directive::CompilerDirective>> directivesStack;
+	size_t top = 0;
 
   public:
 	void resolve(const std::vector<std::unique_ptr<ast::Statement>> &statement);
