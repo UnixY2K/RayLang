@@ -31,9 +31,7 @@ void CTranspilerGenerator::resolve(
 	output << "extern \"C\" {\n";
 	output << "#endif\n";
 	output << "#include <stddef.h>\n";
-	output << "#ifndef __APPLE__\n";
 	output << "#include <stdint.h>\n";
-	output << "#endif\n";
 	// some of the definitions are technically UB as they may not be exactly 32
 	// or 64 bit,ex(float, double implementations but generally they use the
 	// IEEE 754 format) assuming that the following definitions are true

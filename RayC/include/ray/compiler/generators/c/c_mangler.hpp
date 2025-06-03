@@ -8,11 +8,13 @@
 
 namespace ray::compiler::generator::c {
 class NameMangler {
+	constexpr static std::string_view manglerVersion = "0";
+
   public:
-	std::string mangleFunction(std::string_view module,
-	                           std::string_view namespacePath,
-	                           const ast::Function &function,
-							std::optional<directive::LinkageDirective> &linkageDirective);
+	std::string mangleFunction(
+	    std::string_view module, std::string_view namespacePath,
+	    const ast::Function &function,
+	    std::optional<directive::LinkageDirective> &linkageDirective);
 	std::string mangleStruct(std::string_view module,
 	                         std::string_view namespacePath,
 	                         const ast::Struct &structDefinition);
