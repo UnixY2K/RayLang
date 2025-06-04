@@ -234,7 +234,8 @@ void CTranspilerGenerator::visitVarStatement(const ast::Var &var) {
 		        1, var.type.name.lexeme.find_last_of("]") - 1),
 		    var.name.lexeme);
 	} else {
-		output << std::format("{} {}", var.type.name.lexeme, var.name.lexeme);
+		var.type.visit(*this);
+		output << std::format("{}", var.name.lexeme);
 	}
 	if (var.initializer.has_value()) {
 		output << " = ";
