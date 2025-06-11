@@ -1,17 +1,27 @@
 // requires to link against libc and math
 // requires libs/c/stdio.c for the get_stdout function
 
-extern "C"{
+
+
 struct FILE;
-fn extern get_stdout() -> mut FILE*;
+
+#[Linkage(mangling="c")]
 fn extern atoi(buffer: [c_char;]) -> mut c_int;
+#[Linkage(mangling="c")]
 fn extern fwrite(buffer: c_voidptr, size: mut c_size, count: mut c_size, stream: mut FILE*) -> mut c_size;
+#[Linkage(mangling="c")]
 fn extern strlen(buffer: [c_char;]) -> mut c_size;
+#[Linkage(mangling="c")]
 fn extern floor(number: mut f64) -> mut f64;
+#[Linkage(mangling="c")]
 fn extern log10(number: mut f64) -> mut f64;
+#[Linkage(mangling="c")]
 fn extern malloc(size: c_size) -> mut c_voidptr;
+#[Linkage(mangling="c")]
 fn extern free(size: mut c_voidptr);
-}
+
+#[Linkage(mangling = "c", resolution="external", name="ray_libc_stdio_get_stdout")]
+fn extern get_stdout() -> mut FILE*;
 
 fn print(buffer: [u8;]){
 	fwrite(buffer as mut c_voidptr, sizeof(c_char), strlen(buffer as c_char*), get_stdout());
@@ -19,9 +29,9 @@ fn print(buffer: [u8;]){
 
 fn s32toString(num: s32) -> mut [u8;]{
 	let size: usize = floor(log10(num)) + 1;
-	let mut n: s32 = num;
-	let mut array: [u8;] = malloc(size + 1) as mut [u8;];
-	let i: usize = (size - 1);
+	let n: mut s32 = num;
+	let array: mut [u8;] = malloc(size + 1) as mut [u8;];
+	let i: mut usize = (size - 1);
 	array[size] = '\0';
 	while n != 0 {
 		array[i--] = (n % 10) + '0';
@@ -38,8 +48,8 @@ fn fib(n: s32) -> s32{
 	return fib(n-1) + fib(n-2);
 }
 
-extern "C"{
 
+#[Linkage(mangling="c")]
 pub fn main(argc: s32, argv: c_char**) -> mut s32 {
 	if(argc != 2){
 		print("usage: ");
@@ -55,4 +65,5 @@ pub fn main(argc: s32, argv: c_char**) -> mut s32 {
 	return 0;
 }
 
-}
+
+

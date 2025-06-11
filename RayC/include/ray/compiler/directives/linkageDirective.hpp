@@ -11,6 +11,7 @@ class LinkageDirective : public CompilerDirective {
 	enum class ManglingType {
 		Default,
 		C,
+		Unknonw
 	};
 
 	std::string overrideName;
