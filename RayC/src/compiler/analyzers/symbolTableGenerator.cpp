@@ -1,20 +1,35 @@
 #include <iostream>
 
+#include <ray/cli/terminal.hpp>
 #include <ray/compiler/analyzers/symbolTableGenerator.hpp>
 
 namespace ray::compiler::analyzer::symbols {
+using namespace terminal::literals;
+
 void SymbolTableGenerator::resolve(
-    const std::vector<std::unique_ptr<ast::Statement>> &statement) {}
+    const std::vector<std::unique_ptr<ast::Statement>> &statement) {
+	for (const auto &stmt : statement) {
+		stmt->visit(*this);
+	}
+
+	if (!this->directivesStack.empty()) {
+		for (auto &directive : directivesStack) {
+			std::cerr << std::format("{}: unused compiler directive {}\n",
+			                         "WARNING"_yellow,
+			                         directive->directiveName());
+		}
+	}
+}
 
 void SymbolTableGenerator::visitBlockStatement(const ast::Block &value) {
 	std::cerr << "visitBlockStatement not implemented\n";
 }
 void SymbolTableGenerator::visitTerminalExprStatement(
-	const ast::TerminalExpr &value) {
+    const ast::TerminalExpr &value) {
 	std::cerr << "visitTerminalExprStatement not implemented\n";
 }
 void SymbolTableGenerator::visitExpressionStmtStatement(
-	const ast::ExpressionStmt &value) {
+    const ast::ExpressionStmt &value) {
 	std::cerr << "visitExpressionStmtStatement not implemented\n";
 }
 void SymbolTableGenerator::visitFunctionStatement(const ast::Function &value) {
@@ -36,14 +51,14 @@ void SymbolTableGenerator::visitStructStatement(const ast::Struct &value) {
 	std::cerr << "visitStructStatement not implemented\n";
 }
 void SymbolTableGenerator::visitNamespaceStatement(
-	const ast::Namespace &value) {
+    const ast::Namespace &value) {
 	std::cerr << "visitNamespaceStatement not implemented\n";
 }
 void SymbolTableGenerator::visitExternStatement(const ast::Extern &value) {
 	std::cerr << "visitExternStatement not implemented\n";
 }
 void SymbolTableGenerator::visitCompDirectiveStatement(
-	const ast::CompDirective &value) {
+    const ast::CompDirective &value) {
 	std::cerr << "visitCompDirectiveStatement not implemented\n";
 }
 // Expression
@@ -75,7 +90,7 @@ void SymbolTableGenerator::visitUnaryExpression(const ast::Unary &value) {
 	std::cerr << "visitUnaryExpression not implemented\n";
 }
 void SymbolTableGenerator::visitArrayAccessExpression(
-	const ast::ArrayAccess &value) {
+    const ast::ArrayAccess &value) {
 	std::cerr << "visitArrayAccessExpression not implemented\n";
 }
 void SymbolTableGenerator::visitVariableExpression(const ast::Variable &value) {
@@ -88,7 +103,7 @@ void SymbolTableGenerator::visitCastExpression(const ast::Cast &value) {
 	std::cerr << "visitCastExpression not implemented\n";
 }
 void SymbolTableGenerator::visitParameterExpression(
-	const ast::Parameter &value) {
+    const ast::Parameter &value) {
 	std::cerr << "visitParameterExpression not implemented\n";
 }
 

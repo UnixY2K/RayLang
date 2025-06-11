@@ -2,10 +2,14 @@
 
 #include <ray/compiler/ast/expression.hpp>
 #include <ray/compiler/ast/statement.hpp>
+#include <ray/compiler/directives/compilerDirective.hpp>
+#include <ray/compiler/directives/linkageDirective.hpp>
 
 namespace ray::compiler::analyzer::symbols {
 class SymbolTableGenerator : public ast::StatementVisitor,
                              public ast::ExpressionVisitor {
+	std::vector<std::string_view> namespaceStack;
+	std::vector<std::unique_ptr<directive::CompilerDirective>> directivesStack;
 
   public:
 	void resolve(const std::vector<std::unique_ptr<ast::Statement>> &statement);
