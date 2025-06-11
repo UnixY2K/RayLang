@@ -6,6 +6,11 @@
 namespace ray::compiler::analyzer::symbols {
 class SymbolTableGenerator : public ast::StatementVisitor,
                              public ast::ExpressionVisitor {
+
+  public:
+	void resolve(const std::vector<std::unique_ptr<ast::Statement>> &statement);
+
+  private:
 	void visitBlockStatement(const ast::Block &value) override;
 	void visitTerminalExprStatement(const ast::TerminalExpr &value) override;
 	void
@@ -35,4 +40,4 @@ class SymbolTableGenerator : public ast::StatementVisitor,
 	void visitCastExpression(const ast::Cast &value) override;
 	void visitParameterExpression(const ast::Parameter &value) override;
 };
-} // namespace ray::compiler::generator::c
+} // namespace ray::compiler::analyzer::symbols
