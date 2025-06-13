@@ -8,7 +8,7 @@
 #include <ray/cli/options.hpp>
 #include <ray/cli/terminal.hpp>
 
-#include <ray/compiler/analyzers/symbolTableGenerator.hpp>
+#include <ray/compiler/analyzers/resolver.hpp>
 
 #include <ray/compiler/generators/c/c_transpiler.hpp>
 #include <ray/compiler/generators/wasm/wasm_text.hpp>
@@ -88,7 +88,7 @@ int main(int argc, char **argv) {
 			}
 			case cli::Options::TargetEnum::C_SOURCE: {
 				handled = true;
-				analyzer::symbols::SymbolTableGenerator symbolTableGen;
+				analyzer::symbols::Resolver symbolTableGen;
 				generator::c::CTranspilerGenerator CTranspilerGen;
 
 				symbolTableGen.resolve(statements);
