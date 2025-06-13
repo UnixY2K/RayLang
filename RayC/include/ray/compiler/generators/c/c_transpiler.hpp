@@ -9,6 +9,8 @@
 #include <ray/compiler/ast/expression.hpp>
 #include <ray/compiler/ast/statement.hpp>
 #include <ray/compiler/directives/compilerDirective.hpp>
+#include <ray/compiler/passes/resolver.hpp>
+#include <ray/compiler/passes/symbol_mangler.hpp>
 
 namespace ray::compiler::generator::c {
 
@@ -23,8 +25,13 @@ class CTranspilerGenerator : public ast::StatementVisitor,
 	std::vector<std::unique_ptr<directive::CompilerDirective>> directivesStack;
 	size_t top = 0;
 
+	analyzer::symbols::SymbolTable symbolTable;
+
+	passes::mangling::NameMangler nameMangler;
+
   public:
-	void resolve(const std::vector<std::unique_ptr<ast::Statement>> &statement);
+	void resolve(const std::vector<std::unique_ptr<ast::Statement>> &statement,
+	             analyzer::symbols::SymbolTable symbolTable);
 
 	bool hasFailed() const;
 
@@ -59,6 +66,10 @@ class CTranspilerGenerator : public ast::StatementVisitor,
 	void visitTypeExpression(const ast::Type &value) override;
 	void visitCastExpression(const ast::Cast &value) override;
 	void visitParameterExpression(const ast::Parameter &value) override;
+
+  private:
+	std::string findCallableName(const ast::Call &callable,
+	                             const std::string_view name) const;
 };
 
 } // namespace ray::compiler::generator::c

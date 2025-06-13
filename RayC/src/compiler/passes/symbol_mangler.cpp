@@ -3,9 +3,9 @@
 
 #include <ray/cli/terminal.hpp>
 #include <ray/compiler/directives/linkageDirective.hpp>
-#include <ray/compiler/generators/c/c_mangler.hpp>
+#include <ray/compiler/passes/symbol_mangler.hpp>
 
-namespace ray::compiler::generator::c {
+namespace ray::compiler::passes::mangling {
 using namespace terminal::literals;
 
 std::string NameMangler::mangleFunction(
@@ -38,4 +38,4 @@ std::string NameMangler::mangleFunction(
 	                   namespacePath, function.name.lexeme.size(),
 	                   function.name.lexeme);
 }
-} // namespace ray::compiler::generator::c
+} // namespace ray::compiler::passes::mangling

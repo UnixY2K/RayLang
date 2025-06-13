@@ -1,7 +1,5 @@
 #pragma once
-
 #include <memory>
-#include <unordered_map>
 
 #include <ray/compiler/ast/expression.hpp>
 #include <ray/compiler/ast/statement.hpp>
@@ -9,15 +7,30 @@
 #include <ray/compiler/directives/linkageDirective.hpp>
 
 namespace ray::compiler::analyzer::symbols {
-class Resolver : public ast::StatementVisitor,
-                             public ast::ExpressionVisitor {
+struct Symbol {
+	enum class SymbolType {
+		Function,
+	};
+	std::string name;
+	std::string mangledName;
+	SymbolType type;
+	std::string scope;
+	const ast::Statement* object;
+};
+using SymbolTable = std::vector<Symbol>;
+class Resolver : public ast::StatementVisitor, public ast::ExpressionVisitor {
 	std::vector<std::string_view> namespaceStack;
 	std::vector<std::unique_ptr<directive::CompilerDirective>> directivesStack;
 
-	std::unordered_map<std::string, std::unique_ptr<ast::Statement>> globalTable;
+	SymbolTable globalTable;
+	size_t top = 0;
 
   public:
 	void resolve(const std::vector<std::unique_ptr<ast::Statement>> &statement);
+
+	SymbolTable getSymbolTable() const;
+
+	bool hasFailed() const;
 
   private:
 	void visitBlockStatement(const ast::Block &value) override;

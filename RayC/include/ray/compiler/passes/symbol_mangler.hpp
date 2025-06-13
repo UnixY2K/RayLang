@@ -6,7 +6,7 @@
 #include <ray/compiler/ast/statement.hpp>
 #include <ray/compiler/directives/linkageDirective.hpp>
 
-namespace ray::compiler::generator::c {
+namespace ray::compiler::passes::mangling {
 class NameMangler {
 	constexpr static std::string_view manglerVersion = "0";
 
@@ -19,4 +19,4 @@ class NameMangler {
 	                         std::string_view namespacePath,
 	                         const ast::Struct &structDefinition);
 };
-} // namespace ray::compiler::generator::c
+} // namespace ray::compiler::passes::mangling

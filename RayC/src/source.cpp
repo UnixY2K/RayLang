@@ -8,7 +8,7 @@
 #include <ray/cli/options.hpp>
 #include <ray/cli/terminal.hpp>
 
-#include <ray/compiler/analyzers/resolver.hpp>
+#include <ray/compiler/passes/resolver.hpp>
 
 #include <ray/compiler/generators/c/c_transpiler.hpp>
 #include <ray/compiler/generators/wasm/wasm_text.hpp>
@@ -73,6 +73,14 @@ int main(int argc, char **argv) {
 			}
 			std::string output;
 			bool handled = false;
+			analyzer::symbols::Resolver symbolTableGen;
+			symbolTableGen.resolve(statements);
+
+			if (symbolTableGen.hasFailed()) {
+				std::cerr << std::format("{}: {}\n", "Error"_red,
+				                         "symbolTableGen failed");
+				return 1;
+			}
 			switch (opts.target) {
 			case cli::Options::TargetEnum::WASM_TEXT: {
 				handled = true;
@@ -88,12 +96,9 @@ int main(int argc, char **argv) {
 			}
 			case cli::Options::TargetEnum::C_SOURCE: {
 				handled = true;
-				analyzer::symbols::Resolver symbolTableGen;
 				generator::c::CTranspilerGenerator CTranspilerGen;
 
-				symbolTableGen.resolve(statements);
-
-				CTranspilerGen.resolve(statements);
+				CTranspilerGen.resolve(statements, symbolTableGen.getSymbolTable());
 				if (CTranspilerGen.hasFailed()) {
 					std::cerr << std::format("{}: {}\n", "Error"_red,
 					                         "CSourceGen failed");
