@@ -33,7 +33,7 @@ std::string NameMangler::mangleFunction(
 		}
 		}
 	}
-	return std::format("_Ray{}_{}_{}_{}_{}_{}_{}_{}", manglerVersion, "F",
+	return std::format("_RayMv{}_T{}_M{}_{}_NS{}_{}_N{}_{}", manglerVersion, "F",
 	                   module.size(), module, namespacePath.size(),
 	                   namespacePath, function.name.lexeme.size(),
 	                   function.name.lexeme);
