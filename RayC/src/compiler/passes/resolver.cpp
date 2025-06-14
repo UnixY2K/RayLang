@@ -80,8 +80,35 @@ void Resolver::visitVarStatement(const ast::Var &value) {
 void Resolver::visitWhileStatement(const ast::While &value) {
 	std::cerr << "visitWhileStatement not implemented\n";
 }
-void Resolver::visitStructStatement(const ast::Struct &value) {
-	std::cerr << "visitStructStatement not implemented\n";
+void Resolver::visitStructStatement(const ast::Struct &structObj) {
+	std::string currentNamespace;
+	std::string currentModule;
+
+	std::optional<directive::LinkageDirective> linkageDirective;
+
+	for (size_t i = directivesStack.size(); i > top; i--) {
+		auto &directive = directivesStack[i - i];
+		if (auto foundLinkDirective =
+		        dynamic_cast<directive::LinkageDirective *>(directive.get())) {
+			linkageDirective = *foundLinkDirective;
+		} else {
+			std::cout << std::format(
+			    "{}: unmatched compiler directive '{}' for struct.\n",
+			    "WARNING"_yellow, directive->directiveName());
+		}
+		directivesStack.pop_back();
+	}
+
+	std::string mangledStructName =
+	    passes::mangling::NameMangler().mangleStruct(
+	        currentModule, currentNamespace, structObj, linkageDirective);
+	globalTable.push_back(Symbol{
+	    .name = std::string(structObj.name.getLexeme()),
+	    .mangledName = mangledStructName,
+	    .type = Symbol::SymbolType::Struct,
+	    .scope = currentNamespace,
+	    .object = &structObj,
+	});
 }
 void Resolver::visitNamespaceStatement(const ast::Namespace &value) {
 	std::cerr << "visitNamespaceStatement not implemented\n";

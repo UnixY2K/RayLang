@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <format>
 #include <memory>
 #include <optional>
@@ -313,8 +314,8 @@ ast::Var Parser::varDeclaration(std::string kind) {
 	Token name = consume(Token::TokenType::TOKEN_IDENTIFIER,
 	                     std::format("Expect {} name.", kind));
 
-	ast::Type type =
-	    ast::Type{Token{Token::TokenType::TOKEN_UNINITIALIZED}, true, false};
+	ast::Type type = ast::Type{
+	    Token{Token::TokenType::TOKEN_UNINITIALIZED}, true, false, {}};
 	if (match({Token::TokenType::TOKEN_COLON})) {
 		// array type
 		type = typeExpression();
@@ -327,7 +328,7 @@ ast::Var Parser::varDeclaration(std::string kind) {
 
 	consume(Token::TokenType::TOKEN_SEMICOLON,
 	        std::format("Expect ';' after {} declaration.", kind));
-	ast::Var variable{name, type, is_mutable, is_extern,
+	ast::Var variable{name, std::move(type), is_mutable, is_extern,
 	                  std::move(initializer)};
 	return ast::Var(std::move(variable));
 }
@@ -355,9 +356,10 @@ ast::Function Parser::function(std::string kind, bool publicVisiblity) {
 			consume(Token::TokenType::TOKEN_COLON,
 			        "Expect ':' after parameter name.");
 			ast::Type parameterType = typeExpression();
-			auto parameter = ast::Parameter(attributeToken, parameterType);
+			auto parameter =
+			    ast::Parameter(attributeToken, std::move(parameterType));
 
-			parameters.push_back(parameter);
+			parameters.push_back(std::move(parameter));
 		} while (match({Token::TokenType::TOKEN_COMMA}));
 	}
 	consume(Token::TokenType::TOKEN_RIGHT_PAREN,
@@ -367,7 +369,7 @@ ast::Function Parser::function(std::string kind, bool publicVisiblity) {
 
 	ast::Type returnType(
 	    types::makeUnitTypeToken(previous().line, previous().column), true,
-	    false);
+	    false, {});
 
 	if (match({Token::TokenType::TOKEN_ARROW})) {
 		returnType = typeExpression();
@@ -379,8 +381,12 @@ ast::Function Parser::function(std::string kind, bool publicVisiblity) {
 		        std::format("Expect '{{' before {} body.", kind));
 		body = {block()};
 	}
-	return {name,       publicVisiblity, is_extern,
-	        parameters, std::move(body), returnType};
+	return {name,
+	        publicVisiblity,
+	        is_extern,
+	        std::move(parameters),
+	        std::move(body),
+	        std::move(returnType)};
 }
 std::vector<std::unique_ptr<ast::Statement>> Parser::block() {
 	std::vector<std::unique_ptr<ast::Statement>> statements;
@@ -539,7 +545,8 @@ std::unique_ptr<ast::Expression> Parser::unaryExpression() {
 	auto expr = call();
 	if (match({Token::TokenType::TOKEN_AS})) {
 		auto type = typeExpression();
-		expr = std::make_unique<ast::Cast>(ast::Cast{std::move(expr), type});
+		expr = std::make_unique<ast::Cast>(
+		    ast::Cast{std::move(expr), std::move(type)});
 	}
 	return expr;
 }
@@ -547,25 +554,32 @@ ast::Type Parser::typeExpression() {
 	bool is_mutable = match({Token::TokenType::TOKEN_MUT});
 	if (match({Token::TokenType::TOKEN_LEFT_SQUARE_BRACE})) {
 		auto arrayStartToken = previous();
-		auto arrayTypeToken = consume(Token::TokenType::TOKEN_IDENTIFIER,
-		                              "Expect type signature");
+		auto arrayType = typeExpression();
 		consume(Token::TokenType::TOKEN_SEMICOLON, "Expect ';' after type.");
 		consume(Token::TokenType::TOKEN_RIGHT_SQUARE_BRACE,
 		        "Expect ']' after array type.");
 		return ast::Type{Token{Token::TokenType::TOKEN_LEFT_SQUARE_BRACE,
 		                       std::format("[{}]", arrayStartToken.lexeme +
-		                                               arrayTypeToken.lexeme),
+		                                               arrayType.name.lexeme),
 		                       arrayStartToken.line, arrayStartToken.column},
-		                 !is_mutable, true};
+		                 !is_mutable, true,
+		                 std::make_unique<ast::Type>(std::move(arrayType))};
 	}
 	auto typeToken =
 	    consume(Token::TokenType::TOKEN_IDENTIFIER, "Expect type signature");
+	std::optional<std::unique_ptr<ast::Type>> subType;
 	bool isPointer = false;
 	while (match({Token::TokenType::TOKEN_STAR})) {
+		subType = std::make_unique<ast::Type>(ast::Type{
+			typeToken,
+		    !is_mutable,
+		    isPointer,
+		    std::move(subType),
+		});
 		isPointer = true;
 		typeToken.lexeme += previous().getGlyph();
 	}
-	return ast::Type{typeToken, !is_mutable, isPointer};
+	return ast::Type{typeToken, !is_mutable, isPointer, std::move(subType)};
 }
 
 std::unique_ptr<ast::Expression>

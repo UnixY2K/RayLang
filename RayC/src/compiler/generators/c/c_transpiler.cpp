@@ -108,6 +108,27 @@ void CTranspilerGenerator::resolve(
 			}
 			break;
 		}
+		case analyzer::symbols::Symbol::SymbolType::Struct: {
+			if (auto *structObj =
+			        dynamic_cast<const ast::Struct *>(symbol.object)) {
+				output << std::format("{}typedef struct {}", currentIdent(),
+				                      symbol.mangledName);
+				if (!structObj->declaration) {
+					output << " {\n";
+					ident++;
+					for (auto &member : structObj->members) {
+						member.visit(*this);
+					}
+					ident--;
+					output << std::format("{}}}", currentIdent());
+				} else {
+					std::cerr << std::format("{}: struct declaration\n",
+					                         "WARNING"_yellow);
+				}
+				output << std::format(" {};\n", symbol.mangledName);
+			}
+			break;
+		}
 		}
 	}
 	// ident++;
@@ -267,16 +288,9 @@ void CTranspilerGenerator::visitVarStatement(const ast::Var &var) {
 		output << "extern ";
 	}
 
-	if (var.type.name.lexeme.starts_with("[")) {
-		output << std::format(
-		    "{} *{}",
-		    var.type.name.lexeme.substr(
-		        1, var.type.name.lexeme.find_last_of("]") - 1),
-		    var.name.lexeme);
-	} else {
-		var.type.visit(*this);
-		output << std::format("{}", var.name.lexeme);
-	}
+	var.type.visit(*this);
+	output << std::format("{}", var.name.lexeme);
+
 	if (var.initializer.has_value()) {
 		output << " = ";
 		auto initializer = var.initializer->get();
@@ -301,9 +315,11 @@ void CTranspilerGenerator::visitWhileStatement(const ast::While &value) {
 	output << std::format("{}}}\n", identTab);
 }
 void CTranspilerGenerator::visitStructStatement(const ast::Struct &value) {
-	output << std::format("{}typedef struct {}", currentIdent(),
-	                      value.name.lexeme);
+	// we just ignore any struct declaration
+	// as they were declared before
 	if (!value.declaration) {
+		output << std::format("{}typedef struct {}", currentIdent(),
+		                      value.name.lexeme);
 		output << " {\n";
 		ident++;
 		for (auto &member : value.members) {
@@ -311,8 +327,8 @@ void CTranspilerGenerator::visitStructStatement(const ast::Struct &value) {
 		}
 		ident--;
 		output << std::format("{}}}", currentIdent());
+		output << std::format(" {};\n", value.name.lexeme);
 	}
-	output << std::format(" {};\n", value.name.lexeme);
 }
 void CTranspilerGenerator::visitNamespaceStatement(const ast::Namespace &ns) {
 	// Split ns.name by "::" and output each part
@@ -576,18 +592,39 @@ void CTranspilerGenerator::visitVariableExpression(
 	output << std::format("{}", variable.name.lexeme);
 }
 void CTranspilerGenerator::visitTypeExpression(const ast::Type &type) {
-	if (type.isConst && type.name.type != Token::TokenType::TOKEN_TYPE_UNIT) {
+	if (type.isConst && type.name.type != Token::TokenType::TOKEN_TYPE_UNIT &&
+	    !type.isPointer) {
 		output << "const ";
 	}
 	if (type.name.type == Token::TokenType::TOKEN_TYPE_UNIT) {
 		output << "void ";
 	} else if (type.name.lexeme.starts_with("[")) {
-		output << std::format(
-		    "{} *",
-		    type.name.lexeme.substr(1, type.name.lexeme.find_last_of("]") - 1),
-		    type.name.lexeme);
+		if (type.subtype.has_value() && type.subtype.value()) {
+			type.subtype.value()->visit(*this);
+			output << "*";
+		} else {
+			std::cerr << std::format("{}: subtype null for array type\n",
+			                         "COMPILER_BUG"_red);
+			output << std::format(
+			    " *",
+			    type.name.lexeme.substr(1,
+			                            type.name.lexeme.find_last_of("]") - 1),
+			    type.name.lexeme);
+		}
 	} else {
-		output << std::format("{} ", type.name.lexeme);
+		if (type.isPointer) {
+			if (type.subtype.has_value() && type.subtype.value()) {
+				type.subtype.value()->visit(*this);
+			} else {
+				std::cerr << std::format("{}: subtype null\n",
+				                         "COMPILER_BUG"_red);
+			}
+			output << "*";
+		} else {
+			std::string typeName = findStructName(type.name.lexeme);
+			typeName = typeName.empty() ? type.name.lexeme : typeName;
+			output << std::format("{} ", typeName);
+		}
 	}
 }
 void CTranspilerGenerator::visitCastExpression(const ast::Cast &value) {
@@ -623,6 +660,35 @@ CTranspilerGenerator::findCallableName(const ast::Call &callable,
 				}
 				break;
 			}
+			default:
+				break;
+			}
+		}
+	}
+	return "";
+}
+std::string
+CTranspilerGenerator::findStructName(const std::string_view name) const {
+	// we should make a propper lookup and ranking
+	// but for now we will match the first struct found with same name and
+	// namespace
+	for (const auto &symbol : symbolTable) {
+		if (symbol.name == name) {
+			switch (symbol.type) {
+			case analyzer::symbols::Symbol::SymbolType::Struct: {
+				if (const auto *currentStruct =
+				        dynamic_cast<const ast::Struct *>(symbol.object)) {
+					if (currentStruct->name.lexeme == name) {
+						// here we should add to a list of candidate functions
+						// than later are checked for types
+						// but now we just return the mangled function name
+						return symbol.mangledName;
+					}
+				}
+				break;
+			}
+			default:
+				break;
 			}
 		}
 	}

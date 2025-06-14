@@ -10,6 +10,7 @@ namespace ray::compiler::analyzer::symbols {
 struct Symbol {
 	enum class SymbolType {
 		Function,
+		Struct
 	};
 	std::string name;
 	std::string mangledName;

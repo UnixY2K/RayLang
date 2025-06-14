@@ -70,6 +70,7 @@ class CTranspilerGenerator : public ast::StatementVisitor,
   private:
 	std::string findCallableName(const ast::Call &callable,
 	                             const std::string_view name) const;
+	std::string findStructName(const std::string_view name) const;
 };
 
 } // namespace ray::compiler::generator::c

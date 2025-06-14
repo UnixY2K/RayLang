@@ -1,6 +1,7 @@
 #pragma once
 #include <memory>
 #include <vector>
+#include <optional>
 #include <ray/compiler/lexer/token.hpp>
 
 namespace ray::compiler::ast {
@@ -253,13 +254,16 @@ class Type : public Expression {
 	Token name;
 	bool isConst;
 	bool isPointer;
+	std::optional<std::unique_ptr<Type>> subtype;
 
 	Type(Token name,
 	        bool isConst,
-	        bool isPointer):
+	        bool isPointer,
+	        std::optional<std::unique_ptr<Type>> subtype):
 		name(std::move(name)),
 		isConst(std::move(isConst)),
-		isPointer(std::move(isPointer)) {}
+		isPointer(std::move(isPointer)),
+		subtype(std::move(subtype)) {}
 
 	void visit(ExpressionVisitor& visitor) const override {
 		visitor.visitTypeExpression(*this);

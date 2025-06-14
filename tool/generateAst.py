@@ -121,6 +121,7 @@ def main():
     defineAst(outputDir, "Expression",
             ["memory",
              "vector",
+             "optional",
              "ray/compiler/lexer/token.hpp"
             ],
             [],
@@ -135,7 +136,7 @@ def main():
              "Unary			= Token op, bool isPrefix, std::unique_ptr<Expression> expr",
              "ArrayAccess	= std::unique_ptr<Expression> array, std::unique_ptr<Expression> index",
              "Variable		= Token name",
-             "Type			= Token name, bool isConst, bool isPointer",
+             "Type			= Token name, bool isConst, bool isPointer, std::optional<std::unique_ptr<Type>> subtype",
              "Cast			= std::unique_ptr<Expression> expression, Type type",
              "Parameter		= Token name, Type type",
             ])
