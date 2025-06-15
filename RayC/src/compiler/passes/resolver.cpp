@@ -1,3 +1,4 @@
+#include "ray/compiler/ast/statement.hpp"
 #include <iostream>
 
 #include <ray/cli/terminal.hpp>
@@ -132,7 +133,9 @@ void Resolver::visitCompDirectiveStatement(const ast::CompDirective &value) {
 		              : directive::LinkageDirective::ManglingType::Unknonw
 		        : directive::LinkageDirective::ManglingType::Default);
 		if (value.child) {
-			if (dynamic_cast<ast::Function *>(value.child.get())) {
+			auto childValue = value.child.get();
+			if (dynamic_cast<ast::Function *>(childValue) ||
+			    dynamic_cast<ast::Struct *>(childValue)) {
 				size_t startDirectives = directivesStack.size();
 				size_t originalTop = top + 1;
 				top = startDirectives;
@@ -147,7 +150,7 @@ void Resolver::visitCompDirectiveStatement(const ast::CompDirective &value) {
 				top = originalTop;
 			} else {
 				std::cerr << std::format(
-				    "{}: {} child expression must be a function.\n",
+				    "{}: {} child expression must be a function or a struct.\n",
 				    "ERROR"_red, directive.directiveName());
 			}
 		} else {

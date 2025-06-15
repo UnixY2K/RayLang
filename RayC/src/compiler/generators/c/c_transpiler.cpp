@@ -319,6 +319,24 @@ void CTranspilerGenerator::visitWhileStatement(const ast::While &value) {
 	output << std::format("{}}}\n", identTab);
 }
 void CTranspilerGenerator::visitStructStatement(const ast::Struct &value) {
+	std::string currentNamespace;
+	std::string currentModule;
+
+	std::optional<directive::LinkageDirective> linkageDirective;
+
+	for (size_t i = directivesStack.size(); i > top; i--) {
+		auto &directive = directivesStack[i - i];
+		if (auto foundLinkDirective =
+		        dynamic_cast<directive::LinkageDirective *>(directive.get())) {
+			linkageDirective = *foundLinkDirective;
+		} else {
+			std::cout << std::format(
+			    "{}: unmatched compiler directive '{}' for function.\n",
+			    "WARNING"_yellow, directive->directiveName());
+		}
+		directivesStack.pop_back();
+	}
+
 	// we just ignore any struct declaration
 	// as they were declared before
 	if (!value.declaration) {
@@ -378,7 +396,9 @@ void CTranspilerGenerator::visitCompDirectiveStatement(
 		              : directive::LinkageDirective::ManglingType::Unknonw
 		        : directive::LinkageDirective::ManglingType::Default);
 		if (value.child) {
-			if (dynamic_cast<ast::Function *>(value.child.get())) {
+			auto childValue = value.child.get();
+			if (dynamic_cast<ast::Function *>(childValue) ||
+			    dynamic_cast<ast::Struct *>(childValue)) {
 				size_t startDirectives = directivesStack.size();
 				size_t originalTop = top + 1;
 				top = startDirectives;
@@ -393,7 +413,7 @@ void CTranspilerGenerator::visitCompDirectiveStatement(
 				top = originalTop;
 			} else {
 				std::cerr << std::format(
-				    "{}: {} child expression must be a function.\n",
+				    "{}: {} child expression must be a function or a struct.\n",
 				    "ERROR"_red, directive.directiveName());
 			}
 		} else {
