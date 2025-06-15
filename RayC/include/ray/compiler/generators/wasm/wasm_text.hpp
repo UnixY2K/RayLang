@@ -47,9 +47,10 @@ class WASMTextGenerator : public ast::StatementVisitor,
 	void visitUnaryExpression(const ast::Unary &value) override;
 	void visitArrayAccessExpression(const ast::ArrayAccess &value) override;
 	void visitVariableExpression(const ast::Variable &value) override;
+	void visitIntrinsicExpression(const ast::Intrinsic &value) override;
 	void visitTypeExpression(const ast::Type &value) override;
 	void visitCastExpression(const ast::Cast &value) override;
 	void visitParameterExpression(const ast::Parameter &value) override;
 };
 
-} // namespace ray::compiler::generator
+} // namespace ray::compiler::generator::wasm

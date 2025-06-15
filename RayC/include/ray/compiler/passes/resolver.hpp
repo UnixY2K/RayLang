@@ -8,15 +8,12 @@
 
 namespace ray::compiler::analyzer::symbols {
 struct Symbol {
-	enum class SymbolType {
-		Function,
-		Struct
-	};
+	enum class SymbolType { Function, Struct };
 	std::string name;
 	std::string mangledName;
 	SymbolType type;
 	std::string scope;
-	const ast::Statement* object;
+	const ast::Statement *object;
 };
 using SymbolTable = std::vector<Symbol>;
 class Resolver : public ast::StatementVisitor, public ast::ExpressionVisitor {
@@ -59,6 +56,7 @@ class Resolver : public ast::StatementVisitor, public ast::ExpressionVisitor {
 	void visitUnaryExpression(const ast::Unary &value) override;
 	void visitArrayAccessExpression(const ast::ArrayAccess &value) override;
 	void visitVariableExpression(const ast::Variable &value) override;
+	void visitIntrinsicExpression(const ast::Intrinsic &value) override;
 	void visitTypeExpression(const ast::Type &value) override;
 	void visitCastExpression(const ast::Cast &value) override;
 	void visitParameterExpression(const ast::Parameter &value) override;

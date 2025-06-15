@@ -23,7 +23,7 @@ class Lexer {
 	bool isAtEnd() const;
 	std::vector<Token> scanTokens();
 
-	const std::vector<LexerError>& getErrors() const;
+	const std::vector<LexerError> &getErrors() const;
 
   private:
 	void scanToken();
@@ -31,10 +31,13 @@ class Lexer {
 
 	void addToken(Token::TokenType type);
 	void addToken(Token::TokenType type, std::string literal);
+	void addToken(Token::TokenType type, std::string literal, size_t line,
+	              size_t column);
 	bool match(char expected);
 	void string();
 	void number();
 	void charLiteral();
+	void intrinsicFunction();
 	void identifier();
 	void comment();
 	void multiLineComment();

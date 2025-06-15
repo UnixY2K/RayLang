@@ -193,6 +193,9 @@ void Resolver::visitArrayAccessExpression(const ast::ArrayAccess &value) {
 void Resolver::visitVariableExpression(const ast::Variable &value) {
 	std::cerr << "visitVariableExpression not implemented\n";
 }
+void Resolver::visitIntrinsicExpression(const ast::Intrinsic &value) {
+	std::cerr << "visitIntrinsicExpression not implemented\n";
+}
 void Resolver::visitTypeExpression(const ast::Type &value) {
 	std::cerr << "visitTypeExpression not implemented\n";
 }

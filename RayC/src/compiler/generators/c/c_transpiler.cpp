@@ -8,6 +8,7 @@
 
 #include <ray/cli/terminal.hpp>
 #include <ray/compiler/ast/expression.hpp>
+#include <ray/compiler/ast/intrinsic.hpp>
 #include <ray/compiler/ast/statement.hpp>
 #include <ray/compiler/directives/compilerDirective.hpp>
 #include <ray/compiler/directives/linkageDirective.hpp>
@@ -15,6 +16,7 @@
 #include <ray/compiler/lexer/token.hpp>
 #include <ray/compiler/passes/resolver.hpp>
 #include <ray/compiler/passes/symbol_mangler.hpp>
+#include <ray/compiler/types/types.hpp>
 
 namespace ray::compiler::generator::c {
 
@@ -463,6 +465,30 @@ void CTranspilerGenerator::visitCallExpression(const ast::Call &callable) {
 			}
 		}
 		output << ")";
+	} else if (ast::Intrinsic *intr =
+	               dynamic_cast<ast::Intrinsic *>(callable.callee.get())) {
+		switch (intr->intrinsic) {
+		case ray::compiler::ast::IntrinsicType::INTR_SIZEOF: {
+			if (callable.arguments.size() != 1) {
+				std::cerr << std::format("@sizeOf intrinsic expects 1 argument "
+				                         "but {} got provided\n",
+				                         callable.arguments.size());
+			} else {
+				auto param = callable.arguments[0].get();
+				if (auto type = getTypeExpression(param)) {
+					output << std::format("((ssize){})", type->calculatedSize);
+				} else {
+					std::cerr << std::format("'{}'is not a Type expression\n",
+					                         param->variantName());
+				}
+			}
+			break;
+		}
+		case ray::compiler::ast::IntrinsicType::INTR_UNKNOWN:
+			std::cerr << std::format("'{}' is not a valid intrinsic\n",
+			                         intr->name.lexeme);
+			break;
+		}
 	} else {
 		std::cerr << std::format("'{}' is not a supported callable type\n",
 		                         callable.callee.get()->variantName());
@@ -591,6 +617,10 @@ void CTranspilerGenerator::visitVariableExpression(
     const ast::Variable &variable) {
 	output << std::format("{}", variable.name.lexeme);
 }
+void CTranspilerGenerator::visitIntrinsicExpression(
+    const ast::Intrinsic &value) {
+	std::cerr << "visitIntrinsicExpression not implemented\n";
+}
 void CTranspilerGenerator::visitTypeExpression(const ast::Type &type) {
 	if (type.isConst && type.name.type != Token::TokenType::TOKEN_TYPE_UNIT &&
 	    !type.isPointer) {
@@ -693,6 +723,26 @@ CTranspilerGenerator::findStructName(const std::string_view name) const {
 		}
 	}
 	return "";
+}
+
+std::optional<types::TypeInfo>
+CTranspilerGenerator::findScalarTypeInfo(const std::string_view lexeme) {
+	return types::TypeInfo::findScalarTypeInfo(lexeme);
+}
+std::optional<types::TypeInfo>
+CTranspilerGenerator::findTypeInfo(const std::string_view lexeme) {
+	auto scalarType = findScalarTypeInfo(lexeme);
+	if (scalarType) {
+		return scalarType;
+	}
+	return {};
+}
+std::optional<types::TypeInfo>
+CTranspilerGenerator::getTypeExpression(const ast::Expression *expression) {
+	if (auto var = dynamic_cast<const ast::Variable *>(expression)) {
+		return findTypeInfo(var->name.lexeme);
+	}
+	return {};
 }
 
 } // namespace ray::compiler::generator::c

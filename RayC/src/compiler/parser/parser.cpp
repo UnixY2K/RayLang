@@ -1,3 +1,4 @@
+#include "ray/compiler/ast/intrinsic.hpp"
 #include <algorithm>
 #include <format>
 #include <memory>
@@ -571,7 +572,7 @@ ast::Type Parser::typeExpression() {
 	bool isPointer = false;
 	while (match({Token::TokenType::TOKEN_STAR})) {
 		subType = std::make_unique<ast::Type>(ast::Type{
-			typeToken,
+		    typeToken,
 		    !is_mutable,
 		    isPointer,
 		    std::move(subType),
@@ -656,6 +657,12 @@ std::unique_ptr<ast::Expression> Parser::primaryExpresion() {
 
 	if (match({Token::TokenType::TOKEN_IDENTIFIER})) {
 		return std::make_unique<ast::Variable>(ast::Variable(previous()));
+	}
+
+	if (match({Token::TokenType::TOKEN_INTRINSIC})) {
+		Token token = previous();
+		return std::make_unique<ast::Intrinsic>(
+		    ast::Intrinsic(token, ast::getintrinsicType(token.lexeme)));
 	}
 
 	if (match({Token::TokenType::TOKEN_LEFT_PAREN})) {

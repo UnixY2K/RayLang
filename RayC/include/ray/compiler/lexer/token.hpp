@@ -66,6 +66,7 @@ struct Token {
 		TOKEN_STRING,     // ex: "Hello, world"
 		TOKEN_NUMBER,     // ex: 0x01, 10, 10.2, -2
 		TOKEN_CHAR,       // ex: 'a', 'b', 'c'
+		TOKEN_INTRINSIC,    // ex: @sizeOf
 		// Keywords.
 		TOKEN_IF,        // if
 		TOKEN_ELSE,      // else

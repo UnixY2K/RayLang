@@ -206,6 +206,8 @@ void Lexer::scanToken() {
 			string();
 		} else if (c == '\'') {
 			charLiteral();
+		} else if (c == '@') {
+			intrinsicFunction();
 		} else if (c == ' ' || c == '\r' || c == '\t' || c == '\n') {
 		} else {
 			Token errorToken =
@@ -236,6 +238,11 @@ char Lexer::advance() {
 
 void Lexer::addToken(Token::TokenType type) { addToken(type, ""); }
 void Lexer::addToken(Token::TokenType type, std::string literal) {
+	tokens.push_back(
+	    Token{.type = type, .lexeme = literal, .line = line, .column = column});
+}
+void Lexer::addToken(Token::TokenType type, std::string literal, size_t line,
+                     size_t column) {
 	tokens.push_back(
 	    Token{.type = type, .lexeme = literal, .line = line, .column = column});
 }
@@ -383,6 +390,17 @@ void Lexer::charLiteral() {
 	}
 	advance();
 	addToken(Token::TokenType::TOKEN_CHAR, {character});
+}
+
+void Lexer::intrinsicFunction() {
+	auto startColumn = column;
+	auto startLine = line;
+	while (std::isalnum(peek()) || peek() == '_') {
+		advance();
+	}
+	auto text = source.substr(start, current - start);
+	addToken(Token::TokenType::TOKEN_INTRINSIC, std::string(text), startLine,
+	         startColumn);
 }
 
 void Lexer::identifier() {

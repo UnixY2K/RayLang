@@ -16,9 +16,7 @@ std::string_view Token::getLexeme() const {
 }
 std::string_view Token::getGlyph() const { return glyph(type); }
 
-void Token::merge(Token other){
-	lexeme += other.lexeme;
-}
+void Token::merge(Token other) { lexeme += other.lexeme; }
 
 Token::TokenType Token::fromChar(const char c) { return fromString({&c, 1}); }
 Token::TokenType Token::fromString(std::string_view str) {
@@ -81,6 +79,7 @@ Token::TokenType Token::fromString(std::string_view str) {
 	    //{"", Token::TokenType::TOKEN_NUMBER},     // ex: 0x01, 10, 10.2, -2,
 	    //.1
 	    //{"", Token::TokenType::TOKEN_CHAR},     	// ex: 'A', 'B'
+	    //{"", Token::TokenType::TOKEN_INTRINSIC},  // ex: @sizeOf
 	    // keywords
 	    {"if", Token::TokenType::TOKEN_IF},               // if
 	    {"else", Token::TokenType::TOKEN_ELSE},           // else
@@ -217,6 +216,8 @@ std::string_view Token::toString(TokenType token) {
 		return "TOKEN_NUMBER";
 	case TokenType::TOKEN_CHAR:
 		return "TOKEN_CHAR";
+	case TokenType::TOKEN_INTRINSIC:
+		return "TOKEN_INTRINSIC";
 	// keywords
 	case TokenType::TOKEN_IF:
 		return "TOKEN_IF";
@@ -374,6 +375,8 @@ std::string_view Token::glyph(TokenType token) {
 		return "<number>";
 	case TokenType::TOKEN_CHAR:
 		return "<char-literal>";
+	case TokenType::TOKEN_INTRINSIC:
+		return "<intrinsic>";
 	// keywords
 	case TokenType::TOKEN_IF:
 		return "if";

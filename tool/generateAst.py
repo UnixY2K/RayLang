@@ -122,7 +122,8 @@ def main():
             ["memory",
              "vector",
              "optional",
-             "ray/compiler/lexer/token.hpp"
+             "ray/compiler/lexer/token.hpp",
+             "ray/compiler/ast/intrinsic.hpp"
             ],
             [],
             ["Assign		= std::unique_ptr<Expression> lhs, Token assignmentOp, std::unique_ptr<Expression> rhs",
@@ -136,6 +137,7 @@ def main():
              "Unary			= Token op, bool isPrefix, std::unique_ptr<Expression> expr",
              "ArrayAccess	= std::unique_ptr<Expression> array, std::unique_ptr<Expression> index",
              "Variable		= Token name",
+             "Intrinsic		= Token name, IntrinsicType intrinsic",
              "Type			= Token name, bool isConst, bool isPointer, std::optional<std::unique_ptr<Type>> subtype",
              "Cast			= std::unique_ptr<Expression> expression, Type type",
              "Parameter		= Token name, Type type",

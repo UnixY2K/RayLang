@@ -3,6 +3,7 @@
 #include <vector>
 #include <optional>
 #include <ray/compiler/lexer/token.hpp>
+#include <ray/compiler/ast/intrinsic.hpp>
 
 namespace ray::compiler::ast {
 
@@ -17,6 +18,7 @@ class Set;
 class Unary;
 class ArrayAccess;
 class Variable;
+class Intrinsic;
 class Type;
 class Cast;
 class Parameter;
@@ -34,6 +36,7 @@ class ExpressionVisitor {
 	virtual void visitUnaryExpression(const Unary& value) = 0;
 	virtual void visitArrayAccessExpression(const ArrayAccess& value) = 0;
 	virtual void visitVariableExpression(const Variable& value) = 0;
+	virtual void visitIntrinsicExpression(const Intrinsic& value) = 0;
 	virtual void visitTypeExpression(const Type& value) = 0;
 	virtual void visitCastExpression(const Cast& value) = 0;
 	virtual void visitParameterExpression(const Parameter& value) = 0;
@@ -247,6 +250,23 @@ class Variable : public Expression {
 	}
 
 	std::string variantName() const override { return "Variable"; }
+
+};
+class Intrinsic : public Expression {
+  public:
+	Token name;
+	IntrinsicType intrinsic;
+
+	Intrinsic(Token name,
+	        IntrinsicType intrinsic):
+		name(std::move(name)),
+		intrinsic(std::move(intrinsic)) {}
+
+	void visit(ExpressionVisitor& visitor) const override {
+		visitor.visitIntrinsicExpression(*this);
+	}
+
+	std::string variantName() const override { return "Intrinsic"; }
 
 };
 class Type : public Expression {

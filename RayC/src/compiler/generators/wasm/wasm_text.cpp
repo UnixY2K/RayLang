@@ -292,6 +292,9 @@ void WASMTextGenerator::visitVariableExpression(const ast::Variable &variable) {
 	std::string identTab = currentIdent();
 	output << std::format("{}local.get ${}\n", identTab, variable.name.lexeme);
 }
+void WASMTextGenerator::visitIntrinsicExpression(const ast::Intrinsic &value) {
+	std::cerr << "visitIntrinsicExpression not implemented\n";
+}
 void WASMTextGenerator::visitTypeExpression(const ast::Type &value) {
 	std::cerr << "visitTypeExpression not implemented\n";
 }
