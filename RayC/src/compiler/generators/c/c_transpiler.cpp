@@ -41,16 +41,18 @@ void CTranspilerGenerator::resolve(
 	// some of the definitions are technically UB as they may not be exactly 32
 	// or 64 bit,ex(float, double implementations but generally they use the
 	// IEEE 754 format) assuming that the following definitions are true
-	output << "#define i8 int8_t\n";
 	output << "#define u8 uint8_t\n";
+	output << "#define s8 int8_t\n";
+	output << "#define u16 uint16_t\n";
+	output << "#define s16 int16_t\n";
 	output << "#define u32 uint32_t\n";
 	output << "#define s32 int32_t\n";
 	output << "#define u64 uint64_t\n";
 	output << "#define s64 int64_t\n";
 	output << "#define f32 float\n";
 	output << "#define f64 double\n";
-	output << "#define ssize intmax_t\n";
 	output << "#define usize uintmax_t\n";
+	output << "#define ssize intmax_t\n";
 	output << "#define c_char char\n";
 	output << "#define c_int int\n";
 	output << "#define c_size size_t\n";
@@ -476,7 +478,13 @@ void CTranspilerGenerator::visitCallExpression(const ast::Call &callable) {
 			} else {
 				auto param = callable.arguments[0].get();
 				if (auto type = getTypeExpression(param)) {
-					output << std::format("((ssize){})", type->calculatedSize);
+					if (type->platformDependent) {
+						output << std::format("((ssize)sizeof({}))",
+						                      type->mangledName);
+					} else {
+						output
+						    << std::format("((ssize){})", type->calculatedSize);
+					}
 				} else {
 					std::cerr << std::format("'{}'is not a Type expression\n",
 					                         param->variantName());
@@ -633,7 +641,7 @@ void CTranspilerGenerator::visitTypeExpression(const ast::Type &type) {
 			type.subtype.value()->visit(*this);
 			output << "*";
 		} else {
-			std::cerr << std::format("{}: subtype null for array type\n",
+			std::cerr << std::format("{}: subtype null for array typke\n",
 			                         "COMPILER_BUG"_red);
 			output << std::format(
 			    " *",
