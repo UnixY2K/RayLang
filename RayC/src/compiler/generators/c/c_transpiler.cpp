@@ -125,9 +125,6 @@ void CTranspilerGenerator::resolve(
 					}
 					ident--;
 					output << std::format("{}}}", currentIdent());
-				} else {
-					std::cerr << std::format("{}: struct declaration\n",
-					                         "WARNING"_yellow);
 				}
 				output << std::format(" {};\n", symbol.mangledName);
 			}
@@ -180,7 +177,6 @@ void CTranspilerGenerator::visitExpressionStmtStatement(
 }
 void CTranspilerGenerator::visitFunctionStatement(
     const ast::Function &function) {
-
 	std::string identTabs = currentIdent();
 	std::string currentNamespace;
 	std::string currentModule;
@@ -202,31 +198,33 @@ void CTranspilerGenerator::visitFunctionStatement(
 	std::string functionName = nameMangler.mangleFunction(
 	    currentModule, currentNamespace, function, linkageDirective);
 
-	output << identTabs;
-	if (!function.publicVisibility) {
-		if (!function.is_extern) {
-			output << "RAYLANG_MACRO_LINK_LOCAL ";
-			output << "static ";
-		}
-	} else if (function.body.has_value()) {
-		if (function.body.has_value()) {
-			output << "RAYLANG_MACRO_LINK_EXPORT ";
-		} else {
-			output << "RAYLANG_MACRO_LINK_IMPORT ";
-		}
-	}
-	function.returnType.visit(*this);
-
-	output << std::format("{}(", functionName);
-	for (size_t index = 0; index < function.params.size(); ++index) {
-		const auto &parameter = function.params[index];
-		parameter.visit(*this);
-		if (index < function.params.size() - 1) {
-			output << ", ";
-		}
-	}
-	output << ")";
+	// ignore any function declaration
 	if (function.body.has_value()) {
+
+		output << identTabs;
+		if (!function.publicVisibility) {
+			if (!function.is_extern) {
+				output << "RAYLANG_MACRO_LINK_LOCAL ";
+				output << "static ";
+			}
+		} else if (function.body.has_value()) {
+			if (function.body.has_value()) {
+				output << "RAYLANG_MACRO_LINK_EXPORT ";
+			} else {
+				output << "RAYLANG_MACRO_LINK_IMPORT ";
+			}
+		}
+		function.returnType.visit(*this);
+
+		output << std::format("{}(", functionName);
+		for (size_t index = 0; index < function.params.size(); ++index) {
+			const auto &parameter = function.params[index];
+			parameter.visit(*this);
+			if (index < function.params.size() - 1) {
+				output << ", ";
+			}
+		}
+		output << ")";
 		output << " {";
 		if (function.body->statements.size() > 1) {
 			auto statement = dynamic_cast<ast::TerminalExpr *>(
@@ -239,8 +237,6 @@ void CTranspilerGenerator::visitFunctionStatement(
 			}
 		}
 		output << std::format("{}}}\n", identTabs);
-	} else {
-		output << ";\n";
 	}
 }
 void CTranspilerGenerator::visitIfStatement(const ast::If &ifStatement) {
