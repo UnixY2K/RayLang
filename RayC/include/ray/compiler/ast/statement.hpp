@@ -20,7 +20,6 @@ class Var;
 class While;
 class Struct;
 class Namespace;
-class Extern;
 class CompDirective;
 
 class StatementVisitor {
@@ -35,7 +34,6 @@ class StatementVisitor {
 	virtual void visitWhileStatement(const While& value) = 0;
 	virtual void visitStructStatement(const Struct& value) = 0;
 	virtual void visitNamespaceStatement(const Namespace& value) = 0;
-	virtual void visitExternStatement(const Extern& value) = 0;
 	virtual void visitCompDirectiveStatement(const CompDirective& value) = 0;
 	virtual ~StatementVisitor() = default;
 };
@@ -93,20 +91,17 @@ class Function : public Statement {
   public:
 	Token name;
 	bool publicVisibility;
-	bool is_extern;
 	std::vector<Parameter> params;
 	std::optional<Block> body;
 	Type returnType;
 
 	Function(Token name,
 	        bool publicVisibility,
-	        bool is_extern,
 	        std::vector<Parameter> params,
 	        std::optional<Block> body,
 	        Type returnType):
 		name(std::move(name)),
 		publicVisibility(std::move(publicVisibility)),
-		is_extern(std::move(is_extern)),
 		params(std::move(params)),
 		body(std::move(body)),
 		returnType(std::move(returnType)) {}
@@ -160,18 +155,15 @@ class Var : public Statement {
 	Token name;
 	Type type;
 	bool is_mutable;
-	bool is_extern;
 	std::optional<std::unique_ptr<Expression>> initializer;
 
 	Var(Token name,
 	        Type type,
 	        bool is_mutable,
-	        bool is_extern,
 	        std::optional<std::unique_ptr<Expression>> initializer):
 		name(std::move(name)),
 		type(std::move(type)),
 		is_mutable(std::move(is_mutable)),
-		is_extern(std::move(is_extern)),
 		initializer(std::move(initializer)) {}
 
 	void visit(StatementVisitor& visitor) const override {
@@ -239,23 +231,6 @@ class Namespace : public Statement {
 	}
 
 	std::string variantName() const override { return "Namespace"; }
-
-};
-class Extern : public Statement {
-  public:
-	Token name;
-	std::vector<std::unique_ptr<Statement>> statements;
-
-	Extern(Token name,
-	        std::vector<std::unique_ptr<Statement>> statements):
-		name(std::move(name)),
-		statements(std::move(statements)) {}
-
-	void visit(StatementVisitor& visitor) const override {
-		visitor.visitExternStatement(*this);
-	}
-
-	std::string variantName() const override { return "Extern"; }
 
 };
 class CompDirective : public Statement {

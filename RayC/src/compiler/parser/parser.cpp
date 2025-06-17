@@ -1,5 +1,3 @@
-#include "ray/compiler/ast/intrinsic.hpp"
-#include <algorithm>
 #include <format>
 #include <memory>
 #include <optional>
@@ -8,6 +6,7 @@
 #include <vector>
 
 #include <ray/compiler/ast/expression.hpp>
+#include <ray/compiler/ast/intrinsic.hpp>
 #include <ray/compiler/ast/statement.hpp>
 #include <ray/compiler/error_bag.hpp>
 #include <ray/compiler/lexer/token.hpp>
@@ -62,25 +61,11 @@ Parser::NamespaceStatement(bool root) {
 		    std::make_unique<ast::Namespace>(name, std::move(statements)));
 		return nsStatements;
 	}
-	if (match({Token::TokenType::TOKEN_EXTERN})) {
-		name = consume(Token::TokenType::TOKEN_STRING,
-		               "expected extern identifier");
-		consume(Token::TokenType::TOKEN_LEFT_BRACE,
-		        "expected '{' after extern identifier");
-		statements = NamespaceStatement(false);
-		consume(Token::TokenType::TOKEN_RIGHT_BRACE,
-		        "expected '}' to close extern");
-		std::vector<std::unique_ptr<ast::Statement>> extStatements{};
-		extStatements.push_back(
-		    std::make_unique<ast::Extern>(name, std::move(statements)));
-		return extStatements;
-	}
 
 	while ((root || !check(Token::TokenType::TOKEN_RIGHT_BRACE)) &&
 	       !isAtEnd()) {
 
-		if (!(check(Token::TokenType::TOKEN_NAMESPACE) ||
-		      check(Token::TokenType::TOKEN_EXTERN))) {
+		if (!(check(Token::TokenType::TOKEN_NAMESPACE))) {
 			auto result = CompilerDirective();
 			if (result.has_value()) {
 				statements.push_back(std::move(result.value()));
@@ -309,9 +294,6 @@ std::unique_ptr<ast::Statement> Parser::whileStatement() {
 }
 ast::Var Parser::varDeclaration(std::string kind) {
 	bool is_mutable = match({Token::TokenType::TOKEN_MUT});
-	// maybe this should be in a compiler directive?, ex:
-	// #[linkage(storage=extern, lifetime=static)]
-	bool is_extern = match({Token::TokenType::TOKEN_EXTERN});
 	Token name = consume(Token::TokenType::TOKEN_IDENTIFIER,
 	                     std::format("Expect {} name.", kind));
 
@@ -329,7 +311,7 @@ ast::Var Parser::varDeclaration(std::string kind) {
 
 	consume(Token::TokenType::TOKEN_SEMICOLON,
 	        std::format("Expect ';' after {} declaration.", kind));
-	ast::Var variable{name, std::move(type), is_mutable, is_extern,
+	ast::Var variable{name, std::move(type), is_mutable,
 	                  std::move(initializer)};
 	return ast::Var(std::move(variable));
 }
@@ -343,7 +325,7 @@ std::unique_ptr<ast::Statement> Parser::expressionStatement() {
 	    ast::TerminalExpr(std::move(expr)));
 }
 ast::Function Parser::function(std::string kind, bool publicVisiblity) {
-	bool is_extern = match({Token::TokenType::TOKEN_EXTERN});
+
 	Token name = consume(Token::TokenType::TOKEN_IDENTIFIER,
 	                     std::format("Expect {} name.", kind));
 
@@ -382,12 +364,13 @@ ast::Function Parser::function(std::string kind, bool publicVisiblity) {
 		        std::format("Expect '{{' before {} body.", kind));
 		body = {block()};
 	}
-	return {name,
-	        publicVisiblity,
-	        is_extern,
-	        std::move(parameters),
-	        std::move(body),
-	        std::move(returnType)};
+	return {
+	    name,
+	    publicVisiblity,
+	    std::move(parameters),
+	    std::move(body),
+	    std::move(returnType),
+	};
 }
 std::vector<std::unique_ptr<ast::Statement>> Parser::block() {
 	std::vector<std::unique_ptr<ast::Statement>> statements;

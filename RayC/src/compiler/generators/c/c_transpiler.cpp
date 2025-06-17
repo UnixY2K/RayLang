@@ -86,10 +86,8 @@ void CTranspilerGenerator::resolve(
 			if (auto *function =
 			        dynamic_cast<const ast::Function *>(symbol.object)) {
 				if (!function->publicVisibility) {
-					if (!function->is_extern) {
-						output << "RAYLANG_MACRO_LINK_LOCAL ";
-						output << "static ";
-					}
+					output << "RAYLANG_MACRO_LINK_LOCAL ";
+					output << "static ";
 				} else if (function->body.has_value()) {
 					if (function->body.has_value()) {
 						output << "RAYLANG_MACRO_LINK_EXPORT ";
@@ -203,10 +201,8 @@ void CTranspilerGenerator::visitFunctionStatement(
 
 		output << identTabs;
 		if (!function.publicVisibility) {
-			if (!function.is_extern) {
-				output << "RAYLANG_MACRO_LINK_LOCAL ";
-				output << "static ";
-			}
+			output << "RAYLANG_MACRO_LINK_LOCAL ";
+			output << "static ";
 		} else if (function.body.has_value()) {
 			if (function.body.has_value()) {
 				output << "RAYLANG_MACRO_LINK_EXPORT ";
@@ -283,10 +279,6 @@ void CTranspilerGenerator::visitJumpStatement(const ast::Jump &jump) {
 }
 void CTranspilerGenerator::visitVarStatement(const ast::Var &var) {
 	output << currentIdent();
-
-	if (var.is_extern) {
-		output << "extern ";
-	}
 
 	var.type.visit(*this);
 	output << std::format("{}", var.name.lexeme);
@@ -366,13 +358,6 @@ void CTranspilerGenerator::visitNamespaceStatement(const ast::Namespace &ns) {
 	}
 	while (insertedNamespaces-- > 0) {
 		namespaceStack.pop_back();
-	}
-}
-void CTranspilerGenerator::visitExternStatement(const ast::Extern &ext) {
-	std::cerr << std::format("{}: extern semantics not implemented yet.\n",
-	                         "WARNING"_yellow);
-	for (auto &value : ext.statements) {
-		value->visit(*this);
 	}
 }
 void CTranspilerGenerator::visitCompDirectiveStatement(

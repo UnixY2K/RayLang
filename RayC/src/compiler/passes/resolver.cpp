@@ -1,7 +1,7 @@
-#include "ray/compiler/ast/statement.hpp"
 #include <iostream>
 
 #include <ray/cli/terminal.hpp>
+#include <ray/compiler/ast/statement.hpp>
 #include <ray/compiler/passes/resolver.hpp>
 #include <ray/compiler/passes/symbol_mangler.hpp>
 
@@ -130,9 +130,6 @@ void Resolver::visitNamespaceStatement(const ast::Namespace &ns) {
 	while (insertedNamespaces-- > 0) {
 		namespaceStack.pop_back();
 	}
-}
-void Resolver::visitExternStatement(const ast::Extern &value) {
-	std::cerr << "visitExternStatement not implemented\n";
 }
 void Resolver::visitCompDirectiveStatement(const ast::CompDirective &value) {
 	auto directiveName = value.name.getLexeme();
