@@ -14,8 +14,8 @@
 #include <ray/compiler/directives/linkageDirective.hpp>
 #include <ray/compiler/generators/c/c_transpiler.hpp>
 #include <ray/compiler/lexer/token.hpp>
-#include <ray/compiler/passes/resolver.hpp>
 #include <ray/compiler/passes/symbol_mangler.hpp>
+#include <ray/compiler/passes/topLevelResolver.hpp>
 #include <ray/compiler/types/types.hpp>
 
 namespace ray::compiler::generator::c {
@@ -677,6 +677,10 @@ void CTranspilerGenerator::visitParameterExpression(
     const ast::Parameter &param) {
 	param.type.visit(*this);
 	output << std::format("{}", param.name.lexeme);
+}
+
+void CTranspilerGenerator::visitImportStatement(const ast::Import &value) {
+	// the c transpiler does not need to either validate or verify this
 }
 
 std::string

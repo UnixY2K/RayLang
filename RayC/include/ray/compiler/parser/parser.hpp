@@ -29,6 +29,7 @@ class Parser {
 
   private:
 	std::unique_ptr<ast::Expression> expression();
+	std::vector<std::unique_ptr<ast::Statement>> importStatement();
 	std::vector<std::unique_ptr<ast::Statement>> NamespaceStatement(bool root);
 	std::optional<std::unique_ptr<ast::Statement>> CompilerDirective();
 	std::optional<std::unique_ptr<ast::Statement>> declaration();

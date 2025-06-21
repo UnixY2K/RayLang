@@ -8,7 +8,7 @@
 #include <ray/cli/options.hpp>
 #include <ray/cli/terminal.hpp>
 
-#include <ray/compiler/passes/resolver.hpp>
+#include <ray/compiler/passes/topLevelResolver.hpp>
 
 #include <ray/compiler/generators/c/c_transpiler.hpp>
 #include <ray/compiler/generators/wasm/wasm_text.hpp>
@@ -73,7 +73,7 @@ int main(int argc, char **argv) {
 			}
 			std::string output;
 			bool handled = false;
-			analyzer::symbols::Resolver symbolTableGen;
+			analyzer::symbols::TopLevelResolver symbolTableGen;
 			symbolTableGen.resolve(statements);
 
 			if (symbolTableGen.hasFailed()) {
@@ -98,7 +98,8 @@ int main(int argc, char **argv) {
 				handled = true;
 				generator::c::CTranspilerGenerator CTranspilerGen;
 
-				CTranspilerGen.resolve(statements, symbolTableGen.getSymbolTable());
+				CTranspilerGen.resolve(statements,
+				                       symbolTableGen.getSymbolTable());
 				if (CTranspilerGen.hasFailed()) {
 					std::cerr << std::format("{}: {}\n", "Error"_red,
 					                         "CSourceGen failed");

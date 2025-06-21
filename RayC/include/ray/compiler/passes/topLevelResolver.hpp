@@ -16,7 +16,8 @@ struct Symbol {
 	const ast::Statement *object;
 };
 using SymbolTable = std::vector<Symbol>;
-class Resolver : public ast::StatementVisitor, public ast::ExpressionVisitor {
+class TopLevelResolver : public ast::StatementVisitor,
+                         public ast::ExpressionVisitor {
 	std::vector<std::string_view> namespaceStack;
 	std::vector<std::unique_ptr<directive::CompilerDirective>> directivesStack;
 
@@ -43,6 +44,7 @@ class Resolver : public ast::StatementVisitor, public ast::ExpressionVisitor {
 	void visitStructStatement(const ast::Struct &value) override;
 	void visitNamespaceStatement(const ast::Namespace &value) override;
 	void visitCompDirectiveStatement(const ast::CompDirective &value) override;
+	void visitImportStatement(const ast::Import& value) override;
 	// Expression
 	void visitAssignExpression(const ast::Assign &value) override;
 	void visitBinaryExpression(const ast::Binary &value) override;

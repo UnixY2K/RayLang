@@ -2,13 +2,13 @@
 
 #include <ray/cli/terminal.hpp>
 #include <ray/compiler/ast/statement.hpp>
-#include <ray/compiler/passes/resolver.hpp>
 #include <ray/compiler/passes/symbol_mangler.hpp>
+#include <ray/compiler/passes/topLevelResolver.hpp>
 
 namespace ray::compiler::analyzer::symbols {
 using namespace terminal::literals;
 
-void Resolver::resolve(
+void TopLevelResolver::resolve(
     const std::vector<std::unique_ptr<ast::Statement>> &statement) {
 	globalTable.clear();
 	for (const auto &stmt : statement) {
@@ -24,20 +24,24 @@ void Resolver::resolve(
 	}
 }
 
-SymbolTable Resolver::getSymbolTable() const { return globalTable; }
+SymbolTable TopLevelResolver::getSymbolTable() const { return globalTable; }
 
-bool Resolver::hasFailed() const { return false; }
+bool TopLevelResolver::hasFailed() const { return false; }
 
-void Resolver::visitBlockStatement(const ast::Block &value) {
-	std::cerr << "visitBlockStatement not implemented\n";
+void TopLevelResolver::visitBlockStatement(const ast::Block &value) {
+	// the top level resolver does not go inside definitions
+	// maybe a compiler directive could change this
+	// ex: #[If()] directive
 }
-void Resolver::visitTerminalExprStatement(const ast::TerminalExpr &value) {
+void TopLevelResolver::visitTerminalExprStatement(
+    const ast::TerminalExpr &value) {
 	std::cerr << "visitTerminalExprStatement not implemented\n";
 }
-void Resolver::visitExpressionStmtStatement(const ast::ExpressionStmt &value) {
+void TopLevelResolver::visitExpressionStmtStatement(
+    const ast::ExpressionStmt &value) {
 	std::cerr << "visitExpressionStmtStatement not implemented\n";
 }
-void Resolver::visitFunctionStatement(const ast::Function &function) {
+void TopLevelResolver::visitFunctionStatement(const ast::Function &function) {
 	std::string currentNamespace;
 	std::string currentModule;
 
@@ -69,19 +73,19 @@ void Resolver::visitFunctionStatement(const ast::Function &function) {
 		function.body->visit(*this);
 	}
 }
-void Resolver::visitIfStatement(const ast::If &value) {
+void TopLevelResolver::visitIfStatement(const ast::If &value) {
 	std::cerr << "visitIfStatement not implemented\n";
 }
-void Resolver::visitJumpStatement(const ast::Jump &value) {
+void TopLevelResolver::visitJumpStatement(const ast::Jump &value) {
 	std::cerr << "visitJumpStatement not implemented\n";
 }
-void Resolver::visitVarStatement(const ast::Var &value) {
+void TopLevelResolver::visitVarStatement(const ast::Var &value) {
 	std::cerr << "visitVarStatement not implemented\n";
 }
-void Resolver::visitWhileStatement(const ast::While &value) {
+void TopLevelResolver::visitWhileStatement(const ast::While &value) {
 	std::cerr << "visitWhileStatement not implemented\n";
 }
-void Resolver::visitStructStatement(const ast::Struct &structObj) {
+void TopLevelResolver::visitStructStatement(const ast::Struct &structObj) {
 	std::string currentNamespace;
 	std::string currentModule;
 
@@ -111,7 +115,7 @@ void Resolver::visitStructStatement(const ast::Struct &structObj) {
 	    .object = &structObj,
 	});
 }
-void Resolver::visitNamespaceStatement(const ast::Namespace &ns) {
+void TopLevelResolver::visitNamespaceStatement(const ast::Namespace &ns) {
 	// Split ns.name by "::" and output each part
 	std::string_view name = ns.name.getLexeme();
 	auto delimiter = std::string_view("::");
@@ -131,7 +135,8 @@ void Resolver::visitNamespaceStatement(const ast::Namespace &ns) {
 		namespaceStack.pop_back();
 	}
 }
-void Resolver::visitCompDirectiveStatement(const ast::CompDirective &value) {
+void TopLevelResolver::visitCompDirectiveStatement(
+    const ast::CompDirective &value) {
 	auto directiveName = value.name.getLexeme();
 	if (directiveName == "Linkage") {
 		auto &attributes = value.values;
@@ -176,50 +181,54 @@ void Resolver::visitCompDirectiveStatement(const ast::CompDirective &value) {
 		                         "WARNING"_yellow, directiveName);
 	}
 }
+void TopLevelResolver::visitImportStatement(const ast::Import &value) {
+	std::cerr << "visitImportStatement not implemented\n";
+}
 // Expression
-void Resolver::visitAssignExpression(const ast::Assign &value) {
+void TopLevelResolver::visitAssignExpression(const ast::Assign &value) {
 	std::cerr << "visitAssignExpression not implemented\n";
 }
-void Resolver::visitBinaryExpression(const ast::Binary &value) {
+void TopLevelResolver::visitBinaryExpression(const ast::Binary &value) {
 	std::cerr << "visitBinaryExpression not implemented\n";
 }
-void Resolver::visitCallExpression(const ast::Call &value) {
+void TopLevelResolver::visitCallExpression(const ast::Call &value) {
 	std::cerr << "visitCallExpression not implemented\n";
 }
-void Resolver::visitGetExpression(const ast::Get &value) {
+void TopLevelResolver::visitGetExpression(const ast::Get &value) {
 	std::cerr << "visitGetExpression not implemented\n";
 }
-void Resolver::visitGroupingExpression(const ast::Grouping &value) {
+void TopLevelResolver::visitGroupingExpression(const ast::Grouping &value) {
 	std::cerr << "visitGroupingExpression not implemented\n";
 }
-void Resolver::visitLiteralExpression(const ast::Literal &value) {
+void TopLevelResolver::visitLiteralExpression(const ast::Literal &value) {
 	std::cerr << "visitLiteralExpression not implemented\n";
 }
-void Resolver::visitLogicalExpression(const ast::Logical &value) {
+void TopLevelResolver::visitLogicalExpression(const ast::Logical &value) {
 	std::cerr << "visitLogicalExpression not implemented\n";
 }
-void Resolver::visitSetExpression(const ast::Set &value) {
+void TopLevelResolver::visitSetExpression(const ast::Set &value) {
 	std::cerr << "visitSetExpression not implemented\n";
 }
-void Resolver::visitUnaryExpression(const ast::Unary &value) {
+void TopLevelResolver::visitUnaryExpression(const ast::Unary &value) {
 	std::cerr << "visitUnaryExpression not implemented\n";
 }
-void Resolver::visitArrayAccessExpression(const ast::ArrayAccess &value) {
+void TopLevelResolver::visitArrayAccessExpression(
+    const ast::ArrayAccess &value) {
 	std::cerr << "visitArrayAccessExpression not implemented\n";
 }
-void Resolver::visitVariableExpression(const ast::Variable &value) {
+void TopLevelResolver::visitVariableExpression(const ast::Variable &value) {
 	std::cerr << "visitVariableExpression not implemented\n";
 }
-void Resolver::visitIntrinsicExpression(const ast::Intrinsic &value) {
+void TopLevelResolver::visitIntrinsicExpression(const ast::Intrinsic &value) {
 	std::cerr << "visitIntrinsicExpression not implemented\n";
 }
-void Resolver::visitTypeExpression(const ast::Type &value) {
+void TopLevelResolver::visitTypeExpression(const ast::Type &value) {
 	std::cerr << "visitTypeExpression not implemented\n";
 }
-void Resolver::visitCastExpression(const ast::Cast &value) {
+void TopLevelResolver::visitCastExpression(const ast::Cast &value) {
 	std::cerr << "visitCastExpression not implemented\n";
 }
-void Resolver::visitParameterExpression(const ast::Parameter &value) {
+void TopLevelResolver::visitParameterExpression(const ast::Parameter &value) {
 	std::cerr << "visitParameterExpression not implemented\n";
 }
 

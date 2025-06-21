@@ -149,6 +149,10 @@ void WASMTextGenerator::visitCompDirectiveStatement(
     const ast::CompDirective &value) {
 	std::cerr << "visitCompDirectiveStatement not implemented\n";
 }
+void WASMTextGenerator::visitImportStatement(const ast::Import &value) {
+	std::cerr << "visitImportStatement not implemented\n";
+}
+
 // Expression
 void WASMTextGenerator::visitAssignExpression(const ast::Assign &value) {
 	std::string identTab = currentIdent();

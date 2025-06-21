@@ -22,7 +22,7 @@ std::vector<std::unique_ptr<ast::Statement>> Parser::parse() {
 	try {
 		std::vector<std::unique_ptr<ast::Statement>> statements{};
 		while (!isAtEnd()) {
-			auto stmts = NamespaceStatement(true);
+			auto stmts = importStatement();
 			statements.insert(statements.end(),
 			                  std::make_move_iterator(stmts.begin()),
 			                  std::make_move_iterator(stmts.end()));
@@ -34,6 +34,17 @@ std::vector<std::unique_ptr<ast::Statement>> Parser::parse() {
 }
 
 bool Parser::failed() const { return errorBag.failed(); }
+
+std::vector<std::unique_ptr<ast::Statement>> Parser::importStatement() {
+	if (match({Token::TokenType::TOKEN_IMPORT})) {
+		auto path = consume(Token::TokenType::TOKEN_STRING,
+		                    "expected string literal after import statement");
+		std::vector<std::unique_ptr<ast::Statement>> stmts;
+		stmts.push_back(std::make_unique<ast::Import>(path));
+		return stmts;
+	}
+	return NamespaceStatement(true);
+}
 
 std::vector<std::unique_ptr<ast::Statement>>
 Parser::NamespaceStatement(bool root) {

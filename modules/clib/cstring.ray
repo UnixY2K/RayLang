@@ -1,0 +1,6 @@
+
+
+namespace libc::cstring{
+	#[Linkage(mangling="c", resolution="external")]
+	pub fn strlen(buffer: [c_char;]) -> mut c_size;
+}

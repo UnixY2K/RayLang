@@ -9,8 +9,8 @@
 #include <ray/compiler/ast/expression.hpp>
 #include <ray/compiler/ast/statement.hpp>
 #include <ray/compiler/directives/compilerDirective.hpp>
-#include <ray/compiler/passes/resolver.hpp>
 #include <ray/compiler/passes/symbol_mangler.hpp>
+#include <ray/compiler/passes/topLevelResolver.hpp>
 #include <ray/compiler/types/types.hpp>
 
 namespace ray::compiler::generator::c {
@@ -67,6 +67,7 @@ class CTranspilerGenerator : public ast::StatementVisitor,
 	void visitTypeExpression(const ast::Type &value) override;
 	void visitCastExpression(const ast::Cast &value) override;
 	void visitParameterExpression(const ast::Parameter &value) override;
+	void visitImportStatement(const ast::Import& value) override;
 
   private:
 	std::string findCallableName(const ast::Call &callable,

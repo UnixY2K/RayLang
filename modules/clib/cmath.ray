@@ -1,0 +1,6 @@
+namespace libc::cmath {
+	#[Linkage(mangling="c", resolution="external")]
+	pub fn floor(number: mut f64) -> mut f64;
+	#[Linkage(mangling="c", resolution="external")]
+	pub fn log10(number: mut f64) -> mut f64;
+}

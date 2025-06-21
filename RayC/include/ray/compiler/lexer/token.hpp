@@ -66,7 +66,7 @@ struct Token {
 		TOKEN_STRING,     // ex: "Hello, world"
 		TOKEN_NUMBER,     // ex: 0x01, 10, 10.2, -2
 		TOKEN_CHAR,       // ex: 'a', 'b', 'c'
-		TOKEN_INTRINSIC,    // ex: @sizeOf
+		TOKEN_INTRINSIC,  // ex: @sizeOf
 		// Keywords.
 		TOKEN_IF,        // if
 		TOKEN_ELSE,      // else
@@ -84,6 +84,7 @@ struct Token {
 		TOKEN_STRUCT,    // struct
 		TOKEN_AS,        // as, ex: 2 as isize
 		TOKEN_NAMESPACE, // namespace ex: namespace test
+		TOKEN_IMPORT,    // import ex: import "hello.ray"
 		// token types
 		TOKEN_TYPE_UNIT, // unit aka '()'
 		// other
