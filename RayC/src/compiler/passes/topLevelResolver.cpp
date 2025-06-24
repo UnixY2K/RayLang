@@ -1,7 +1,7 @@
-#include "ray/compiler/ast/expression.hpp"
 #include <iostream>
 
 #include <ray/cli/terminal.hpp>
+#include <ray/compiler/ast/expression.hpp>
 #include <ray/compiler/ast/statement.hpp>
 #include <ray/compiler/passes/symbol_mangler.hpp>
 #include <ray/compiler/passes/topLevelResolver.hpp>
@@ -193,14 +193,25 @@ void TopLevelResolver::visitAssignExpression(const ast::Assign &value) {
 void TopLevelResolver::visitBinaryExpression(const ast::Binary &value) {
 	std::cerr << "visitBinaryExpression not implemented\n";
 }
-void TopLevelResolver::visitCallExpression(const ast::Call &value) {
-	if (auto intrinsic = dynamic_cast<ast::Intrinsic *>(value.callee.get())) {
+void TopLevelResolver::visitCallExpression(const ast::Call &callee) {
+	if (auto intrinsic = dynamic_cast<ast::Intrinsic *>(callee.callee.get())) {
 		switch (intrinsic->intrinsic) {
 		case ast::IntrinsicType::INTR_SIZEOF: {
 			break;
 		}
 		case ast::IntrinsicType::INTR_IMPORT: {
-			std::cerr << std::format("@import intrinsic not yet implemented\n");
+			if (callee.arguments.size() != 1) {
+				std::cerr << std::format(
+				    "@import requires 1 argument but {} were provided\n",
+				    callee.arguments.size());
+			}
+			callee.arguments[0]->visit(*this);
+			if (evaluationStack.size() < 1) {
+				std::cerr << std::format("{}: evaluation stack underflow\n",
+				                         "COMPILER_BUG"_red);
+			} else {
+				std::string filePath = evaluationStack.back();
+			}
 			break;
 		}
 		case ast::IntrinsicType::INTR_UNKNOWN: {
@@ -219,8 +230,8 @@ void TopLevelResolver::visitGetExpression(const ast::Get &value) {
 void TopLevelResolver::visitGroupingExpression(const ast::Grouping &value) {
 	std::cerr << "visitGroupingExpression not implemented\n";
 }
-void TopLevelResolver::visitLiteralExpression(const ast::Literal &value) {
-	std::cerr << "visitLiteralExpression not implemented\n";
+void TopLevelResolver::visitLiteralExpression(const ast::Literal &literal) {
+	evaluationStack.push_back(literal.value);
 }
 void TopLevelResolver::visitLogicalExpression(const ast::Logical &value) {
 	std::cerr << "visitLogicalExpression not implemented\n";

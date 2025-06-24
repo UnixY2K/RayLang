@@ -5,6 +5,7 @@
 #include <ray/compiler/ast/statement.hpp>
 #include <ray/compiler/directives/compilerDirective.hpp>
 #include <ray/compiler/directives/linkageDirective.hpp>
+#include <ray/compiler/lang/sourceUnit.hpp>
 
 namespace ray::compiler::analyzer::symbols {
 struct Symbol {
@@ -20,8 +21,10 @@ class TopLevelResolver : public ast::StatementVisitor,
                          public ast::ExpressionVisitor {
 	std::vector<std::string_view> namespaceStack;
 	std::vector<std::unique_ptr<directive::CompilerDirective>> directivesStack;
+	std::vector<std::string> evaluationStack;
 
 	SymbolTable globalTable;
+	lang::SourceUnit currentSourceUnit;
 	size_t top = 0;
 
   public:
