@@ -1,3 +1,4 @@
+#include "ray/compiler/ast/expression.hpp"
 #include <iostream>
 
 #include <ray/cli/terminal.hpp>
@@ -80,7 +81,11 @@ void TopLevelResolver::visitJumpStatement(const ast::Jump &value) {
 	std::cerr << "visitJumpStatement not implemented\n";
 }
 void TopLevelResolver::visitVarStatement(const ast::Var &value) {
-	std::cerr << "visitVarStatement not implemented\n";
+	// if we find a top level var statement check it as it might contain an
+	// module import
+	if (value.initializer) {
+		value.initializer.value()->visit(*this);
+	}
 }
 void TopLevelResolver::visitWhileStatement(const ast::While &value) {
 	std::cerr << "visitWhileStatement not implemented\n";
@@ -189,7 +194,24 @@ void TopLevelResolver::visitBinaryExpression(const ast::Binary &value) {
 	std::cerr << "visitBinaryExpression not implemented\n";
 }
 void TopLevelResolver::visitCallExpression(const ast::Call &value) {
-	std::cerr << "visitCallExpression not implemented\n";
+	if (auto intrinsic = dynamic_cast<ast::Intrinsic *>(value.callee.get())) {
+		switch (intrinsic->intrinsic) {
+		case ast::IntrinsicType::INTR_SIZEOF: {
+			break;
+		}
+		case ast::IntrinsicType::INTR_IMPORT: {
+			std::cerr << std::format("@import intrinsic not yet implemented\n");
+			break;
+		}
+		case ast::IntrinsicType::INTR_UNKNOWN: {
+			std::cerr << std::format("unkown intrinsic type for {}\n",
+			                         intrinsic->name.getLexeme());
+			break;
+		}
+		}
+	} else {
+		std::cerr << "visitCallExpression not implemented\n";
+	}
 }
 void TopLevelResolver::visitGetExpression(const ast::Get &value) {
 	std::cerr << "visitGetExpression not implemented\n";
