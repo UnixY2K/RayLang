@@ -9,6 +9,7 @@
 #include <ray/compiler/ast/expression.hpp>
 #include <ray/compiler/ast/statement.hpp>
 #include <ray/compiler/directives/compilerDirective.hpp>
+#include <ray/compiler/error_bag.hpp>
 #include <ray/compiler/passes/symbol_mangler.hpp>
 #include <ray/compiler/passes/topLevelResolver.hpp>
 #include <ray/compiler/types/types.hpp>
@@ -17,6 +18,7 @@ namespace ray::compiler::generator::c {
 
 class CTranspilerGenerator : public ast::StatementVisitor,
                              public ast::ExpressionVisitor {
+	ErrorBag errorBag;
 	std::stringstream output;
 	size_t ident = 0;
 
@@ -31,10 +33,13 @@ class CTranspilerGenerator : public ast::StatementVisitor,
 	passes::mangling::NameMangler nameMangler;
 
   public:
+	CTranspilerGenerator(std::string filePath) : errorBag(filePath) {}
+
 	void resolve(const std::vector<std::unique_ptr<ast::Statement>> &statement,
 	             analyzer::symbols::SymbolTable symbolTable);
 
 	bool hasFailed() const;
+	const std::vector<std::string> getErrors() const;
 
 	std::string getOutput() const;
 

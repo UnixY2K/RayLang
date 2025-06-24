@@ -63,9 +63,13 @@ int main(int argc, char **argv) {
 				return 1;
 			}
 
-			auto parser = Parser(opts.input.relative_path().string(), tokens);
+			auto sourceFile = opts.input.relative_path().string();
+			auto parser = Parser(sourceFile, tokens);
 			auto statements = parser.parse();
 			if (parser.failed()) {
+				for (auto parseError : parser.getErrors()) {
+					std::cerr << parseError;
+				}
 				return 1;
 			}
 			if (opts.target == ray::compiler::cli::Options::TargetEnum::NONE) {
@@ -73,12 +77,15 @@ int main(int argc, char **argv) {
 			}
 			std::string output;
 			bool handled = false;
-			analyzer::symbols::TopLevelResolver symbolTableGen;
+			analyzer::symbols::TopLevelResolver symbolTableGen(sourceFile);
 			symbolTableGen.resolve(statements);
 
 			if (symbolTableGen.hasFailed()) {
 				std::cerr << std::format("{}: {}\n", "Error"_red,
 				                         "symbolTableGen failed");
+				for (auto tableGenError : symbolTableGen.getErrors()) {
+					std::cerr << tableGenError;
+				}
 				return 1;
 			}
 			switch (opts.target) {
@@ -96,13 +103,16 @@ int main(int argc, char **argv) {
 			}
 			case cli::Options::TargetEnum::C_SOURCE: {
 				handled = true;
-				generator::c::CTranspilerGenerator CTranspilerGen;
+				generator::c::CTranspilerGenerator CTranspilerGen(sourceFile);
 
 				CTranspilerGen.resolve(statements,
 				                       symbolTableGen.getSymbolTable());
 				if (CTranspilerGen.hasFailed()) {
 					std::cerr << std::format("{}: {}\n", "Error"_red,
 					                         "CSourceGen failed");
+					for (auto cError : CTranspilerGen.getErrors()) {
+						std::cerr << cError;
+					}
 					return 1;
 				}
 				output = CTranspilerGen.getOutput();

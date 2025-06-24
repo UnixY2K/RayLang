@@ -3,6 +3,7 @@
 #include <exception>
 #include <memory>
 #include <optional>
+#include <string>
 #include <vector>
 
 #include <ray/compiler/ast/expression.hpp>
@@ -26,6 +27,7 @@ class Parser {
 	std::vector<std::unique_ptr<ast::Statement>> parse();
 
 	bool failed() const;
+	const std::vector<std::string> getErrors() const;
 
   private:
 	std::unique_ptr<ast::Expression> expression();

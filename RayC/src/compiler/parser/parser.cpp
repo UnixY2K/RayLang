@@ -1,6 +1,7 @@
 #include <format>
 #include <memory>
 #include <optional>
+#include <string>
 #include <unordered_map>
 #include <utility>
 #include <vector>
@@ -34,6 +35,9 @@ std::vector<std::unique_ptr<ast::Statement>> Parser::parse() {
 }
 
 bool Parser::failed() const { return errorBag.failed(); }
+const std::vector<std::string> Parser::getErrors() const {
+	return errorBag.getErrors();
+}
 
 std::optional<std::unique_ptr<ast::Statement>> Parser::CompilerDirective() {
 	if (match({Token::TokenType::TOKEN_POUND})) {
@@ -649,7 +653,7 @@ Token Parser::consume(Token::TokenType type, std::string message) {
 }
 
 ParseException Parser::error(Token token, std::string message) {
-	errorBag.error(token, message);
+	errorBag.error(token, "PARSE", message);
 	return ParseException();
 }
 

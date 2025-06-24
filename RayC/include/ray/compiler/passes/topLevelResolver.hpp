@@ -5,6 +5,7 @@
 #include <ray/compiler/ast/statement.hpp>
 #include <ray/compiler/directives/compilerDirective.hpp>
 #include <ray/compiler/directives/linkageDirective.hpp>
+#include <ray/compiler/error_bag.hpp>
 #include <ray/compiler/lang/sourceUnit.hpp>
 
 namespace ray::compiler::analyzer::symbols {
@@ -19,6 +20,8 @@ struct Symbol {
 using SymbolTable = std::vector<Symbol>;
 class TopLevelResolver : public ast::StatementVisitor,
                          public ast::ExpressionVisitor {
+	ErrorBag errorBag;
+
 	std::vector<std::unique_ptr<directive::CompilerDirective>> directivesStack;
 	std::vector<std::string> evaluationStack;
 
@@ -27,11 +30,13 @@ class TopLevelResolver : public ast::StatementVisitor,
 	size_t top = 0;
 
   public:
+	TopLevelResolver(std::string filePath) : errorBag(filePath) {}
 	void resolve(const std::vector<std::unique_ptr<ast::Statement>> &statement);
 
 	SymbolTable getSymbolTable() const;
 
 	bool hasFailed() const;
+	const std::vector<std::string> getErrors() const;
 
   private:
 	void visitBlockStatement(const ast::Block &value) override;

@@ -2,6 +2,7 @@
 #include <cstddef>
 #include <stdexcept>
 #include <string_view>
+#include <vector>
 
 #include <ray/compiler/lexer/token.hpp>
 namespace ray::compiler {
@@ -15,21 +16,25 @@ class RuntimeError : public std::runtime_error {
 };
 
 class ErrorBag {
-	bool hadError = false;
 	std::string filepath;
+
+	std::vector<std::string> errors;
 
   public:
 	ErrorBag(std::string filepath) : filepath(filepath) {};
 
+	void error(size_t line, size_t column, std::string_view category,
+	           std::string_view message);
+
+	void error(const Token token, std::string_view category,
+	           std::string_view message);
+
 	bool failed() const;
-
-	void error(size_t line, size_t column, std::string_view message);
-
-	void error(const Token token, std::string_view message);
+	const std::vector<std::string> getErrors() const;
 
   private:
 	void report(size_t line, size_t column, std::string_view where,
-	            std::string_view message);
+	            std::string_view category, std::string_view message);
 };
 
 } // namespace ray::compiler
