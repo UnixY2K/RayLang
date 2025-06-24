@@ -181,9 +181,6 @@ void TopLevelResolver::visitCompDirectiveStatement(
 		                         "WARNING"_yellow, directiveName);
 	}
 }
-void TopLevelResolver::visitImportStatement(const ast::Import &value) {
-	std::cerr << "visitImportStatement not implemented\n";
-}
 // Expression
 void TopLevelResolver::visitAssignExpression(const ast::Assign &value) {
 	std::cerr << "visitAssignExpression not implemented\n";

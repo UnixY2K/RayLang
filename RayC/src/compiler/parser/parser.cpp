@@ -22,7 +22,7 @@ std::vector<std::unique_ptr<ast::Statement>> Parser::parse() {
 	try {
 		std::vector<std::unique_ptr<ast::Statement>> statements{};
 		while (!isAtEnd()) {
-			auto stmts = importStatement();
+			auto stmts = NamespaceStatement(true);
 			statements.insert(statements.end(),
 			                  std::make_move_iterator(stmts.begin()),
 			                  std::make_move_iterator(stmts.end()));
@@ -35,23 +35,11 @@ std::vector<std::unique_ptr<ast::Statement>> Parser::parse() {
 
 bool Parser::failed() const { return errorBag.failed(); }
 
-std::vector<std::unique_ptr<ast::Statement>> Parser::importStatement() {
-	if (match({Token::TokenType::TOKEN_IMPORT})) {
-		auto path = consume(Token::TokenType::TOKEN_STRING,
-		                    "expected string literal after import statement");
-		std::vector<std::unique_ptr<ast::Statement>> stmts;
-		stmts.push_back(std::make_unique<ast::Import>(path));
-		return stmts;
-	}
-	return NamespaceStatement(true);
-}
-
 std::vector<std::unique_ptr<ast::Statement>>
 Parser::NamespaceStatement(bool root) {
 	// if no namespace is defined then define it as a global namespace starting
 	// in the current line at column 0
 	Token name{Token::TokenType::TOKEN_IDENTIFIER, "", peek().line, 0};
-	std::vector<std::unique_ptr<ast::Statement>> statements;
 	if (match({Token::TokenType::TOKEN_NAMESPACE})) {
 		name = consume(Token::TokenType::TOKEN_IDENTIFIER,
 		               "expected namespace identifier");
@@ -64,29 +52,20 @@ Parser::NamespaceStatement(bool root) {
 		}
 		consume(Token::TokenType::TOKEN_LEFT_BRACE,
 		        "expected '{' after namespace identifier");
-		statements = NamespaceStatement(false);
+		std::vector<std::unique_ptr<ast::Statement>> nsStatements{};
+		while (!check(Token::TokenType::TOKEN_RIGHT_BRACE) && !isAtEnd()) {
+			nsStatements.push_back(std::make_unique<ast::Namespace>(
+			    name, NamespaceStatement(false)));
+		}
 		consume(Token::TokenType::TOKEN_RIGHT_BRACE,
 		        "expected '}' to close namespace");
-		std::vector<std::unique_ptr<ast::Statement>> nsStatements{};
-		nsStatements.push_back(
-		    std::make_unique<ast::Namespace>(name, std::move(statements)));
 		return nsStatements;
 	}
+	auto result = CompilerDirective();
 
-	while ((root || !check(Token::TokenType::TOKEN_RIGHT_BRACE)) &&
-	       !isAtEnd()) {
-
-		if (!(check(Token::TokenType::TOKEN_NAMESPACE))) {
-			auto result = CompilerDirective();
-			if (result.has_value()) {
-				statements.push_back(std::move(result.value()));
-			}
-		} else {
-			auto nsStatements = NamespaceStatement(false);
-			statements.insert(statements.end(),
-			                  std::make_move_iterator(nsStatements.begin()),
-			                  std::make_move_iterator(nsStatements.end()));
-		}
+	std::vector<std::unique_ptr<ast::Statement>> statements;
+	if (result.has_value()) {
+		statements.push_back(std::move(result.value()));
 	}
 	return statements;
 }

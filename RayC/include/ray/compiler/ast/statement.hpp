@@ -21,7 +21,6 @@ class While;
 class Struct;
 class Namespace;
 class CompDirective;
-class Import;
 
 class StatementVisitor {
   public:
@@ -36,7 +35,6 @@ class StatementVisitor {
 	virtual void visitStructStatement(const Struct& value) = 0;
 	virtual void visitNamespaceStatement(const Namespace& value) = 0;
 	virtual void visitCompDirectiveStatement(const CompDirective& value) = 0;
-	virtual void visitImportStatement(const Import& value) = 0;
 	virtual ~StatementVisitor() = default;
 };
 
@@ -253,20 +251,6 @@ class CompDirective : public Statement {
 	}
 
 	std::string variantName() const override { return "CompDirective"; }
-
-};
-class Import : public Statement {
-  public:
-	Token path;
-
-	Import(Token path):
-		path(std::move(path)) {}
-
-	void visit(StatementVisitor& visitor) const override {
-		visitor.visitImportStatement(*this);
-	}
-
-	std::string variantName() const override { return "Import"; }
 
 };
 

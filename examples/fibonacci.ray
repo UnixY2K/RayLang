@@ -1,25 +1,7 @@
-
-#[Linkage(mangling="c", resolution="external")]
-struct FILE;
-
-#[Linkage(mangling="c", resolution="external")]
-pub fn atoi(buffer: [c_char;]) -> mut c_int;
-#[Linkage(mangling="c", resolution="external")]
-pub fn fwrite(buffer: c_voidptr, size: mut c_size, count: mut c_size, stream: mut FILE*) -> mut c_size;
-#[Linkage(mangling="c", resolution="external")]
-pub fn strlen(buffer: [c_char;]) -> mut c_size;
-#[Linkage(mangling="c", resolution="external")]
-pub fn floor(number: mut f64) -> mut f64;
-#[Linkage(mangling="c", resolution="external")]
-pub fn log10(number: mut f64) -> mut f64;
-#[Linkage(mangling="c", resolution="external")]
-pub fn malloc(size: c_size) -> mut c_voidptr;
-#[Linkage(mangling="c", resolution="external")]
-pub fn free(size: mut c_voidptr);
-
-#[Linkage(mangling = "c", resolution="external", name="ray_libc_stdio_get_stdout")]
-pub fn get_stdout() -> mut FILE*;
-
+let cmath = @import("cstd:math.ray");
+let cstdio = @import("cstd:io.ray");
+let cstdlib = @import("cstd:std.ray");
+let cstring = @import("cstd:string.ray");
 
 fn print(buffer: [u8;]){
 	fwrite(buffer as mut c_voidptr, @sizeOf(c_char), strlen(buffer as c_char*), get_stdout());

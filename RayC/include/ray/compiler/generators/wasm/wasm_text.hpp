@@ -34,7 +34,6 @@ class WASMTextGenerator : public ast::StatementVisitor,
 	void visitStructStatement(const ast::Struct &value) override;
 	void visitNamespaceStatement(const ast::Namespace &value) override;
 	void visitCompDirectiveStatement(const ast::CompDirective &value) override;
-	void visitImportStatement(const ast::Import& value) override;
 	// Expression
 	void visitAssignExpression(const ast::Assign &value) override;
 	void visitBinaryExpression(const ast::Binary &value) override;

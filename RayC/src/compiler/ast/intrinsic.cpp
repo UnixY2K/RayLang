@@ -9,6 +9,7 @@ IntrinsicType getintrinsicType(const std::string_view lexeme) {
 	static std::unordered_map<std::string, ray::compiler::ast::IntrinsicType>
 	    map = {
 	        {"@sizeOf", IntrinsicType::INTR_SIZEOF}, // @sizeOf
+	        {"@import", IntrinsicType::INTR_IMPORT}, // @import
 	    };
 	std::string key{lexeme};
 	return map.contains(key) ? map.at(key) : IntrinsicType::INTR_UNKNOWN;

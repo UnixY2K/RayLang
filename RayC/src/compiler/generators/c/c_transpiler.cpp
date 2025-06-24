@@ -493,6 +493,11 @@ void CTranspilerGenerator::visitCallExpression(const ast::Call &callable) {
 			}
 			break;
 		}
+		case ray::compiler::ast::IntrinsicType::INTR_IMPORT: {
+			std::cerr << std::format("'{}' is not implemented yet for C backend\n",
+			                         intr->name.lexeme);
+			break;
+		}
 		case ray::compiler::ast::IntrinsicType::INTR_UNKNOWN:
 			std::cerr << std::format("'{}' is not a valid intrinsic\n",
 			                         intr->name.lexeme);
@@ -677,10 +682,6 @@ void CTranspilerGenerator::visitParameterExpression(
     const ast::Parameter &param) {
 	param.type.visit(*this);
 	output << std::format("{}", param.name.lexeme);
-}
-
-void CTranspilerGenerator::visitImportStatement(const ast::Import &value) {
-	// the c transpiler does not need to either validate or verify this
 }
 
 std::string

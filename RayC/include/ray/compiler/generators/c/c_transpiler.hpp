@@ -67,7 +67,6 @@ class CTranspilerGenerator : public ast::StatementVisitor,
 	void visitTypeExpression(const ast::Type &value) override;
 	void visitCastExpression(const ast::Cast &value) override;
 	void visitParameterExpression(const ast::Parameter &value) override;
-	void visitImportStatement(const ast::Import& value) override;
 
   private:
 	std::string findCallableName(const ast::Call &callable,
