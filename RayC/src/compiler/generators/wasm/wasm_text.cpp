@@ -142,9 +142,6 @@ void WASMTextGenerator::visitWhileStatement(const ast::While &value) {
 void WASMTextGenerator::visitStructStatement(const ast::Struct &value) {
 	std::cerr << "visitStructStatement not implemented\n";
 }
-void WASMTextGenerator::visitNamespaceStatement(const ast::Namespace &value) {
-	std::cerr << "visitNamespaceStatement not implemented\n";
-}
 void WASMTextGenerator::visitCompDirectiveStatement(
     const ast::CompDirective &value) {
 	std::cerr << "visitCompDirectiveStatement not implemented\n";

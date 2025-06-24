@@ -19,7 +19,6 @@ class Jump;
 class Var;
 class While;
 class Struct;
-class Namespace;
 class CompDirective;
 
 class StatementVisitor {
@@ -33,7 +32,6 @@ class StatementVisitor {
 	virtual void visitVarStatement(const Var& value) = 0;
 	virtual void visitWhileStatement(const While& value) = 0;
 	virtual void visitStructStatement(const Struct& value) = 0;
-	virtual void visitNamespaceStatement(const Namespace& value) = 0;
 	virtual void visitCompDirectiveStatement(const CompDirective& value) = 0;
 	virtual ~StatementVisitor() = default;
 };
@@ -214,23 +212,6 @@ class Struct : public Statement {
 	}
 
 	std::string variantName() const override { return "Struct"; }
-
-};
-class Namespace : public Statement {
-  public:
-	Token name;
-	std::vector<std::unique_ptr<Statement>> statements;
-
-	Namespace(Token name,
-	        std::vector<std::unique_ptr<Statement>> statements):
-		name(std::move(name)),
-		statements(std::move(statements)) {}
-
-	void visit(StatementVisitor& visitor) const override {
-		visitor.visitNamespaceStatement(*this);
-	}
-
-	std::string variantName() const override { return "Namespace"; }
 
 };
 class CompDirective : public Statement {

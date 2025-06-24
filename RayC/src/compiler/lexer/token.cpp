@@ -96,7 +96,6 @@ Token::TokenType Token::fromString(std::string_view str) {
 	    {"mut", Token::TokenType::TOKEN_MUT},             // mut
 	    {"struct", Token::TokenType::TOKEN_STRUCT},       // struct
 	    {"as", Token::TokenType::TOKEN_AS},               // as
-	    {"namespace", Token::TokenType::TOKEN_NAMESPACE}, // namespace
 	    {"import", Token::TokenType::TOKEN_IMPORT},       // import
 	    // Token Types
 	    {"()", Token::TokenType::TOKEN_TYPE_UNIT}, // ()
@@ -249,8 +248,6 @@ std::string_view Token::toString(TokenType token) {
 		return "TOKEN_STRUCT";
 	case TokenType::TOKEN_AS:
 		return "TOKEN_AS";
-	case TokenType::TOKEN_NAMESPACE:
-		return "TOKEN_NAMESPACE";
 	case TokenType::TOKEN_IMPORT:
 		return "TOKEN_IMPORT";
 	// token types
@@ -408,8 +405,6 @@ std::string_view Token::glyph(TokenType token) {
 		return "struct";
 	case TokenType::TOKEN_AS:
 		return "as";
-	case TokenType::TOKEN_NAMESPACE:
-		return "namespace";
 	case TokenType::TOKEN_IMPORT:
 		return "import";
 	// token types

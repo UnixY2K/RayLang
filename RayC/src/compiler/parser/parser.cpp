@@ -22,10 +22,10 @@ std::vector<std::unique_ptr<ast::Statement>> Parser::parse() {
 	try {
 		std::vector<std::unique_ptr<ast::Statement>> statements{};
 		while (!isAtEnd()) {
-			auto stmts = NamespaceStatement(true);
-			statements.insert(statements.end(),
-			                  std::make_move_iterator(stmts.begin()),
-			                  std::make_move_iterator(stmts.end()));
+			auto stmts = CompilerDirective();
+			if (stmts.has_value()) {
+				statements.push_back(std::move(*stmts));
+			}
 		}
 		return statements;
 	} catch (ParseException &e) {
@@ -35,40 +35,6 @@ std::vector<std::unique_ptr<ast::Statement>> Parser::parse() {
 
 bool Parser::failed() const { return errorBag.failed(); }
 
-std::vector<std::unique_ptr<ast::Statement>>
-Parser::NamespaceStatement(bool root) {
-	// if no namespace is defined then define it as a global namespace starting
-	// in the current line at column 0
-	Token name{Token::TokenType::TOKEN_IDENTIFIER, "", peek().line, 0};
-	if (match({Token::TokenType::TOKEN_NAMESPACE})) {
-		name = consume(Token::TokenType::TOKEN_IDENTIFIER,
-		               "expected namespace identifier");
-		while (match({Token::TokenType::TOKEN_COLON})) {
-			consume(Token::TokenType::TOKEN_COLON,
-			        "expected ':' after first colon of nested namespace");
-			Token subNamespace = consume(Token::TokenType::TOKEN_IDENTIFIER,
-			                             "expected namespace identifier");
-			name.merge(subNamespace);
-		}
-		consume(Token::TokenType::TOKEN_LEFT_BRACE,
-		        "expected '{' after namespace identifier");
-		std::vector<std::unique_ptr<ast::Statement>> nsStatements{};
-		while (!check(Token::TokenType::TOKEN_RIGHT_BRACE) && !isAtEnd()) {
-			nsStatements.push_back(std::make_unique<ast::Namespace>(
-			    name, NamespaceStatement(false)));
-		}
-		consume(Token::TokenType::TOKEN_RIGHT_BRACE,
-		        "expected '}' to close namespace");
-		return nsStatements;
-	}
-	auto result = CompilerDirective();
-
-	std::vector<std::unique_ptr<ast::Statement>> statements;
-	if (result.has_value()) {
-		statements.push_back(std::move(result.value()));
-	}
-	return statements;
-}
 std::optional<std::unique_ptr<ast::Statement>> Parser::CompilerDirective() {
 	if (match({Token::TokenType::TOKEN_POUND})) {
 		consume(Token::TokenType::TOKEN_LEFT_SQUARE_BRACE,
@@ -703,8 +669,6 @@ void Parser::synchronize() {
 		case Token::TokenType::TOKEN_WHILE:
 		case Token::TokenType::TOKEN_RETURN:
 		case Token::TokenType::TOKEN_STRUCT:
-		case Token::TokenType::TOKEN_NAMESPACE:
-			return;
 		default: {
 		}
 		}

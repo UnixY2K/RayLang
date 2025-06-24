@@ -340,26 +340,6 @@ void CTranspilerGenerator::visitStructStatement(const ast::Struct &value) {
 		output << std::format(" {};\n", value.name.lexeme);
 	}
 }
-void CTranspilerGenerator::visitNamespaceStatement(const ast::Namespace &ns) {
-	// Split ns.name by "::" and output each part
-	std::string_view name = ns.name.getLexeme();
-	auto delimiter = std::string_view("::");
-	size_t pos_start = 0, pos_end, delim_len = delimiter.length();
-	size_t insertedNamespaces = 0;
-	while ((pos_end = name.find(delimiter, pos_start)) != std::string::npos) {
-		auto namespaceValue = name.substr(pos_start, pos_end - pos_start);
-		pos_start = pos_end + delim_len;
-		this->namespaceStack.push_back(namespaceValue);
-		insertedNamespaces++;
-	}
-
-	for (auto &value : ns.statements) {
-		value->visit(*this);
-	}
-	while (insertedNamespaces-- > 0) {
-		namespaceStack.pop_back();
-	}
-}
 void CTranspilerGenerator::visitCompDirectiveStatement(
     const ast::CompDirective &value) {
 	auto directiveName = value.name.getLexeme();
