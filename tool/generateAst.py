@@ -51,7 +51,8 @@ def defineAst(outputDir: str, baseName: str, requiredHeaders: list[str], definit
         headerFile.write(f"class {baseName} {{\n")
         headerFile.write("  public:\n")
         headerFile.write(f"\tvirtual void visit({baseName}Visitor& visitor) const = 0;\n")
-        headerFile.write(f"\tvirtual std::string variantName() const = 0;\n")
+        headerFile.write(f"\tvirtual const std::string_view variantName() const = 0;\n")
+        headerFile.write(f"\tvirtual const Token& getToken() const = 0;\n")
         headerFile.write(f"\tvirtual ~{baseName}() = default;\n")
         headerFile.write("};\n\n")
 
@@ -76,6 +77,9 @@ def defineType(baseName: str, clazz: dict[str]):
     for field in clazz["Fields"]:
         stringList.append(
             f"\t{field["Type"]} {field["Name"]};\n")
+    # append to the fields a Token Location
+    stringList.append(
+            f"\tToken token;\n")
     stringList.append("\n")
 
     # define constructor
@@ -96,7 +100,8 @@ def defineType(baseName: str, clazz: dict[str]):
         stringList.append(")")
     stringList.append(" {}\n\n")
     stringList.append(f"\tvoid visit({baseName}Visitor& visitor) const override {{\n\t\tvisitor.visit{clazz["Name"]}{baseName}(*this);\n\t}}\n\n")
-    stringList.append(f"\tstd::string variantName() const override {{ return \"{clazz["Name"]}\"; }}\n\n")
+    stringList.append(f"\tconst std::string_view variantName() const override {{ return \"{clazz["Name"]}\"; }}\n\n")
+    stringList.append(f"\tconst Token& getToken() const override {{ return token; }};\n")
 
     stringList.append("};")
 

@@ -275,7 +275,7 @@ void CTranspilerGenerator::visitJumpStatement(const ast::Jump &jump) {
 		output << ";\n";
 		break;
 	default:
-		errorBag.error(0, 0, "C-BACKEND",
+		errorBag.error(jump.getToken(), "C-BACKEND",
 		               std::format("'{}' is not a supported jump type",
 		                           jump.keyword.getLexeme()));
 		break;
@@ -345,10 +345,10 @@ void CTranspilerGenerator::visitStructStatement(const ast::Struct &value) {
 	}
 }
 void CTranspilerGenerator::visitCompDirectiveStatement(
-    const ast::CompDirective &value) {
-	auto directiveName = value.name.getLexeme();
+    const ast::CompDirective &compDirective) {
+	auto directiveName = compDirective.name.getLexeme();
 	if (directiveName == "Linkage") {
-		auto &attributes = value.values;
+		auto &attributes = compDirective.values;
 		auto directive = directive::LinkageDirective(
 		    attributes.find("name") != attributes.end() ? attributes.at("name")
 		                                                : "",
@@ -360,8 +360,8 @@ void CTranspilerGenerator::visitCompDirectiveStatement(
 		              ? directive::LinkageDirective::ManglingType::C
 		              : directive::LinkageDirective::ManglingType::Unknonw
 		        : directive::LinkageDirective::ManglingType::Default);
-		if (value.child) {
-			auto childValue = value.child.get();
+		if (compDirective.child) {
+			auto childValue = compDirective.child.get();
 			if (dynamic_cast<ast::Function *>(childValue) ||
 			    dynamic_cast<ast::Struct *>(childValue)) {
 				size_t startDirectives = directivesStack.size();
@@ -369,27 +369,27 @@ void CTranspilerGenerator::visitCompDirectiveStatement(
 				top = startDirectives;
 				directivesStack.push_back(
 				    std::make_unique<directive::LinkageDirective>(directive));
-				value.child->visit(*this);
+				compDirective.child->visit(*this);
 				if (directivesStack.size() != startDirectives) {
-					errorBag.error(0, 0, "BUG",
+					errorBag.error(childValue->getToken(), "BUG",
 					               "unprocessed compiler directives");
 				}
 				top = originalTop;
 			} else {
 				errorBag.error(
-				    0, 0, "C-BACKEND",
+				    childValue->getToken(), "C-BACKEND",
 				    std::format(
 				        "{} child expression must be a function or a struct.",
 				        directive.directiveName()));
 			}
 		} else {
-			errorBag.error(0, 0, "C-BACKEND",
+			errorBag.error(compDirective.getToken(), "C-BACKEND",
 			               std::format("{} must have a child expression.",
 			                           directive.directiveName()));
 		}
 	} else {
 		errorBag.error(
-		    0, 0, "C-BACKEND",
+		    compDirective.getToken(), "C-BACKEND",
 		    std::format("Unknown compiler directive '{}'.", directiveName));
 	}
 }
@@ -425,7 +425,7 @@ void CTranspilerGenerator::visitBinaryExpression(
 		output << std::format(" {} ", op.getGlyph());
 		break;
 	default:
-		errorBag.error(0, 0, "C-BACKEND",
+		errorBag.error(binaryExpression.op, "C-BACKEND",
 		               std::format("'{}' is not a supported binary operation",
 		                           op.getLexeme()));
 	}
@@ -440,8 +440,8 @@ void CTranspilerGenerator::visitCallExpression(const ast::Call &callable) {
 		    findCallableName(callable, var->name.getLexeme());
 		if (callableName.empty()) {
 			errorBag.error(
-			    0, 0, "C-BACKEND",
-			    std::format("undefined symbol: '{}'", var->name.lexeme));
+			    var->name, "C-BACKEND",
+			    std::format("undefined symbol '{}'", var->name.lexeme));
 			callableName = var->name.lexeme;
 		}
 		output << std::format("{}(", callableName);
@@ -462,7 +462,7 @@ void CTranspilerGenerator::visitCallExpression(const ast::Call &callable) {
 		switch (intr->intrinsic) {
 		case ray::compiler::ast::IntrinsicType::INTR_SIZEOF: {
 			if (callable.arguments.size() != 1) {
-				errorBag.error(0, 0, "C-BACKEND",
+				errorBag.error(intr->name, "C-BACKEND",
 				               std::format("@sizeOf intrinsic expects 1 "
 				                           "argument but {} got provided",
 				                           callable.arguments.size()));
@@ -477,7 +477,7 @@ void CTranspilerGenerator::visitCallExpression(const ast::Call &callable) {
 						    << std::format("((ssize){})", type->calculatedSize);
 					}
 				} else {
-					errorBag.error(0, 0, "C-BACKEND",
+					errorBag.error(intr->name, "C-BACKEND",
 					               std::format("'{}' is not a Type expression",
 					                           param->variantName()));
 				}
@@ -486,19 +486,19 @@ void CTranspilerGenerator::visitCallExpression(const ast::Call &callable) {
 		}
 		case ray::compiler::ast::IntrinsicType::INTR_IMPORT: {
 			errorBag.error(
-			    0, 0, "C-BACKEND",
+			    intr->name, "C-BACKEND",
 			    std::format("'{}' is not implemented yet for C backend",
 			                intr->name.lexeme));
 			break;
 		}
 		case ray::compiler::ast::IntrinsicType::INTR_UNKNOWN:
-			errorBag.error(0, 0, "C-BACKEND",
+			errorBag.error(intr->name, "C-BACKEND",
 			               std::format("'{}' is not a valid intrinsic",
 			                           intr->name.lexeme));
 			break;
 		}
 	} else {
-		errorBag.error(0, 0, "C-BACKEND",
+		errorBag.error(intr->name, "C-BACKEND",
 		               std::format("'{}' is not a supported callable type",
 		                           callable.callee.get()->variantName()));
 	}
@@ -576,7 +576,7 @@ void CTranspilerGenerator::visitLiteralExpression(const ast::Literal &literal) {
 		break;
 	}
 	default:
-		errorBag.error(0, 0, "C-BACKEND",
+		errorBag.error(literal.token, "C-BACKEND",
 		               std::format("'{}' ({}) is not a supported literal type",
 		                           literal.kind.getLexeme(),
 		                           literal.kind.getGlyph()));
@@ -609,7 +609,7 @@ void CTranspilerGenerator::visitUnaryExpression(const ast::Unary &unary) {
 		output << std::format("{}", unary.op.getLexeme());
 		break;
 	default:
-		errorBag.error(0, 0, "C-BACKEND",
+		errorBag.error(unary.op, "C-BACKEND",
 		               std::format("'{}' is not a supported unary operation",
 		                           unary.op.getLexeme()));
 	}
@@ -629,8 +629,8 @@ void CTranspilerGenerator::visitVariableExpression(
 	output << std::format("{}", variable.name.lexeme);
 }
 void CTranspilerGenerator::visitIntrinsicExpression(
-    const ast::Intrinsic &value) {
-	errorBag.error(0, 0, "C-BACKEND",
+    const ast::Intrinsic &intrinsic) {
+	errorBag.error(intrinsic.name, "C-BACKEND",
 	               "visitIntrinsicExpression not implemented");
 }
 void CTranspilerGenerator::visitTypeExpression(const ast::Type &type) {
@@ -645,7 +645,7 @@ void CTranspilerGenerator::visitTypeExpression(const ast::Type &type) {
 			type.subtype.value()->visit(*this);
 			output << "*";
 		} else {
-			errorBag.error(0, 0, "BUG", "subtype null for array type");
+			errorBag.error(type.name, "BUG", "subtype null for array type");
 			output << std::format(
 			    " *",
 			    type.name.lexeme.substr(1,
@@ -657,7 +657,7 @@ void CTranspilerGenerator::visitTypeExpression(const ast::Type &type) {
 			if (type.subtype.has_value() && type.subtype.value()) {
 				type.subtype.value()->visit(*this);
 			} else {
-				errorBag.error(0, 0, "BUG", "subtype null");
+				errorBag.error(type.name, "BUG", "subtype null");
 			}
 			output << "*";
 		} else {

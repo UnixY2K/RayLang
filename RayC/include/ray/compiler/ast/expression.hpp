@@ -46,7 +46,8 @@ class ExpressionVisitor {
 class Expression {
   public:
 	virtual void visit(ExpressionVisitor& visitor) const = 0;
-	virtual std::string variantName() const = 0;
+	virtual const std::string_view variantName() const = 0;
+	virtual const Token& getToken() const = 0;
 	virtual ~Expression() = default;
 };
 
@@ -55,6 +56,7 @@ class Assign : public Expression {
 	std::unique_ptr<Expression> lhs;
 	Token assignmentOp;
 	std::unique_ptr<Expression> rhs;
+	Token token;
 
 	Assign(std::unique_ptr<Expression> lhs,
 	        Token assignmentOp,
@@ -67,14 +69,16 @@ class Assign : public Expression {
 		visitor.visitAssignExpression(*this);
 	}
 
-	std::string variantName() const override { return "Assign"; }
+	const std::string_view variantName() const override { return "Assign"; }
 
+	const Token& getToken() const override { return token; };
 };
 class Binary : public Expression {
   public:
 	std::unique_ptr<Expression> left;
 	Token op;
 	std::unique_ptr<Expression> right;
+	Token token;
 
 	Binary(std::unique_ptr<Expression> left,
 	        Token op,
@@ -87,14 +91,16 @@ class Binary : public Expression {
 		visitor.visitBinaryExpression(*this);
 	}
 
-	std::string variantName() const override { return "Binary"; }
+	const std::string_view variantName() const override { return "Binary"; }
 
+	const Token& getToken() const override { return token; };
 };
 class Call : public Expression {
   public:
 	std::unique_ptr<Expression> callee;
 	Token paren;
 	std::vector<std::unique_ptr<Expression>> arguments;
+	Token token;
 
 	Call(std::unique_ptr<Expression> callee,
 	        Token paren,
@@ -107,13 +113,15 @@ class Call : public Expression {
 		visitor.visitCallExpression(*this);
 	}
 
-	std::string variantName() const override { return "Call"; }
+	const std::string_view variantName() const override { return "Call"; }
 
+	const Token& getToken() const override { return token; };
 };
 class Get : public Expression {
   public:
 	std::unique_ptr<Expression> object;
 	Token name;
+	Token token;
 
 	Get(std::unique_ptr<Expression> object,
 	        Token name):
@@ -124,12 +132,14 @@ class Get : public Expression {
 		visitor.visitGetExpression(*this);
 	}
 
-	std::string variantName() const override { return "Get"; }
+	const std::string_view variantName() const override { return "Get"; }
 
+	const Token& getToken() const override { return token; };
 };
 class Grouping : public Expression {
   public:
 	std::unique_ptr<Expression> expression;
+	Token token;
 
 	Grouping(std::unique_ptr<Expression> expression):
 		expression(std::move(expression)) {}
@@ -138,13 +148,15 @@ class Grouping : public Expression {
 		visitor.visitGroupingExpression(*this);
 	}
 
-	std::string variantName() const override { return "Grouping"; }
+	const std::string_view variantName() const override { return "Grouping"; }
 
+	const Token& getToken() const override { return token; };
 };
 class Literal : public Expression {
   public:
 	Token kind;
 	std::string value;
+	Token token;
 
 	Literal(Token kind,
 	        std::string value):
@@ -155,14 +167,16 @@ class Literal : public Expression {
 		visitor.visitLiteralExpression(*this);
 	}
 
-	std::string variantName() const override { return "Literal"; }
+	const std::string_view variantName() const override { return "Literal"; }
 
+	const Token& getToken() const override { return token; };
 };
 class Logical : public Expression {
   public:
 	std::unique_ptr<Expression> left;
 	Token op;
 	std::unique_ptr<Expression> right;
+	Token token;
 
 	Logical(std::unique_ptr<Expression> left,
 	        Token op,
@@ -175,8 +189,9 @@ class Logical : public Expression {
 		visitor.visitLogicalExpression(*this);
 	}
 
-	std::string variantName() const override { return "Logical"; }
+	const std::string_view variantName() const override { return "Logical"; }
 
+	const Token& getToken() const override { return token; };
 };
 class Set : public Expression {
   public:
@@ -184,6 +199,7 @@ class Set : public Expression {
 	Token name;
 	Token assignmentOp;
 	std::unique_ptr<Expression> value;
+	Token token;
 
 	Set(std::unique_ptr<Expression> object,
 	        Token name,
@@ -198,14 +214,16 @@ class Set : public Expression {
 		visitor.visitSetExpression(*this);
 	}
 
-	std::string variantName() const override { return "Set"; }
+	const std::string_view variantName() const override { return "Set"; }
 
+	const Token& getToken() const override { return token; };
 };
 class Unary : public Expression {
   public:
 	Token op;
 	bool isPrefix;
 	std::unique_ptr<Expression> expr;
+	Token token;
 
 	Unary(Token op,
 	        bool isPrefix,
@@ -218,13 +236,15 @@ class Unary : public Expression {
 		visitor.visitUnaryExpression(*this);
 	}
 
-	std::string variantName() const override { return "Unary"; }
+	const std::string_view variantName() const override { return "Unary"; }
 
+	const Token& getToken() const override { return token; };
 };
 class ArrayAccess : public Expression {
   public:
 	std::unique_ptr<Expression> array;
 	std::unique_ptr<Expression> index;
+	Token token;
 
 	ArrayAccess(std::unique_ptr<Expression> array,
 	        std::unique_ptr<Expression> index):
@@ -235,12 +255,14 @@ class ArrayAccess : public Expression {
 		visitor.visitArrayAccessExpression(*this);
 	}
 
-	std::string variantName() const override { return "ArrayAccess"; }
+	const std::string_view variantName() const override { return "ArrayAccess"; }
 
+	const Token& getToken() const override { return token; };
 };
 class Variable : public Expression {
   public:
 	Token name;
+	Token token;
 
 	Variable(Token name):
 		name(std::move(name)) {}
@@ -249,13 +271,15 @@ class Variable : public Expression {
 		visitor.visitVariableExpression(*this);
 	}
 
-	std::string variantName() const override { return "Variable"; }
+	const std::string_view variantName() const override { return "Variable"; }
 
+	const Token& getToken() const override { return token; };
 };
 class Intrinsic : public Expression {
   public:
 	Token name;
 	IntrinsicType intrinsic;
+	Token token;
 
 	Intrinsic(Token name,
 	        IntrinsicType intrinsic):
@@ -266,8 +290,9 @@ class Intrinsic : public Expression {
 		visitor.visitIntrinsicExpression(*this);
 	}
 
-	std::string variantName() const override { return "Intrinsic"; }
+	const std::string_view variantName() const override { return "Intrinsic"; }
 
+	const Token& getToken() const override { return token; };
 };
 class Type : public Expression {
   public:
@@ -275,6 +300,7 @@ class Type : public Expression {
 	bool isConst;
 	bool isPointer;
 	std::optional<std::unique_ptr<Type>> subtype;
+	Token token;
 
 	Type(Token name,
 	        bool isConst,
@@ -289,13 +315,15 @@ class Type : public Expression {
 		visitor.visitTypeExpression(*this);
 	}
 
-	std::string variantName() const override { return "Type"; }
+	const std::string_view variantName() const override { return "Type"; }
 
+	const Token& getToken() const override { return token; };
 };
 class Cast : public Expression {
   public:
 	std::unique_ptr<Expression> expression;
 	Type type;
+	Token token;
 
 	Cast(std::unique_ptr<Expression> expression,
 	        Type type):
@@ -306,13 +334,15 @@ class Cast : public Expression {
 		visitor.visitCastExpression(*this);
 	}
 
-	std::string variantName() const override { return "Cast"; }
+	const std::string_view variantName() const override { return "Cast"; }
 
+	const Token& getToken() const override { return token; };
 };
 class Parameter : public Expression {
   public:
 	Token name;
 	Type type;
+	Token token;
 
 	Parameter(Token name,
 	        Type type):
@@ -323,8 +353,9 @@ class Parameter : public Expression {
 		visitor.visitParameterExpression(*this);
 	}
 
-	std::string variantName() const override { return "Parameter"; }
+	const std::string_view variantName() const override { return "Parameter"; }
 
+	const Token& getToken() const override { return token; };
 };
 
 } // namespace ray::compiler::ast

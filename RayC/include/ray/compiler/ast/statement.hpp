@@ -39,13 +39,15 @@ class StatementVisitor {
 class Statement {
   public:
 	virtual void visit(StatementVisitor& visitor) const = 0;
-	virtual std::string variantName() const = 0;
+	virtual const std::string_view variantName() const = 0;
+	virtual const Token& getToken() const = 0;
 	virtual ~Statement() = default;
 };
 
 class Block : public Statement {
   public:
 	std::vector<std::unique_ptr<Statement>> statements;
+	Token token;
 
 	Block(std::vector<std::unique_ptr<Statement>> statements):
 		statements(std::move(statements)) {}
@@ -54,12 +56,14 @@ class Block : public Statement {
 		visitor.visitBlockStatement(*this);
 	}
 
-	std::string variantName() const override { return "Block"; }
+	const std::string_view variantName() const override { return "Block"; }
 
+	const Token& getToken() const override { return token; };
 };
 class TerminalExpr : public Statement {
   public:
 	std::optional<std::unique_ptr<Expression>> expression;
+	Token token;
 
 	TerminalExpr(std::optional<std::unique_ptr<Expression>> expression):
 		expression(std::move(expression)) {}
@@ -68,12 +72,14 @@ class TerminalExpr : public Statement {
 		visitor.visitTerminalExprStatement(*this);
 	}
 
-	std::string variantName() const override { return "TerminalExpr"; }
+	const std::string_view variantName() const override { return "TerminalExpr"; }
 
+	const Token& getToken() const override { return token; };
 };
 class ExpressionStmt : public Statement {
   public:
 	std::unique_ptr<Expression> expression;
+	Token token;
 
 	ExpressionStmt(std::unique_ptr<Expression> expression):
 		expression(std::move(expression)) {}
@@ -82,8 +88,9 @@ class ExpressionStmt : public Statement {
 		visitor.visitExpressionStmtStatement(*this);
 	}
 
-	std::string variantName() const override { return "ExpressionStmt"; }
+	const std::string_view variantName() const override { return "ExpressionStmt"; }
 
+	const Token& getToken() const override { return token; };
 };
 class Function : public Statement {
   public:
@@ -92,6 +99,7 @@ class Function : public Statement {
 	std::vector<Parameter> params;
 	std::optional<Block> body;
 	Type returnType;
+	Token token;
 
 	Function(Token name,
 	        bool publicVisibility,
@@ -108,14 +116,16 @@ class Function : public Statement {
 		visitor.visitFunctionStatement(*this);
 	}
 
-	std::string variantName() const override { return "Function"; }
+	const std::string_view variantName() const override { return "Function"; }
 
+	const Token& getToken() const override { return token; };
 };
 class If : public Statement {
   public:
 	std::unique_ptr<Expression> condition;
 	std::unique_ptr<Statement> thenBranch;
 	std::optional<std::unique_ptr<Statement>> elseBranch;
+	Token token;
 
 	If(std::unique_ptr<Expression> condition,
 	        std::unique_ptr<Statement> thenBranch,
@@ -128,13 +138,15 @@ class If : public Statement {
 		visitor.visitIfStatement(*this);
 	}
 
-	std::string variantName() const override { return "If"; }
+	const std::string_view variantName() const override { return "If"; }
 
+	const Token& getToken() const override { return token; };
 };
 class Jump : public Statement {
   public:
 	Token keyword;
 	std::optional<std::unique_ptr<Expression>> value;
+	Token token;
 
 	Jump(Token keyword,
 	        std::optional<std::unique_ptr<Expression>> value):
@@ -145,8 +157,9 @@ class Jump : public Statement {
 		visitor.visitJumpStatement(*this);
 	}
 
-	std::string variantName() const override { return "Jump"; }
+	const std::string_view variantName() const override { return "Jump"; }
 
+	const Token& getToken() const override { return token; };
 };
 class Var : public Statement {
   public:
@@ -154,6 +167,7 @@ class Var : public Statement {
 	Type type;
 	bool is_mutable;
 	std::optional<std::unique_ptr<Expression>> initializer;
+	Token token;
 
 	Var(Token name,
 	        Type type,
@@ -168,13 +182,15 @@ class Var : public Statement {
 		visitor.visitVarStatement(*this);
 	}
 
-	std::string variantName() const override { return "Var"; }
+	const std::string_view variantName() const override { return "Var"; }
 
+	const Token& getToken() const override { return token; };
 };
 class While : public Statement {
   public:
 	std::unique_ptr<Expression> condition;
 	std::unique_ptr<Statement> body;
+	Token token;
 
 	While(std::unique_ptr<Expression> condition,
 	        std::unique_ptr<Statement> body):
@@ -185,8 +201,9 @@ class While : public Statement {
 		visitor.visitWhileStatement(*this);
 	}
 
-	std::string variantName() const override { return "While"; }
+	const std::string_view variantName() const override { return "While"; }
 
+	const Token& getToken() const override { return token; };
 };
 class Struct : public Statement {
   public:
@@ -195,6 +212,7 @@ class Struct : public Statement {
 	bool declaration;
 	std::vector<Var> members;
 	std::vector<bool> memberVisibility;
+	Token token;
 
 	Struct(Token name,
 	        bool publicVisibility,
@@ -211,14 +229,16 @@ class Struct : public Statement {
 		visitor.visitStructStatement(*this);
 	}
 
-	std::string variantName() const override { return "Struct"; }
+	const std::string_view variantName() const override { return "Struct"; }
 
+	const Token& getToken() const override { return token; };
 };
 class CompDirective : public Statement {
   public:
 	Token name;
 	CompDirectiveAttr values;
 	std::unique_ptr<Statement> child;
+	Token token;
 
 	CompDirective(Token name,
 	        CompDirectiveAttr values,
@@ -231,8 +251,9 @@ class CompDirective : public Statement {
 		visitor.visitCompDirectiveStatement(*this);
 	}
 
-	std::string variantName() const override { return "CompDirective"; }
+	const std::string_view variantName() const override { return "CompDirective"; }
 
+	const Token& getToken() const override { return token; };
 };
 
 } // namespace ray::compiler::ast
