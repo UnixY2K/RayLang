@@ -106,7 +106,8 @@ int main(int argc, char **argv) {
 				generator::c::CTranspilerGenerator CTranspilerGen(sourceFile);
 
 				CTranspilerGen.resolve(statements,
-				                       symbolTableGen.getSymbolTable());
+				                       symbolTableGen.getStructDefinitions(),
+				                       symbolTableGen.getFunctionDefinitons());
 				if (CTranspilerGen.hasFailed()) {
 					std::cerr << std::format("{}: {}\n", "Error"_red,
 					                         "CSourceGen failed");

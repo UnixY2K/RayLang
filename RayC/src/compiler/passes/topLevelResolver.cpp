@@ -4,6 +4,8 @@
 #include <ray/cli/terminal.hpp>
 #include <ray/compiler/ast/expression.hpp>
 #include <ray/compiler/ast/statement.hpp>
+#include <ray/compiler/lang/functionDefinition.hpp>
+#include <ray/compiler/lang/structDefinition.hpp>
 #include <ray/compiler/passes/symbol_mangler.hpp>
 #include <ray/compiler/passes/topLevelResolver.hpp>
 
@@ -12,7 +14,8 @@ using namespace terminal::literals;
 
 void TopLevelResolver::resolve(
     const std::vector<std::unique_ptr<ast::Statement>> &statement) {
-	globalTable.clear();
+	globalStructDefinitions.clear();
+	globalFunctionDefinitions.clear();
 	for (const auto &stmt : statement) {
 		stmt->visit(*this);
 	}
@@ -25,8 +28,6 @@ void TopLevelResolver::resolve(
 		}
 	}
 }
-
-SymbolTable TopLevelResolver::getSymbolTable() const { return globalTable; }
 
 bool TopLevelResolver::hasFailed() const { return errorBag.failed(); }
 const std::vector<std::string> TopLevelResolver::getErrors() const {
@@ -49,7 +50,6 @@ void TopLevelResolver::visitExpressionStmtStatement(
 	               "visitExpressionStmtStatement not implemented");
 }
 void TopLevelResolver::visitFunctionStatement(const ast::Function &function) {
-	std::string currentNamespace;
 	std::string currentModule;
 
 	std::optional<directive::LinkageDirective> linkageDirective;
@@ -67,14 +67,12 @@ void TopLevelResolver::visitFunctionStatement(const ast::Function &function) {
 		directivesStack.pop_back();
 	}
 	std::string mangledFunctionName =
-	    passes::mangling::NameMangler().mangleFunction(
-	        currentModule, currentNamespace, function, linkageDirective);
-	globalTable.push_back(Symbol{
+	    passes::mangling::NameMangler().mangleFunction(currentModule, function,
+	                                                   linkageDirective);
+	globalFunctionDefinitions.push_back(lang::FunctionDefinition{
 	    .name = std::string(function.name.getLexeme()),
 	    .mangledName = mangledFunctionName,
-	    .type = Symbol::SymbolType::Function,
-	    .scope = currentNamespace,
-	    .object = &function,
+	    .function = function,
 	});
 	if (function.body.has_value()) {
 		function.body->visit(*this);
@@ -99,7 +97,6 @@ void TopLevelResolver::visitWhileStatement(const ast::While &value) {
 	               "visitWhileStatement not implemented");
 }
 void TopLevelResolver::visitStructStatement(const ast::Struct &structObj) {
-	std::string currentNamespace;
 	std::string currentModule;
 
 	std::optional<directive::LinkageDirective> linkageDirective;
@@ -118,14 +115,12 @@ void TopLevelResolver::visitStructStatement(const ast::Struct &structObj) {
 	}
 
 	std::string mangledStructName =
-	    passes::mangling::NameMangler().mangleStruct(
-	        currentModule, currentNamespace, structObj, linkageDirective);
-	globalTable.push_back(Symbol{
+	    passes::mangling::NameMangler().mangleStruct(currentModule, structObj,
+	                                                 linkageDirective);
+	globalStructDefinitions.push_back(lang::StructDefinition{
 	    .name = std::string(structObj.name.getLexeme()),
 	    .mangledName = mangledStructName,
-	    .type = Symbol::SymbolType::Struct,
-	    .scope = currentNamespace,
-	    .object = &structObj,
+	    .structObj = structObj,
 	});
 }
 void TopLevelResolver::visitCompDirectiveStatement(
@@ -189,29 +184,13 @@ void TopLevelResolver::visitBinaryExpression(const ast::Binary &value) {
 	               "visitBinaryExpression not implemented");
 }
 void TopLevelResolver::visitCallExpression(const ast::Call &call) {
+	// early top level scan does not require to evaluate call expressions
+	// as modules and current intrinsics will be evaluated at a later pass
 	if (auto intrinsic = dynamic_cast<ast::Intrinsic *>(call.callee.get())) {
 		switch (intrinsic->intrinsic) {
-		case ast::IntrinsicType::INTR_SIZEOF: {
+		case ast::IntrinsicType::INTR_SIZEOF:
+		case ast::IntrinsicType::INTR_IMPORT:
 			break;
-		}
-		case ast::IntrinsicType::INTR_IMPORT: {
-			if (call.arguments.size() != 1) {
-				errorBag.error(
-				    intrinsic->name, "RESOLVER",
-				    std::format(
-				        "@import requires 1 argument but {} were provided",
-				        call.arguments.size()));
-			}
-			call.arguments[0]->visit(*this);
-			if (evaluationStack.size() < 1) {
-				errorBag.error(intrinsic->name, "BUG",
-				               "evaluation stack underflow");
-			} else {
-				std::string filePath = evaluationStack.back();
-				currentSourceUnit.requiredFiles.push_back(filePath);
-			}
-			break;
-		}
 		case ast::IntrinsicType::INTR_UNKNOWN: {
 			errorBag.error(intrinsic->name, "RESOLVER",
 			               std::format("unknown intrinsic type for '{}'",
@@ -233,9 +212,7 @@ void TopLevelResolver::visitGroupingExpression(const ast::Grouping &value) {
 	errorBag.error(value.getToken(), "BUG",
 	               "visitGroupingExpression not implemented");
 }
-void TopLevelResolver::visitLiteralExpression(const ast::Literal &literal) {
-	evaluationStack.push_back(literal.value);
-}
+void TopLevelResolver::visitLiteralExpression(const ast::Literal &literal) {}
 void TopLevelResolver::visitLogicalExpression(const ast::Logical &value) {
 	errorBag.error(value.getToken(), "BUG",
 	               "visitLogicalExpression not implemented");

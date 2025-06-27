@@ -1,5 +1,7 @@
 #pragma once
 
+#include "ray/compiler/lang/functionDefinition.hpp"
+#include "ray/compiler/lang/structDefinition.hpp"
 #include <cstddef>
 #include <memory>
 #include <sstream>
@@ -16,6 +18,16 @@
 
 namespace ray::compiler::generator::c {
 
+struct Symbol {
+	enum class SymbolType { Function, Struct };
+	std::string name;
+	std::string mangledName;
+	SymbolType type;
+	std::string scope;
+	const ast::Statement *object;
+};
+using SymbolTable = std::vector<Symbol>;
+
 class CTranspilerGenerator : public ast::StatementVisitor,
                              public ast::ExpressionVisitor {
 	ErrorBag errorBag;
@@ -28,7 +40,7 @@ class CTranspilerGenerator : public ast::StatementVisitor,
 	std::vector<std::unique_ptr<directive::CompilerDirective>> directivesStack;
 	size_t top = 0;
 
-	analyzer::symbols::SymbolTable symbolTable;
+	SymbolTable symbolTable;
 
 	passes::mangling::NameMangler nameMangler;
 
@@ -36,7 +48,8 @@ class CTranspilerGenerator : public ast::StatementVisitor,
 	CTranspilerGenerator(std::string filePath) : errorBag(filePath) {}
 
 	void resolve(const std::vector<std::unique_ptr<ast::Statement>> &statement,
-	             analyzer::symbols::SymbolTable symbolTable);
+	             std::vector<lang::StructDefinition> structDefinitions,
+	             std::vector<lang::FunctionDefinition> functionDefinitions);
 
 	bool hasFailed() const;
 	const std::vector<std::string> getErrors() const;

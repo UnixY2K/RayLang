@@ -6,26 +6,20 @@
 #include <ray/compiler/directives/compilerDirective.hpp>
 #include <ray/compiler/directives/linkageDirective.hpp>
 #include <ray/compiler/error_bag.hpp>
+#include <ray/compiler/lang/functionDefinition.hpp>
 #include <ray/compiler/lang/sourceUnit.hpp>
+#include <ray/compiler/lang/structDefinition.hpp>
 
 namespace ray::compiler::analyzer::symbols {
-struct Symbol {
-	enum class SymbolType { Function, Struct };
-	std::string name;
-	std::string mangledName;
-	SymbolType type;
-	std::string scope;
-	const ast::Statement *object;
-};
-using SymbolTable = std::vector<Symbol>;
+
 class TopLevelResolver : public ast::StatementVisitor,
                          public ast::ExpressionVisitor {
 	ErrorBag errorBag;
 
 	std::vector<std::unique_ptr<directive::CompilerDirective>> directivesStack;
-	std::vector<std::string> evaluationStack;
 
-	SymbolTable globalTable;
+	std::vector<lang::StructDefinition> globalStructDefinitions;
+	std::vector<lang::FunctionDefinition> globalFunctionDefinitions;
 	lang::SourceUnit currentSourceUnit;
 	size_t top = 0;
 
@@ -33,7 +27,12 @@ class TopLevelResolver : public ast::StatementVisitor,
 	TopLevelResolver(std::string filePath) : errorBag(filePath) {}
 	void resolve(const std::vector<std::unique_ptr<ast::Statement>> &statement);
 
-	SymbolTable getSymbolTable() const;
+	std::vector<lang::StructDefinition> getStructDefinitions() const {
+		return globalStructDefinitions;
+	}
+	std::vector<lang::FunctionDefinition> getFunctionDefinitons() const {
+		return globalFunctionDefinitions;
+	}
 
 	bool hasFailed() const;
 	const std::vector<std::string> getErrors() const;
