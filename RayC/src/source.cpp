@@ -1,3 +1,4 @@
+#include "ray/compiler/lang/moduleStore.hpp"
 #include <exception>
 #include <format>
 #include <fstream>
@@ -9,6 +10,7 @@
 #include <ray/cli/terminal.hpp>
 
 #include <ray/compiler/passes/topLevelResolver.hpp>
+#include <ray/compiler/passes/typeChecker.hpp>
 
 #include <ray/compiler/generators/c/c_transpiler.hpp>
 #include <ray/compiler/generators/wasm/wasm_text.hpp>
@@ -77,7 +79,9 @@ int main(int argc, char **argv) {
 			}
 			std::string output;
 			bool handled = false;
-			analyzer::symbols::TopLevelResolver symbolTableGen(sourceFile);
+
+			lang::ModuleStore moduleStore;
+			analyzer::TopLevelResolver symbolTableGen(sourceFile);
 			symbolTableGen.resolve(statements);
 
 			if (symbolTableGen.hasFailed()) {
@@ -88,6 +92,20 @@ int main(int argc, char **argv) {
 				}
 				return 1;
 			}
+			analyzer::TypeChecker typeChecker(
+			    sourceFile, symbolTableGen.getStructDefinitions(),
+			    symbolTableGen.getFunctionDefinitons(), moduleStore);
+
+			typeChecker.resolve(statements);
+			if (typeChecker.hasFailed()) {
+				std::cerr << std::format("{}: {}\n", "Error"_red,
+				                         "typeChecker failed");
+				for (auto typeCheckerError : typeChecker.getErrors()) {
+					std::cerr << typeCheckerError;
+				}
+				return 1;
+			}
+
 			switch (opts.target) {
 			case cli::Options::TargetEnum::WASM_TEXT: {
 				handled = true;
@@ -106,8 +124,8 @@ int main(int argc, char **argv) {
 				generator::c::CTranspilerGenerator CTranspilerGen(sourceFile);
 
 				CTranspilerGen.resolve(statements,
-				                       symbolTableGen.getStructDefinitions(),
-				                       symbolTableGen.getFunctionDefinitons());
+				                       typeChecker.getStructDefinitions(),
+				                       typeChecker.getFunctionDefinitons());
 				if (CTranspilerGen.hasFailed()) {
 					std::cerr << std::format("{}: {}\n", "Error"_red,
 					                         "CSourceGen failed");

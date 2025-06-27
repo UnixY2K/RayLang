@@ -9,7 +9,7 @@
 #include <ray/compiler/passes/symbol_mangler.hpp>
 #include <ray/compiler/passes/topLevelResolver.hpp>
 
-namespace ray::compiler::analyzer::symbols {
+namespace ray::compiler::analyzer {
 using namespace terminal::literals;
 
 void TopLevelResolver::resolve(
@@ -251,4 +251,4 @@ void TopLevelResolver::visitParameterExpression(const ast::Parameter &value) {
 	               "visitParameterExpression not implemented");
 }
 
-} // namespace ray::compiler::analyzer::symbols
+} // namespace ray::compiler::analyzer

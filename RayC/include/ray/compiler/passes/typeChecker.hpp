@@ -7,13 +7,14 @@
 #include <ray/compiler/directives/linkageDirective.hpp>
 #include <ray/compiler/error_bag.hpp>
 #include <ray/compiler/lang/functionDefinition.hpp>
+#include <ray/compiler/lang/moduleStore.hpp>
 #include <ray/compiler/lang/sourceUnit.hpp>
 #include <ray/compiler/lang/structDefinition.hpp>
 
 namespace ray::compiler::analyzer {
 
-class TopLevelResolver : public ast::StatementVisitor,
-                         public ast::ExpressionVisitor {
+class TypeChecker : public ast::StatementVisitor,
+                    public ast::ExpressionVisitor {
 	ErrorBag errorBag;
 
 	std::vector<std::unique_ptr<directive::CompilerDirective>> directivesStack;
@@ -21,10 +22,18 @@ class TopLevelResolver : public ast::StatementVisitor,
 	std::vector<lang::StructDefinition> globalStructDefinitions;
 	std::vector<lang::FunctionDefinition> globalFunctionDefinitions;
 	lang::SourceUnit currentSourceUnit;
+	lang::ModuleStore &moduleStore;
 	size_t top = 0;
 
   public:
-	TopLevelResolver(std::string filePath) : errorBag(filePath) {}
+	TypeChecker(std::string filePath,
+	            std::vector<lang::StructDefinition> structDefinitions,
+	            std::vector<lang::FunctionDefinition> functionDefinitions,
+	            lang::ModuleStore &moduleStore)
+	    : errorBag(filePath), globalStructDefinitions(structDefinitions),
+	      globalFunctionDefinitions(functionDefinitions),
+	      moduleStore(moduleStore) {}
+
 	void resolve(const std::vector<std::unique_ptr<ast::Statement>> &statement);
 
 	std::vector<lang::StructDefinition> getStructDefinitions() const {

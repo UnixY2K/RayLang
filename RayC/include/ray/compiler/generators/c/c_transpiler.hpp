@@ -1,7 +1,5 @@
 #pragma once
 
-#include "ray/compiler/lang/functionDefinition.hpp"
-#include "ray/compiler/lang/structDefinition.hpp"
 #include <cstddef>
 #include <memory>
 #include <sstream>
@@ -12,9 +10,12 @@
 #include <ray/compiler/ast/statement.hpp>
 #include <ray/compiler/directives/compilerDirective.hpp>
 #include <ray/compiler/error_bag.hpp>
+#include <ray/compiler/lang/functionDefinition.hpp>
+#include <ray/compiler/lang/structDefinition.hpp>
 #include <ray/compiler/passes/symbol_mangler.hpp>
 #include <ray/compiler/passes/topLevelResolver.hpp>
 #include <ray/compiler/types/types.hpp>
+
 
 namespace ray::compiler::generator::c {
 
