@@ -8,15 +8,15 @@
 
 #include <ray/compiler/ast/expression.hpp>
 #include <ray/compiler/ast/statement.hpp>
-#include <ray/compiler/error_bag.hpp>
 #include <ray/compiler/lexer/token.hpp>
+#include <ray/compiler/message_bag.hpp>
 
 namespace ray::compiler {
 
 class ParseException : public std::exception {};
 
 class Parser {
-	ErrorBag errorBag;
+	MessageBag errorBag;
 	std::vector<Token> tokens;
 	size_t current = 0;
 

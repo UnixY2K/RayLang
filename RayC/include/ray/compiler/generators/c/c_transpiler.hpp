@@ -9,13 +9,12 @@
 #include <ray/compiler/ast/expression.hpp>
 #include <ray/compiler/ast/statement.hpp>
 #include <ray/compiler/directives/compilerDirective.hpp>
-#include <ray/compiler/error_bag.hpp>
 #include <ray/compiler/lang/functionDefinition.hpp>
 #include <ray/compiler/lang/structDefinition.hpp>
+#include <ray/compiler/message_bag.hpp>
 #include <ray/compiler/passes/symbol_mangler.hpp>
 #include <ray/compiler/passes/topLevelResolver.hpp>
 #include <ray/compiler/types/types.hpp>
-
 
 namespace ray::compiler::generator::c {
 
@@ -31,7 +30,7 @@ using SymbolTable = std::vector<Symbol>;
 
 class CTranspilerGenerator : public ast::StatementVisitor,
                              public ast::ExpressionVisitor {
-	ErrorBag errorBag;
+	MessageBag errorBag;
 	std::stringstream output;
 	size_t ident = 0;
 

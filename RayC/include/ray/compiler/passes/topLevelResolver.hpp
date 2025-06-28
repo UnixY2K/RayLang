@@ -5,7 +5,7 @@
 #include <ray/compiler/ast/statement.hpp>
 #include <ray/compiler/directives/compilerDirective.hpp>
 #include <ray/compiler/directives/linkageDirective.hpp>
-#include <ray/compiler/error_bag.hpp>
+#include <ray/compiler/message_bag.hpp>
 #include <ray/compiler/lang/functionDefinition.hpp>
 #include <ray/compiler/lang/sourceUnit.hpp>
 #include <ray/compiler/lang/structDefinition.hpp>
@@ -14,7 +14,7 @@ namespace ray::compiler::analyzer {
 
 class TopLevelResolver : public ast::StatementVisitor,
                          public ast::ExpressionVisitor {
-	ErrorBag errorBag;
+	MessageBag messageBag;
 
 	std::vector<std::unique_ptr<directive::CompilerDirective>> directivesStack;
 
@@ -24,7 +24,7 @@ class TopLevelResolver : public ast::StatementVisitor,
 	size_t top = 0;
 
   public:
-	TopLevelResolver(std::string filePath) : errorBag(filePath) {}
+	TopLevelResolver(std::string filePath) : messageBag(filePath) {}
 	void resolve(const std::vector<std::unique_ptr<ast::Statement>> &statement);
 
 	std::vector<lang::StructDefinition> getStructDefinitions() const {
@@ -36,6 +36,7 @@ class TopLevelResolver : public ast::StatementVisitor,
 
 	bool hasFailed() const;
 	const std::vector<std::string> getErrors() const;
+	const std::vector<std::string> getWarnings() const;
 
   private:
 	void visitBlockStatement(const ast::Block &value) override;

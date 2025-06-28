@@ -1,13 +1,30 @@
 #include <ray/compiler/passes/typeChecker.hpp>
 
+#include <format>
+
 namespace ray::compiler::analyzer {
 
 void TypeChecker::resolve(
-    const std::vector<std::unique_ptr<ast::Statement>> &statement) {}
+    const std::vector<std::unique_ptr<ast::Statement>> &statement) {
+	// globalStructDefinitions.clear();
+	// globalFunctionDefinitions.clear();
+	for (const auto &stmt : statement) {
+		stmt->visit(*this);
+	}
 
-bool TypeChecker::hasFailed() const { return errorBag.failed(); }
+	for (auto &directive : directivesStack) {
+		messageBag.warning(directive->getToken(), "TypeChecker",
+		                   std::format("unused compiler directive {}",
+		                               directive->directiveName()));
+	}
+}
+
+bool TypeChecker::hasFailed() const { return messageBag.failed(); }
 const std::vector<std::string> TypeChecker::getErrors() const {
-	return errorBag.getErrors();
+	return messageBag.getErrors();
+}
+const std::vector<std::string> TypeChecker::getWarnings() const {
+	return messageBag.getWarnings();
 }
 
 void TypeChecker::visitBlockStatement(const ast::Block &value) {}

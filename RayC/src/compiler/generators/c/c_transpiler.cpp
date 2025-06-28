@@ -367,7 +367,8 @@ void CTranspilerGenerator::visitCompDirectiveStatement(
 		        ? attributes.at("mangling") == "c"
 		              ? directive::LinkageDirective::ManglingType::C
 		              : directive::LinkageDirective::ManglingType::Unknonw
-		        : directive::LinkageDirective::ManglingType::Default);
+		        : directive::LinkageDirective::ManglingType::Default,
+		    compDirective.getToken());
 		if (compDirective.child) {
 			auto childValue = compDirective.child.get();
 			if (dynamic_cast<ast::Function *>(childValue) ||

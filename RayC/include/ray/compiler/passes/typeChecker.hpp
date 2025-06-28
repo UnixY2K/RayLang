@@ -5,17 +5,17 @@
 #include <ray/compiler/ast/statement.hpp>
 #include <ray/compiler/directives/compilerDirective.hpp>
 #include <ray/compiler/directives/linkageDirective.hpp>
-#include <ray/compiler/error_bag.hpp>
 #include <ray/compiler/lang/functionDefinition.hpp>
 #include <ray/compiler/lang/moduleStore.hpp>
 #include <ray/compiler/lang/sourceUnit.hpp>
 #include <ray/compiler/lang/structDefinition.hpp>
+#include <ray/compiler/message_bag.hpp>
 
 namespace ray::compiler::analyzer {
 
 class TypeChecker : public ast::StatementVisitor,
                     public ast::ExpressionVisitor {
-	ErrorBag errorBag;
+	MessageBag messageBag;
 
 	std::vector<std::unique_ptr<directive::CompilerDirective>> directivesStack;
 
@@ -30,7 +30,7 @@ class TypeChecker : public ast::StatementVisitor,
 	            std::vector<lang::StructDefinition> structDefinitions,
 	            std::vector<lang::FunctionDefinition> functionDefinitions,
 	            lang::ModuleStore &moduleStore)
-	    : errorBag(filePath), globalStructDefinitions(structDefinitions),
+	    : messageBag(filePath), globalStructDefinitions(structDefinitions),
 	      globalFunctionDefinitions(functionDefinitions),
 	      moduleStore(moduleStore) {}
 
@@ -45,6 +45,7 @@ class TypeChecker : public ast::StatementVisitor,
 
 	bool hasFailed() const;
 	const std::vector<std::string> getErrors() const;
+	const std::vector<std::string> getWarnings() const;
 
   private:
 	void visitBlockStatement(const ast::Block &value) override;

@@ -92,6 +92,9 @@ int main(int argc, char **argv) {
 				}
 				return 1;
 			}
+			for (auto tableGenWarning : symbolTableGen.getWarnings()) {
+				std::cerr << tableGenWarning;
+			}
 			analyzer::TypeChecker typeChecker(
 			    sourceFile, symbolTableGen.getStructDefinitions(),
 			    symbolTableGen.getFunctionDefinitons(), moduleStore);
@@ -104,6 +107,9 @@ int main(int argc, char **argv) {
 					std::cerr << typeCheckerError;
 				}
 				return 1;
+			}
+			for (auto typeCheckerWarning : typeChecker.getWarnings()) {
+				std::cerr << typeCheckerWarning;
 			}
 
 			switch (opts.target) {

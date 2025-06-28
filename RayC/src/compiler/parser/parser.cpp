@@ -9,7 +9,7 @@
 #include <ray/compiler/ast/expression.hpp>
 #include <ray/compiler/ast/intrinsic.hpp>
 #include <ray/compiler/ast/statement.hpp>
-#include <ray/compiler/error_bag.hpp>
+#include <ray/compiler/message_bag.hpp>
 #include <ray/compiler/lexer/token.hpp>
 #include <ray/compiler/parser/parser.hpp>
 

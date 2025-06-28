@@ -15,7 +15,7 @@ rayc_srcs = [
 	'src/compiler/passes/typeChecker.cpp',
 	'src/compiler/parser/parser.cpp',
 	'src/compiler/types/types.cpp',
-	'src/compiler/error_bag.cpp',
+	'src/compiler/message_bag.cpp',
 	'src/source.cpp',
 ]
 rayc_args = []
