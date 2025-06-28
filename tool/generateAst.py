@@ -88,6 +88,7 @@ def defineType(baseName: str, clazz: dict[str]):
     for field in clazz["Fields"]:
         constructorParams.append(
             f"{field["Type"]} {field["Name"]}")
+    constructorParams.append("Token token")
 
     stringList.append(f",\n\t{" " * 8}".join(constructorParams))
     if (len(clazz["Fields"]) > 0):
@@ -95,6 +96,7 @@ def defineType(baseName: str, clazz: dict[str]):
         initializerList = list[str]()
         for field in clazz["Fields"]:
             initializerList.append(f"{field["Name"]}(std::move({field["Name"]}))")
+        initializerList.append("token(std::move(token))")
         stringList.append(",\n\t\t".join(initializerList))
     else:
         stringList.append(")")

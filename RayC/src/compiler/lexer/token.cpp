@@ -81,22 +81,22 @@ Token::TokenType Token::fromString(std::string_view str) {
 	    //{"", Token::TokenType::TOKEN_CHAR},     	// ex: 'A', 'B'
 	    //{"", Token::TokenType::TOKEN_INTRINSIC},  // ex: @sizeOf
 	    // keywords
-	    {"if", Token::TokenType::TOKEN_IF},               // if
-	    {"else", Token::TokenType::TOKEN_ELSE},           // else
-	    {"true", Token::TokenType::TOKEN_TRUE},           // true
-	    {"false", Token::TokenType::TOKEN_FALSE},         // false
-	    {"for", Token::TokenType::TOKEN_FOR},             // for
-	    {"while", Token::TokenType::TOKEN_WHILE},         // while
-	    {"fn", Token::TokenType::TOKEN_FN},               // fn
-	    {"let", Token::TokenType::TOKEN_LET},             // let
-	    {"return", Token::TokenType::TOKEN_RETURN},       // return
-	    {"continue", Token::TokenType::TOKEN_CONTINUE},   // continue
-	    {"break", Token::TokenType::TOKEN_BREAK},         // break
-	    {"pub", Token::TokenType::TOKEN_PUB},             // pub
-	    {"mut", Token::TokenType::TOKEN_MUT},             // mut
-	    {"struct", Token::TokenType::TOKEN_STRUCT},       // struct
-	    {"as", Token::TokenType::TOKEN_AS},               // as
-	    {"import", Token::TokenType::TOKEN_IMPORT},       // import
+	    {"if", Token::TokenType::TOKEN_IF},             // if
+	    {"else", Token::TokenType::TOKEN_ELSE},         // else
+	    {"true", Token::TokenType::TOKEN_TRUE},         // true
+	    {"false", Token::TokenType::TOKEN_FALSE},       // false
+	    {"for", Token::TokenType::TOKEN_FOR},           // for
+	    {"while", Token::TokenType::TOKEN_WHILE},       // while
+	    {"fn", Token::TokenType::TOKEN_FN},             // fn
+	    {"let", Token::TokenType::TOKEN_LET},           // let
+	    {"return", Token::TokenType::TOKEN_RETURN},     // return
+	    {"continue", Token::TokenType::TOKEN_CONTINUE}, // continue
+	    {"break", Token::TokenType::TOKEN_BREAK},       // break
+	    {"pub", Token::TokenType::TOKEN_PUB},           // pub
+	    {"mut", Token::TokenType::TOKEN_MUT},           // mut
+	    {"struct", Token::TokenType::TOKEN_STRUCT},     // struct
+	    {"as", Token::TokenType::TOKEN_AS},             // as
+	    {"import", Token::TokenType::TOKEN_IMPORT},     // import
 	    // Token Types
 	    {"()", Token::TokenType::TOKEN_TYPE_UNIT}, // ()
 	};
@@ -265,7 +265,7 @@ std::string_view Token::glyph(TokenType token) {
 	switch (token) {
 	// NON Used, only to hint that the token is not initialized
 	case TokenType::TOKEN_UNINITIALIZED:
-		return "TOKEN_UNINITIALIZED";
+		return "<{?TOKEN_UNINITIALIZED?}>";
 	// block tokens
 	case TokenType::TOKEN_LEFT_PAREN:
 		return "(";

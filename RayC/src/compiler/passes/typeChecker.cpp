@@ -27,32 +27,131 @@ const std::vector<std::string> TypeChecker::getWarnings() const {
 	return messageBag.getWarnings();
 }
 
-void TypeChecker::visitBlockStatement(const ast::Block &value) {}
-void TypeChecker::visitTerminalExprStatement(const ast::TerminalExpr &value) {}
+void TypeChecker::visitBlockStatement(const ast::Block &value) {
+	messageBag.error(value.getToken(), "BUG",
+	                 std::format("visit method not implemented for {}",
+	                             value.variantName()));
+}
+void TypeChecker::visitTerminalExprStatement(const ast::TerminalExpr &value) {
+	messageBag.error(value.getToken(), "BUG",
+	                 std::format("visit method not implemented for {}",
+	                             value.variantName()));
+}
 void TypeChecker::visitExpressionStmtStatement(
-    const ast::ExpressionStmt &value) {}
-void TypeChecker::visitFunctionStatement(const ast::Function &value) {}
-void TypeChecker::visitIfStatement(const ast::If &value) {}
-void TypeChecker::visitJumpStatement(const ast::Jump &value) {}
-void TypeChecker::visitVarStatement(const ast::Var &value) {}
-void TypeChecker::visitWhileStatement(const ast::While &value) {}
-void TypeChecker::visitStructStatement(const ast::Struct &value) {}
+    const ast::ExpressionStmt &value) {
+	messageBag.error(value.getToken(), "BUG",
+	                 std::format("visit method not implemented for {}",
+	                             value.variantName()));
+}
+void TypeChecker::visitFunctionStatement(const ast::Function &value) {
+	messageBag.error(value.getToken(), "BUG",
+	                 std::format("visit method not implemented for {}",
+	                             value.variantName()));
+}
+void TypeChecker::visitIfStatement(const ast::If &value) {
+	messageBag.error(value.getToken(), "BUG",
+	                 std::format("visit method not implemented for {}",
+	                             value.variantName()));
+}
+void TypeChecker::visitJumpStatement(const ast::Jump &value) {
+	messageBag.error(value.getToken(), "BUG",
+	                 std::format("visit method not implemented for {}",
+	                             value.variantName()));
+}
+void TypeChecker::visitVarStatement(const ast::Var &value) {
+	messageBag.error(value.getToken(), "BUG",
+	                 std::format("visit method not implemented for {}",
+	                             value.variantName()));
+}
+void TypeChecker::visitWhileStatement(const ast::While &value) {
+	messageBag.error(value.getToken(), "BUG",
+	                 std::format("visit method not implemented for {}",
+	                             value.variantName()));
+}
+void TypeChecker::visitStructStatement(const ast::Struct &value) {
+	messageBag.error(value.getToken(), "BUG",
+	                 std::format("visit method not implemented for {}",
+	                             value.variantName()));
+}
 void TypeChecker::visitCompDirectiveStatement(const ast::CompDirective &value) {
+	messageBag.error(value.getToken(), "BUG",
+	                 std::format("visit method not implemented for {}",
+	                             value.variantName()));
 }
 // Expression
-void TypeChecker::visitAssignExpression(const ast::Assign &value) {}
-void TypeChecker::visitBinaryExpression(const ast::Binary &value) {}
-void TypeChecker::visitCallExpression(const ast::Call &value) {}
-void TypeChecker::visitGetExpression(const ast::Get &value) {}
-void TypeChecker::visitGroupingExpression(const ast::Grouping &value) {}
-void TypeChecker::visitLiteralExpression(const ast::Literal &value) {}
-void TypeChecker::visitLogicalExpression(const ast::Logical &value) {}
-void TypeChecker::visitSetExpression(const ast::Set &value) {}
-void TypeChecker::visitUnaryExpression(const ast::Unary &value) {}
-void TypeChecker::visitArrayAccessExpression(const ast::ArrayAccess &value) {}
-void TypeChecker::visitVariableExpression(const ast::Variable &value) {}
-void TypeChecker::visitIntrinsicExpression(const ast::Intrinsic &value) {}
-void TypeChecker::visitTypeExpression(const ast::Type &value) {}
-void TypeChecker::visitCastExpression(const ast::Cast &value) {}
-void TypeChecker::visitParameterExpression(const ast::Parameter &value) {}
+void TypeChecker::visitAssignExpression(const ast::Assign &value) {
+	messageBag.error(value.getToken(), "BUG",
+	                 std::format("visit method not implemented for {}",
+	                             value.variantName()));
+}
+void TypeChecker::visitBinaryExpression(const ast::Binary &value) {
+	messageBag.error(value.getToken(), "BUG",
+	                 std::format("visit method not implemented for {}",
+	                             value.variantName()));
+}
+void TypeChecker::visitCallExpression(const ast::Call &value) {
+	messageBag.error(value.getToken(), "BUG",
+	                 std::format("visit method not implemented for {}",
+	                             value.variantName()));
+}
+void TypeChecker::visitGetExpression(const ast::Get &value) {
+	messageBag.error(value.getToken(), "BUG",
+	                 std::format("visit method not implemented for {}",
+	                             value.variantName()));
+}
+void TypeChecker::visitGroupingExpression(const ast::Grouping &value) {
+	messageBag.error(value.getToken(), "BUG",
+	                 std::format("visit method not implemented for {}",
+	                             value.variantName()));
+}
+void TypeChecker::visitLiteralExpression(const ast::Literal &value) {
+	messageBag.error(value.getToken(), "BUG",
+	                 std::format("visit method not implemented for {}",
+	                             value.variantName()));
+}
+void TypeChecker::visitLogicalExpression(const ast::Logical &value) {
+	messageBag.error(value.getToken(), "BUG",
+	                 std::format("visit method not implemented for {}",
+	                             value.variantName()));
+}
+void TypeChecker::visitSetExpression(const ast::Set &value) {
+	messageBag.error(value.getToken(), "BUG",
+	                 std::format("visit method not implemented for {}",
+	                             value.variantName()));
+}
+void TypeChecker::visitUnaryExpression(const ast::Unary &value) {
+	messageBag.error(value.getToken(), "BUG",
+	                 std::format("visit method not implemented for {}",
+	                             value.variantName()));
+}
+void TypeChecker::visitArrayAccessExpression(const ast::ArrayAccess &value) {
+	messageBag.error(value.getToken(), "BUG",
+	                 std::format("visit method not implemented for {}",
+	                             value.variantName()));
+}
+void TypeChecker::visitVariableExpression(const ast::Variable &value) {
+	messageBag.error(value.getToken(), "BUG",
+	                 std::format("visit method not implemented for {}",
+	                             value.variantName()));
+}
+void TypeChecker::visitIntrinsicExpression(const ast::Intrinsic &value) {
+	messageBag.error(value.getToken(), "BUG",
+	                 std::format("visit method not implemented for {}",
+	                             value.variantName()));
+}
+void TypeChecker::visitTypeExpression(const ast::Type &value) {
+	messageBag.error(value.getToken(), "BUG",
+	                 std::format("visit method not implemented for {}",
+	                             value.variantName()));
+}
+void TypeChecker::visitCastExpression(const ast::Cast &value) {
+	messageBag.error(value.getToken(), "BUG",
+	                 std::format("visit method not implemented for {}",
+	                             value.variantName()));
+}
+void TypeChecker::visitParameterExpression(const ast::Parameter &value) {
+	messageBag.error(value.getToken(), "BUG",
+	                 std::format("visit method not implemented for {}",
+	                             value.variantName()));
+}
 } // namespace ray::compiler::analyzer

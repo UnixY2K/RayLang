@@ -49,8 +49,10 @@ class Block : public Statement {
 	std::vector<std::unique_ptr<Statement>> statements;
 	Token token;
 
-	Block(std::vector<std::unique_ptr<Statement>> statements):
-		statements(std::move(statements)) {}
+	Block(std::vector<std::unique_ptr<Statement>> statements,
+	        Token token):
+		statements(std::move(statements)),
+		token(std::move(token)) {}
 
 	void visit(StatementVisitor& visitor) const override {
 		visitor.visitBlockStatement(*this);
@@ -65,8 +67,10 @@ class TerminalExpr : public Statement {
 	std::optional<std::unique_ptr<Expression>> expression;
 	Token token;
 
-	TerminalExpr(std::optional<std::unique_ptr<Expression>> expression):
-		expression(std::move(expression)) {}
+	TerminalExpr(std::optional<std::unique_ptr<Expression>> expression,
+	        Token token):
+		expression(std::move(expression)),
+		token(std::move(token)) {}
 
 	void visit(StatementVisitor& visitor) const override {
 		visitor.visitTerminalExprStatement(*this);
@@ -81,8 +85,10 @@ class ExpressionStmt : public Statement {
 	std::unique_ptr<Expression> expression;
 	Token token;
 
-	ExpressionStmt(std::unique_ptr<Expression> expression):
-		expression(std::move(expression)) {}
+	ExpressionStmt(std::unique_ptr<Expression> expression,
+	        Token token):
+		expression(std::move(expression)),
+		token(std::move(token)) {}
 
 	void visit(StatementVisitor& visitor) const override {
 		visitor.visitExpressionStmtStatement(*this);
@@ -105,12 +111,14 @@ class Function : public Statement {
 	        bool publicVisibility,
 	        std::vector<Parameter> params,
 	        std::optional<Block> body,
-	        Type returnType):
+	        Type returnType,
+	        Token token):
 		name(std::move(name)),
 		publicVisibility(std::move(publicVisibility)),
 		params(std::move(params)),
 		body(std::move(body)),
-		returnType(std::move(returnType)) {}
+		returnType(std::move(returnType)),
+		token(std::move(token)) {}
 
 	void visit(StatementVisitor& visitor) const override {
 		visitor.visitFunctionStatement(*this);
@@ -129,10 +137,12 @@ class If : public Statement {
 
 	If(std::unique_ptr<Expression> condition,
 	        std::unique_ptr<Statement> thenBranch,
-	        std::optional<std::unique_ptr<Statement>> elseBranch):
+	        std::optional<std::unique_ptr<Statement>> elseBranch,
+	        Token token):
 		condition(std::move(condition)),
 		thenBranch(std::move(thenBranch)),
-		elseBranch(std::move(elseBranch)) {}
+		elseBranch(std::move(elseBranch)),
+		token(std::move(token)) {}
 
 	void visit(StatementVisitor& visitor) const override {
 		visitor.visitIfStatement(*this);
@@ -149,9 +159,11 @@ class Jump : public Statement {
 	Token token;
 
 	Jump(Token keyword,
-	        std::optional<std::unique_ptr<Expression>> value):
+	        std::optional<std::unique_ptr<Expression>> value,
+	        Token token):
 		keyword(std::move(keyword)),
-		value(std::move(value)) {}
+		value(std::move(value)),
+		token(std::move(token)) {}
 
 	void visit(StatementVisitor& visitor) const override {
 		visitor.visitJumpStatement(*this);
@@ -172,11 +184,13 @@ class Var : public Statement {
 	Var(Token name,
 	        Type type,
 	        bool is_mutable,
-	        std::optional<std::unique_ptr<Expression>> initializer):
+	        std::optional<std::unique_ptr<Expression>> initializer,
+	        Token token):
 		name(std::move(name)),
 		type(std::move(type)),
 		is_mutable(std::move(is_mutable)),
-		initializer(std::move(initializer)) {}
+		initializer(std::move(initializer)),
+		token(std::move(token)) {}
 
 	void visit(StatementVisitor& visitor) const override {
 		visitor.visitVarStatement(*this);
@@ -193,9 +207,11 @@ class While : public Statement {
 	Token token;
 
 	While(std::unique_ptr<Expression> condition,
-	        std::unique_ptr<Statement> body):
+	        std::unique_ptr<Statement> body,
+	        Token token):
 		condition(std::move(condition)),
-		body(std::move(body)) {}
+		body(std::move(body)),
+		token(std::move(token)) {}
 
 	void visit(StatementVisitor& visitor) const override {
 		visitor.visitWhileStatement(*this);
@@ -218,12 +234,14 @@ class Struct : public Statement {
 	        bool publicVisibility,
 	        bool declaration,
 	        std::vector<Var> members,
-	        std::vector<bool> memberVisibility):
+	        std::vector<bool> memberVisibility,
+	        Token token):
 		name(std::move(name)),
 		publicVisibility(std::move(publicVisibility)),
 		declaration(std::move(declaration)),
 		members(std::move(members)),
-		memberVisibility(std::move(memberVisibility)) {}
+		memberVisibility(std::move(memberVisibility)),
+		token(std::move(token)) {}
 
 	void visit(StatementVisitor& visitor) const override {
 		visitor.visitStructStatement(*this);
@@ -242,10 +260,12 @@ class CompDirective : public Statement {
 
 	CompDirective(Token name,
 	        CompDirectiveAttr values,
-	        std::unique_ptr<Statement> child):
+	        std::unique_ptr<Statement> child,
+	        Token token):
 		name(std::move(name)),
 		values(std::move(values)),
-		child(std::move(child)) {}
+		child(std::move(child)),
+		token(std::move(token)) {}
 
 	void visit(StatementVisitor& visitor) const override {
 		visitor.visitCompDirectiveStatement(*this);

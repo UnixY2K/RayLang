@@ -60,10 +60,12 @@ class Assign : public Expression {
 
 	Assign(std::unique_ptr<Expression> lhs,
 	        Token assignmentOp,
-	        std::unique_ptr<Expression> rhs):
+	        std::unique_ptr<Expression> rhs,
+	        Token token):
 		lhs(std::move(lhs)),
 		assignmentOp(std::move(assignmentOp)),
-		rhs(std::move(rhs)) {}
+		rhs(std::move(rhs)),
+		token(std::move(token)) {}
 
 	void visit(ExpressionVisitor& visitor) const override {
 		visitor.visitAssignExpression(*this);
@@ -82,10 +84,12 @@ class Binary : public Expression {
 
 	Binary(std::unique_ptr<Expression> left,
 	        Token op,
-	        std::unique_ptr<Expression> right):
+	        std::unique_ptr<Expression> right,
+	        Token token):
 		left(std::move(left)),
 		op(std::move(op)),
-		right(std::move(right)) {}
+		right(std::move(right)),
+		token(std::move(token)) {}
 
 	void visit(ExpressionVisitor& visitor) const override {
 		visitor.visitBinaryExpression(*this);
@@ -104,10 +108,12 @@ class Call : public Expression {
 
 	Call(std::unique_ptr<Expression> callee,
 	        Token paren,
-	        std::vector<std::unique_ptr<Expression>> arguments):
+	        std::vector<std::unique_ptr<Expression>> arguments,
+	        Token token):
 		callee(std::move(callee)),
 		paren(std::move(paren)),
-		arguments(std::move(arguments)) {}
+		arguments(std::move(arguments)),
+		token(std::move(token)) {}
 
 	void visit(ExpressionVisitor& visitor) const override {
 		visitor.visitCallExpression(*this);
@@ -124,9 +130,11 @@ class Get : public Expression {
 	Token token;
 
 	Get(std::unique_ptr<Expression> object,
-	        Token name):
+	        Token name,
+	        Token token):
 		object(std::move(object)),
-		name(std::move(name)) {}
+		name(std::move(name)),
+		token(std::move(token)) {}
 
 	void visit(ExpressionVisitor& visitor) const override {
 		visitor.visitGetExpression(*this);
@@ -141,8 +149,10 @@ class Grouping : public Expression {
 	std::unique_ptr<Expression> expression;
 	Token token;
 
-	Grouping(std::unique_ptr<Expression> expression):
-		expression(std::move(expression)) {}
+	Grouping(std::unique_ptr<Expression> expression,
+	        Token token):
+		expression(std::move(expression)),
+		token(std::move(token)) {}
 
 	void visit(ExpressionVisitor& visitor) const override {
 		visitor.visitGroupingExpression(*this);
@@ -159,9 +169,11 @@ class Literal : public Expression {
 	Token token;
 
 	Literal(Token kind,
-	        std::string value):
+	        std::string value,
+	        Token token):
 		kind(std::move(kind)),
-		value(std::move(value)) {}
+		value(std::move(value)),
+		token(std::move(token)) {}
 
 	void visit(ExpressionVisitor& visitor) const override {
 		visitor.visitLiteralExpression(*this);
@@ -180,10 +192,12 @@ class Logical : public Expression {
 
 	Logical(std::unique_ptr<Expression> left,
 	        Token op,
-	        std::unique_ptr<Expression> right):
+	        std::unique_ptr<Expression> right,
+	        Token token):
 		left(std::move(left)),
 		op(std::move(op)),
-		right(std::move(right)) {}
+		right(std::move(right)),
+		token(std::move(token)) {}
 
 	void visit(ExpressionVisitor& visitor) const override {
 		visitor.visitLogicalExpression(*this);
@@ -204,11 +218,13 @@ class Set : public Expression {
 	Set(std::unique_ptr<Expression> object,
 	        Token name,
 	        Token assignmentOp,
-	        std::unique_ptr<Expression> value):
+	        std::unique_ptr<Expression> value,
+	        Token token):
 		object(std::move(object)),
 		name(std::move(name)),
 		assignmentOp(std::move(assignmentOp)),
-		value(std::move(value)) {}
+		value(std::move(value)),
+		token(std::move(token)) {}
 
 	void visit(ExpressionVisitor& visitor) const override {
 		visitor.visitSetExpression(*this);
@@ -227,10 +243,12 @@ class Unary : public Expression {
 
 	Unary(Token op,
 	        bool isPrefix,
-	        std::unique_ptr<Expression> expr):
+	        std::unique_ptr<Expression> expr,
+	        Token token):
 		op(std::move(op)),
 		isPrefix(std::move(isPrefix)),
-		expr(std::move(expr)) {}
+		expr(std::move(expr)),
+		token(std::move(token)) {}
 
 	void visit(ExpressionVisitor& visitor) const override {
 		visitor.visitUnaryExpression(*this);
@@ -247,9 +265,11 @@ class ArrayAccess : public Expression {
 	Token token;
 
 	ArrayAccess(std::unique_ptr<Expression> array,
-	        std::unique_ptr<Expression> index):
+	        std::unique_ptr<Expression> index,
+	        Token token):
 		array(std::move(array)),
-		index(std::move(index)) {}
+		index(std::move(index)),
+		token(std::move(token)) {}
 
 	void visit(ExpressionVisitor& visitor) const override {
 		visitor.visitArrayAccessExpression(*this);
@@ -264,8 +284,10 @@ class Variable : public Expression {
 	Token name;
 	Token token;
 
-	Variable(Token name):
-		name(std::move(name)) {}
+	Variable(Token name,
+	        Token token):
+		name(std::move(name)),
+		token(std::move(token)) {}
 
 	void visit(ExpressionVisitor& visitor) const override {
 		visitor.visitVariableExpression(*this);
@@ -282,9 +304,11 @@ class Intrinsic : public Expression {
 	Token token;
 
 	Intrinsic(Token name,
-	        IntrinsicType intrinsic):
+	        IntrinsicType intrinsic,
+	        Token token):
 		name(std::move(name)),
-		intrinsic(std::move(intrinsic)) {}
+		intrinsic(std::move(intrinsic)),
+		token(std::move(token)) {}
 
 	void visit(ExpressionVisitor& visitor) const override {
 		visitor.visitIntrinsicExpression(*this);
@@ -305,11 +329,13 @@ class Type : public Expression {
 	Type(Token name,
 	        bool isConst,
 	        bool isPointer,
-	        std::optional<std::unique_ptr<Type>> subtype):
+	        std::optional<std::unique_ptr<Type>> subtype,
+	        Token token):
 		name(std::move(name)),
 		isConst(std::move(isConst)),
 		isPointer(std::move(isPointer)),
-		subtype(std::move(subtype)) {}
+		subtype(std::move(subtype)),
+		token(std::move(token)) {}
 
 	void visit(ExpressionVisitor& visitor) const override {
 		visitor.visitTypeExpression(*this);
@@ -326,9 +352,11 @@ class Cast : public Expression {
 	Token token;
 
 	Cast(std::unique_ptr<Expression> expression,
-	        Type type):
+	        Type type,
+	        Token token):
 		expression(std::move(expression)),
-		type(std::move(type)) {}
+		type(std::move(type)),
+		token(std::move(token)) {}
 
 	void visit(ExpressionVisitor& visitor) const override {
 		visitor.visitCastExpression(*this);
@@ -345,9 +373,11 @@ class Parameter : public Expression {
 	Token token;
 
 	Parameter(Token name,
-	        Type type):
+	        Type type,
+	        Token token):
 		name(std::move(name)),
-		type(std::move(type)) {}
+		type(std::move(type)),
+		token(std::move(token)) {}
 
 	void visit(ExpressionVisitor& visitor) const override {
 		visitor.visitParameterExpression(*this);
