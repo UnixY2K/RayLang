@@ -14,6 +14,7 @@
 #include <ray/compiler/directives/linkageDirective.hpp>
 #include <ray/compiler/generators/c/c_transpiler.hpp>
 #include <ray/compiler/lexer/token.hpp>
+#include <ray/compiler/message_bag.hpp>
 #include <ray/compiler/passes/symbol_mangler.hpp>
 #include <ray/compiler/passes/topLevelResolver.hpp>
 #include <ray/compiler/types/types.hpp>
@@ -403,6 +404,15 @@ void CTranspilerGenerator::visitCompDirectiveStatement(
 	}
 }
 // Expression
+void CTranspilerGenerator::visitVariableExpression(
+    const ast::Variable &variable) {
+	output << std::format("{}", variable.name.lexeme);
+}
+void CTranspilerGenerator::visitIntrinsicExpression(
+    const ast::Intrinsic &intrinsic) {
+	errorBag.error(intrinsic.name, "C-BACKEND",
+	               "visitIntrinsicExpression not implemented");
+}
 void CTranspilerGenerator::visitAssignExpression(const ast::Assign &value) {
 	value.lhs->visit(*this);
 	output << std::format(" {} ", value.assignmentOp.getGlyph());
@@ -466,50 +476,50 @@ void CTranspilerGenerator::visitCallExpression(const ast::Call &callable) {
 			}
 		}
 		output << ")";
-	} else if (ast::Intrinsic *intr =
-	               dynamic_cast<ast::Intrinsic *>(callable.callee.get())) {
-		switch (intr->intrinsic) {
-		case ray::compiler::ast::IntrinsicType::INTR_SIZEOF: {
-			if (callable.arguments.size() != 1) {
-				errorBag.error(intr->name, "C-BACKEND",
-				               std::format("@sizeOf intrinsic expects 1 "
-				                           "argument but {} got provided",
-				                           callable.arguments.size()));
-			} else {
-				auto param = callable.arguments[0].get();
-				if (auto type = getTypeExpression(param)) {
-					if (type->platformDependent) {
-						output << std::format("((ssize)sizeof({}))",
-						                      type->mangledName);
-					} else {
-						output
-						    << std::format("((ssize){})", type->calculatedSize);
-					}
-				} else {
-					errorBag.error(intr->name, "C-BACKEND",
-					               std::format("'{}' is not a Type expression",
-					                           param->variantName()));
-				}
-			}
-			break;
-		}
-		case ray::compiler::ast::IntrinsicType::INTR_IMPORT: {
-			errorBag.error(
-			    intr->name, "C-BACKEND",
-			    std::format("'{}' is not implemented yet for C backend",
-			                intr->name.lexeme));
-			break;
-		}
-		case ray::compiler::ast::IntrinsicType::INTR_UNKNOWN:
-			errorBag.error(intr->name, "C-BACKEND",
-			               std::format("'{}' is not a valid intrinsic",
-			                           intr->name.lexeme));
-			break;
-		}
 	} else {
-		errorBag.error(intr->name, "C-BACKEND",
+		errorBag.error(callable.callee->getToken(), "C-BACKEND",
 		               std::format("'{}' is not a supported callable type",
 		                           callable.callee.get()->variantName()));
+	}
+}
+void CTranspilerGenerator::visitIntrinsicCallExpression(
+    const ast::IntrinsicCall &value) {
+
+	switch (value.callee->intrinsic) {
+	case ray::compiler::ast::IntrinsicType::INTR_SIZEOF: {
+		if (value.arguments.size() != 1) {
+			errorBag.error(value.callee->name, "C-BACKEND",
+			               std::format("@sizeOf intrinsic expects 1 "
+			                           "argument but {} got provided",
+			                           value.arguments.size()));
+		} else {
+			auto param = value.arguments[0].get();
+			if (auto type = getTypeExpression(param)) {
+				if (type->platformDependent) {
+					output << std::format("((ssize)sizeof({}))",
+					                      type->mangledName);
+				} else {
+					output << std::format("((ssize){})", type->calculatedSize);
+				}
+			} else {
+				errorBag.error(value.callee->name, "C-BACKEND",
+				               std::format("'{}' is not a Type expression",
+				                           param->variantName()));
+			}
+		}
+		break;
+	}
+	case ray::compiler::ast::IntrinsicType::INTR_IMPORT: {
+		errorBag.error(value.callee->name, "C-BACKEND",
+		               std::format("'{}' is not implemented yet for C backend",
+		                           value.callee->name.lexeme));
+		break;
+	}
+	case ray::compiler::ast::IntrinsicType::INTR_UNKNOWN:
+		errorBag.error(value.callee->name, "C-BACKEND",
+		               std::format("'{}' is not a valid intrinsic",
+		                           value.callee->name.lexeme));
+		break;
 	}
 }
 void CTranspilerGenerator::visitGetExpression(const ast::Get &value) {
@@ -632,15 +642,6 @@ void CTranspilerGenerator::visitArrayAccessExpression(
 	output << "[";
 	value.index->visit(*this);
 	output << "]";
-}
-void CTranspilerGenerator::visitVariableExpression(
-    const ast::Variable &variable) {
-	output << std::format("{}", variable.name.lexeme);
-}
-void CTranspilerGenerator::visitIntrinsicExpression(
-    const ast::Intrinsic &intrinsic) {
-	errorBag.error(intrinsic.name, "C-BACKEND",
-	               "visitIntrinsicExpression not implemented");
 }
 void CTranspilerGenerator::visitTypeExpression(const ast::Type &type) {
 	if (type.isConst && type.name.type != Token::TokenType::TOKEN_TYPE_UNIT &&

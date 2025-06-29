@@ -6,6 +6,8 @@
 #include <utility>
 #include <vector>
 
+#include <ray/cli/terminal.hpp>
+
 #include <ray/compiler/ast/expression.hpp>
 #include <ray/compiler/ast/intrinsic.hpp>
 #include <ray/compiler/ast/statement.hpp>
@@ -14,6 +16,8 @@
 #include <ray/compiler/parser/parser.hpp>
 
 namespace ray::compiler {
+
+using namespace terminal::literals;
 
 Parser::Parser(std::string filepath, std::vector<Token> tokens)
     : errorBag(filepath), tokens(tokens) {}
@@ -678,6 +682,16 @@ Parser::finishCall(std::unique_ptr<ast::Expression> callee) {
 	auto paren = consume(Token::TokenType::TOKEN_RIGHT_PAREN,
 	                     "Expect ')' after arguments.");
 	auto token = callee->getToken();
+	if (token.type == Token::TokenType::TOKEN_INTRINSIC) {
+		if (dynamic_cast<ast::Intrinsic *>(callee.get())) {
+			return std::make_unique<ast::IntrinsicCall>(
+			    std::unique_ptr<ast::Intrinsic>(
+			        static_cast<ast::Intrinsic *>(callee.release())),
+			    paren, std::move(arguments), token);
+		} else {
+			error(peek(), std::format("<{}> Expect expression.", "BUG"_red));
+		}
+	}
 	return std::make_unique<ast::Call>(ast::Call{
 	    std::move(callee),
 	    paren,

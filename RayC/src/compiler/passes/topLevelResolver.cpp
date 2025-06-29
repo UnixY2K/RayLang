@@ -180,6 +180,14 @@ void TopLevelResolver::visitCompDirectiveStatement(
 	}
 }
 // Expression
+void TopLevelResolver::visitVariableExpression(const ast::Variable &value) {
+	messageBag.error(value.getToken(), "BUG",
+	                 "visitVariableExpression not implemented");
+}
+void TopLevelResolver::visitIntrinsicExpression(const ast::Intrinsic &value) {
+	messageBag.error(value.getToken(), "BUG",
+	                 "visitIntrinsicExpression not implemented");
+}
 void TopLevelResolver::visitAssignExpression(const ast::Assign &value) {
 	messageBag.error(value.getToken(), "BUG",
 	                 "visitAssignExpression not implemented");
@@ -191,22 +199,22 @@ void TopLevelResolver::visitBinaryExpression(const ast::Binary &value) {
 void TopLevelResolver::visitCallExpression(const ast::Call &call) {
 	// early top level scan does not require to evaluate call expressions
 	// as modules and current intrinsics will be evaluated at a later pass
-	if (auto intrinsic = dynamic_cast<ast::Intrinsic *>(call.callee.get())) {
-		switch (intrinsic->intrinsic) {
-		case ast::IntrinsicType::INTR_SIZEOF:
-		case ast::IntrinsicType::INTR_IMPORT:
-			break;
-		case ast::IntrinsicType::INTR_UNKNOWN: {
-			messageBag.error(intrinsic->name, "RESOLVER",
-			                 std::format("unknown intrinsic type for '{}'",
-			                             intrinsic->name.getLexeme()));
-			break;
-		}
-		}
-	} else {
-		messageBag.error(call.callee->getToken(), "BUG",
-		                 std::format("call not supported for type {}",
-		                             call.callee->variantName()));
+}
+void TopLevelResolver::visitIntrinsicCallExpression(
+    const ast::IntrinsicCall &value) {
+	// early top level scan does not require to evaluate call expressions
+	// as modules and current intrinsics will be evaluated at a later pass
+
+	switch (value.callee->intrinsic) {
+	case ast::IntrinsicType::INTR_SIZEOF:
+	case ast::IntrinsicType::INTR_IMPORT:
+		break;
+	case ast::IntrinsicType::INTR_UNKNOWN: {
+		messageBag.error(value.callee->name, "RESOLVER",
+		                 std::format("unknown intrinsic type for '{}'",
+		                             value.callee->name.getLexeme()));
+		break;
+	}
 	}
 }
 void TopLevelResolver::visitGetExpression(const ast::Get &value) {
@@ -234,14 +242,6 @@ void TopLevelResolver::visitArrayAccessExpression(
     const ast::ArrayAccess &value) {
 	messageBag.error(value.getToken(), "BUG",
 	                 "visitArrayAccessExpression not implemented");
-}
-void TopLevelResolver::visitVariableExpression(const ast::Variable &value) {
-	messageBag.error(value.getToken(), "BUG",
-	                 "visitVariableExpression not implemented");
-}
-void TopLevelResolver::visitIntrinsicExpression(const ast::Intrinsic &value) {
-	messageBag.error(value.getToken(), "BUG",
-	                 "visitIntrinsicExpression not implemented");
 }
 void TopLevelResolver::visitTypeExpression(const ast::Type &value) {
 	messageBag.error(value.getToken(), "BUG",

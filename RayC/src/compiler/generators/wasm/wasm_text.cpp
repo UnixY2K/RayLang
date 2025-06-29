@@ -148,6 +148,13 @@ void WASMTextGenerator::visitCompDirectiveStatement(
 }
 
 // Expression
+void WASMTextGenerator::visitVariableExpression(const ast::Variable &variable) {
+	std::string identTab = currentIdent();
+	output << std::format("{}local.get ${}\n", identTab, variable.name.lexeme);
+}
+void WASMTextGenerator::visitIntrinsicExpression(const ast::Intrinsic &value) {
+	std::cerr << "visitIntrinsicExpression not implemented\n";
+}
 void WASMTextGenerator::visitAssignExpression(const ast::Assign &value) {
 	std::string identTab = currentIdent();
 	value.lhs->visit(*this);
@@ -222,6 +229,9 @@ void WASMTextGenerator::visitCallExpression(const ast::Call &callable) {
 		                         callable.callee.get()->variantName());
 	}
 }
+void WASMTextGenerator::visitIntrinsicCallExpression(const ast::IntrinsicCall &value){
+	std::cerr << "visitIntrinsicCallExpression not implemented\n";
+}
 void WASMTextGenerator::visitGetExpression(const ast::Get &value) {
 	std::cerr << "visitGetExpression not implemented\n";
 }
@@ -282,13 +292,6 @@ void WASMTextGenerator::visitUnaryExpression(const ast::Unary &unary) {
 void WASMTextGenerator::visitArrayAccessExpression(
     const ast::ArrayAccess &value) {
 	std::cerr << "visitArrayAccessExpression not implemented\n";
-}
-void WASMTextGenerator::visitVariableExpression(const ast::Variable &variable) {
-	std::string identTab = currentIdent();
-	output << std::format("{}local.get ${}\n", identTab, variable.name.lexeme);
-}
-void WASMTextGenerator::visitIntrinsicExpression(const ast::Intrinsic &value) {
-	std::cerr << "visitIntrinsicExpression not implemented\n";
 }
 void WASMTextGenerator::visitTypeExpression(const ast::Type &value) {
 	std::cerr << "visitTypeExpression not implemented\n";

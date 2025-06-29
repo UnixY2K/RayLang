@@ -1,8 +1,10 @@
-#include "ray/compiler/lexer/token.hpp"
+
 #include <cstddef>
 #include <format>
 
+#include <ray/compiler/ast/expression.hpp>
 #include <ray/compiler/lang/type.hpp>
+#include <ray/compiler/lexer/token.hpp>
 #include <ray/compiler/passes/typeChecker.hpp>
 
 namespace ray::compiler::analyzer {
@@ -99,6 +101,16 @@ void TypeChecker::visitCompDirectiveStatement(const ast::CompDirective &value) {
 	                             value.variantName()));
 }
 // Expression
+void TypeChecker::visitVariableExpression(const ast::Variable &value) {
+	messageBag.error(value.getToken(), "BUG",
+	                 std::format("visit method not implemented for {}",
+	                             value.variantName()));
+}
+void TypeChecker::visitIntrinsicExpression(const ast::Intrinsic &value) {
+	messageBag.error(value.getToken(), "BUG",
+	                 std::format("visit method not implemented for {}",
+	                             value.variantName()));
+}
 void TypeChecker::visitAssignExpression(const ast::Assign &value) {
 	messageBag.error(value.getToken(), "BUG",
 	                 std::format("visit method not implemented for {}",
@@ -110,7 +122,13 @@ void TypeChecker::visitBinaryExpression(const ast::Binary &value) {
 	                             value.variantName()));
 }
 void TypeChecker::visitCallExpression(const ast::Call &value) {
-	
+
+	messageBag.error(value.getToken(), "BUG",
+	                 std::format("visit method not implemented for {}",
+	                             value.variantName()));
+}
+void TypeChecker::visitIntrinsicCallExpression(
+    const ast::IntrinsicCall &value) {
 	messageBag.error(value.getToken(), "BUG",
 	                 std::format("visit method not implemented for {}",
 	                             value.variantName()));
@@ -146,16 +164,6 @@ void TypeChecker::visitUnaryExpression(const ast::Unary &value) {
 	                             value.variantName()));
 }
 void TypeChecker::visitArrayAccessExpression(const ast::ArrayAccess &value) {
-	messageBag.error(value.getToken(), "BUG",
-	                 std::format("visit method not implemented for {}",
-	                             value.variantName()));
-}
-void TypeChecker::visitVariableExpression(const ast::Variable &value) {
-	messageBag.error(value.getToken(), "BUG",
-	                 std::format("visit method not implemented for {}",
-	                             value.variantName()));
-}
-void TypeChecker::visitIntrinsicExpression(const ast::Intrinsic &value) {
 	messageBag.error(value.getToken(), "BUG",
 	                 std::format("visit method not implemented for {}",
 	                             value.variantName()));

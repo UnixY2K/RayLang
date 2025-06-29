@@ -69,9 +69,12 @@ class CTranspilerGenerator : public ast::StatementVisitor,
 	void visitStructStatement(const ast::Struct &value) override;
 	void visitCompDirectiveStatement(const ast::CompDirective &value) override;
 	// Expression
+	void visitVariableExpression(const ast::Variable &value) override;
+	void visitIntrinsicExpression(const ast::Intrinsic &value) override;
 	void visitAssignExpression(const ast::Assign &value) override;
 	void visitBinaryExpression(const ast::Binary &value) override;
 	void visitCallExpression(const ast::Call &value) override;
+	void visitIntrinsicCallExpression(const ast::IntrinsicCall &value) override;
 	void visitGetExpression(const ast::Get &value) override;
 	void visitGroupingExpression(const ast::Grouping &value) override;
 	void visitLiteralExpression(const ast::Literal &value) override;
@@ -79,8 +82,6 @@ class CTranspilerGenerator : public ast::StatementVisitor,
 	void visitSetExpression(const ast::Set &value) override;
 	void visitUnaryExpression(const ast::Unary &value) override;
 	void visitArrayAccessExpression(const ast::ArrayAccess &value) override;
-	void visitVariableExpression(const ast::Variable &value) override;
-	void visitIntrinsicExpression(const ast::Intrinsic &value) override;
 	void visitTypeExpression(const ast::Type &value) override;
 	void visitCastExpression(const ast::Cast &value) override;
 	void visitParameterExpression(const ast::Parameter &value) override;

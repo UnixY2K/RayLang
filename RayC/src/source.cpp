@@ -1,4 +1,3 @@
-#include "ray/compiler/lang/moduleStore.hpp"
 #include <exception>
 #include <format>
 #include <fstream>
@@ -15,6 +14,7 @@
 #include <ray/compiler/generators/c/c_transpiler.hpp>
 #include <ray/compiler/generators/wasm/wasm_text.hpp>
 
+#include <ray/compiler/lang/moduleStore.hpp>
 #include <ray/compiler/lexer/lexer.hpp>
 #include <ray/compiler/parser/parser.hpp>
 

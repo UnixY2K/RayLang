@@ -7,9 +7,12 @@
 
 namespace ray::compiler::ast {
 
+class Variable;
+class Intrinsic;
 class Assign;
 class Binary;
 class Call;
+class IntrinsicCall;
 class Get;
 class Grouping;
 class Literal;
@@ -17,17 +20,18 @@ class Logical;
 class Set;
 class Unary;
 class ArrayAccess;
-class Variable;
-class Intrinsic;
 class Type;
 class Cast;
 class Parameter;
 
 class ExpressionVisitor {
   public:
+	virtual void visitVariableExpression(const Variable& value) = 0;
+	virtual void visitIntrinsicExpression(const Intrinsic& value) = 0;
 	virtual void visitAssignExpression(const Assign& value) = 0;
 	virtual void visitBinaryExpression(const Binary& value) = 0;
 	virtual void visitCallExpression(const Call& value) = 0;
+	virtual void visitIntrinsicCallExpression(const IntrinsicCall& value) = 0;
 	virtual void visitGetExpression(const Get& value) = 0;
 	virtual void visitGroupingExpression(const Grouping& value) = 0;
 	virtual void visitLiteralExpression(const Literal& value) = 0;
@@ -35,8 +39,6 @@ class ExpressionVisitor {
 	virtual void visitSetExpression(const Set& value) = 0;
 	virtual void visitUnaryExpression(const Unary& value) = 0;
 	virtual void visitArrayAccessExpression(const ArrayAccess& value) = 0;
-	virtual void visitVariableExpression(const Variable& value) = 0;
-	virtual void visitIntrinsicExpression(const Intrinsic& value) = 0;
 	virtual void visitTypeExpression(const Type& value) = 0;
 	virtual void visitCastExpression(const Cast& value) = 0;
 	virtual void visitParameterExpression(const Parameter& value) = 0;
@@ -51,6 +53,45 @@ class Expression {
 	virtual ~Expression() = default;
 };
 
+class Variable : public Expression {
+  public:
+	Token name;
+	Token token;
+
+	Variable(Token name,
+	        Token token):
+		name(std::move(name)),
+		token(std::move(token)) {}
+
+	void visit(ExpressionVisitor& visitor) const override {
+		visitor.visitVariableExpression(*this);
+	}
+
+	const std::string_view variantName() const override { return "Variable"; }
+
+	const Token& getToken() const override { return token; };
+};
+class Intrinsic : public Expression {
+  public:
+	Token name;
+	IntrinsicType intrinsic;
+	Token token;
+
+	Intrinsic(Token name,
+	        IntrinsicType intrinsic,
+	        Token token):
+		name(std::move(name)),
+		intrinsic(std::move(intrinsic)),
+		token(std::move(token)) {}
+
+	void visit(ExpressionVisitor& visitor) const override {
+		visitor.visitIntrinsicExpression(*this);
+	}
+
+	const std::string_view variantName() const override { return "Intrinsic"; }
+
+	const Token& getToken() const override { return token; };
+};
 class Assign : public Expression {
   public:
 	std::unique_ptr<Expression> lhs;
@@ -120,6 +161,30 @@ class Call : public Expression {
 	}
 
 	const std::string_view variantName() const override { return "Call"; }
+
+	const Token& getToken() const override { return token; };
+};
+class IntrinsicCall : public Expression {
+  public:
+	std::unique_ptr<Intrinsic> callee;
+	Token paren;
+	std::vector<std::unique_ptr<Expression>> arguments;
+	Token token;
+
+	IntrinsicCall(std::unique_ptr<Intrinsic> callee,
+	        Token paren,
+	        std::vector<std::unique_ptr<Expression>> arguments,
+	        Token token):
+		callee(std::move(callee)),
+		paren(std::move(paren)),
+		arguments(std::move(arguments)),
+		token(std::move(token)) {}
+
+	void visit(ExpressionVisitor& visitor) const override {
+		visitor.visitIntrinsicCallExpression(*this);
+	}
+
+	const std::string_view variantName() const override { return "IntrinsicCall"; }
 
 	const Token& getToken() const override { return token; };
 };
@@ -276,45 +341,6 @@ class ArrayAccess : public Expression {
 	}
 
 	const std::string_view variantName() const override { return "ArrayAccess"; }
-
-	const Token& getToken() const override { return token; };
-};
-class Variable : public Expression {
-  public:
-	Token name;
-	Token token;
-
-	Variable(Token name,
-	        Token token):
-		name(std::move(name)),
-		token(std::move(token)) {}
-
-	void visit(ExpressionVisitor& visitor) const override {
-		visitor.visitVariableExpression(*this);
-	}
-
-	const std::string_view variantName() const override { return "Variable"; }
-
-	const Token& getToken() const override { return token; };
-};
-class Intrinsic : public Expression {
-  public:
-	Token name;
-	IntrinsicType intrinsic;
-	Token token;
-
-	Intrinsic(Token name,
-	        IntrinsicType intrinsic,
-	        Token token):
-		name(std::move(name)),
-		intrinsic(std::move(intrinsic)),
-		token(std::move(token)) {}
-
-	void visit(ExpressionVisitor& visitor) const override {
-		visitor.visitIntrinsicExpression(*this);
-	}
-
-	const std::string_view variantName() const override { return "Intrinsic"; }
 
 	const Token& getToken() const override { return token; };
 };
