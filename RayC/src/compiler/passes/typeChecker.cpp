@@ -1,6 +1,9 @@
-#include <ray/compiler/passes/typeChecker.hpp>
-
+#include "ray/compiler/lexer/token.hpp"
+#include <cstddef>
 #include <format>
+
+#include <ray/compiler/lang/type.hpp>
+#include <ray/compiler/passes/typeChecker.hpp>
 
 namespace ray::compiler::analyzer {
 
@@ -59,9 +62,26 @@ void TypeChecker::visitJumpStatement(const ast::Jump &value) {
 	                             value.variantName()));
 }
 void TypeChecker::visitVarStatement(const ast::Var &value) {
-	messageBag.error(value.getToken(), "BUG",
-	                 std::format("visit method not implemented for {}",
-	                             value.variantName()));
+	auto type = lang::Type{};
+
+	if (value.type.token.type != Token::TokenType::TOKEN_UNINITIALIZED) {
+		// initialization code
+	}
+
+	size_t currentTop = typeStack.size();
+	auto initializationType = lang::Type{};
+	if (value.initializer.has_value()) {
+		value.initializer.value()->visit(*this);
+		if (currentTop > typeStack.size()) {
+			initializationType = typeStack.back();
+		}
+	}
+
+	if (!(type.isInitialized() || initializationType.isInitialized())) {
+		messageBag.error(
+		    value.getToken(), "TYPE-ERROR",
+		    "variable does not have a type assigned nor an initialization");
+	}
 }
 void TypeChecker::visitWhileStatement(const ast::While &value) {
 	messageBag.error(value.getToken(), "BUG",
@@ -90,6 +110,7 @@ void TypeChecker::visitBinaryExpression(const ast::Binary &value) {
 	                             value.variantName()));
 }
 void TypeChecker::visitCallExpression(const ast::Call &value) {
+	
 	messageBag.error(value.getToken(), "BUG",
 	                 std::format("visit method not implemented for {}",
 	                             value.variantName()));

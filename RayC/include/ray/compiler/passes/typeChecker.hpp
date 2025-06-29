@@ -9,6 +9,7 @@
 #include <ray/compiler/lang/moduleStore.hpp>
 #include <ray/compiler/lang/sourceUnit.hpp>
 #include <ray/compiler/lang/structDefinition.hpp>
+#include <ray/compiler/lang/type.hpp>
 #include <ray/compiler/message_bag.hpp>
 
 namespace ray::compiler::analyzer {
@@ -18,12 +19,14 @@ class TypeChecker : public ast::StatementVisitor,
 	MessageBag messageBag;
 
 	std::vector<std::unique_ptr<directive::CompilerDirective>> directivesStack;
+	size_t top = 0;
 
 	std::vector<lang::StructDefinition> globalStructDefinitions;
 	std::vector<lang::FunctionDefinition> globalFunctionDefinitions;
+	std::vector<lang::Type> typeStack;
+
 	lang::SourceUnit currentSourceUnit;
 	lang::ModuleStore &moduleStore;
-	size_t top = 0;
 
   public:
 	TypeChecker(std::string filePath,
