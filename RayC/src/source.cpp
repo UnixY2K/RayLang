@@ -65,7 +65,8 @@ int main(int argc, char **argv) {
 				return 1;
 			}
 
-			auto sourceFile = opts.input.relative_path().string();
+			auto sourceFile =
+			    opts.input.make_preferred().relative_path().string();
 			auto parser = Parser(sourceFile, tokens);
 			auto statements = parser.parse();
 			if (parser.failed()) {

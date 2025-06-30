@@ -73,9 +73,16 @@ void TypeChecker::visitVarStatement(const ast::Var &value) {
 	size_t currentTop = typeStack.size();
 	auto initializationType = lang::Type{};
 	if (value.initializer.has_value()) {
-		value.initializer.value()->visit(*this);
+		auto &initializer = *value.initializer.value().get();
+		initializer.visit(*this);
 		if (currentTop > typeStack.size()) {
 			initializationType = typeStack.back();
+		} else {
+			messageBag.error(
+			    initializer.getToken(), "BUG-TYPE-CHECKER",
+			    std::format(
+			        "evaluated value initializer did not yield a type {}",
+			        initializer.variantName()));
 		}
 	}
 
@@ -129,9 +136,44 @@ void TypeChecker::visitCallExpression(const ast::Call &value) {
 }
 void TypeChecker::visitIntrinsicCallExpression(
     const ast::IntrinsicCall &value) {
-	messageBag.error(value.getToken(), "BUG",
-	                 std::format("visit method not implemented for {}",
-	                             value.variantName()));
+
+	switch (value.callee->intrinsic) {
+	case ray::compiler::ast::IntrinsicType::INTR_SIZEOF: {
+		if (value.arguments.size() != 1) {
+			messageBag.error(value.callee->name, "TYPE",
+			                 std::format("@sizeOf intrinsic expects 1 "
+			                             "argument but {} got provided",
+			                             value.arguments.size()));
+		} else {
+			auto param = value.arguments[0].get();
+			size_t currentTop = typeStack.size();
+			param->visit(*this);
+			if (currentTop >= typeStack.size()) {
+				auto type = typeStack.back();
+				typeStack.pop_back();
+			} else {
+				messageBag.error(
+				    value.callee->name, "BUG-TYPE-CHECKER",
+				    std::format("@sizeOf parameter did not yield any value "
+				                " {}",
+				                param->variantName()));
+			}
+		}
+		break;
+	}
+	case ray::compiler::ast::IntrinsicType::INTR_IMPORT: {
+		messageBag.error(
+		    value.callee->name, "TYPE",
+		    std::format("'{}' is not implemented yet for type checker",
+		                value.callee->name.lexeme));
+		break;
+	}
+	case ray::compiler::ast::IntrinsicType::INTR_UNKNOWN:
+		messageBag.error(value.callee->name, "TYPE",
+		                 std::format("'{}' is not a valid intrinsic",
+		                             value.callee->name.lexeme));
+		break;
+	}
 }
 void TypeChecker::visitGetExpression(const ast::Get &value) {
 	messageBag.error(value.getToken(), "BUG",
