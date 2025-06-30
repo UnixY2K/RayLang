@@ -1,3 +1,4 @@
+#include "ray/compiler/lang/symbol.hpp"
 #include <format>
 #include <iostream>
 
@@ -96,6 +97,14 @@ void TopLevelResolver::visitVarStatement(const ast::Var &value) {
 	if (value.initializer) {
 		value.initializer.value()->visit(*this);
 	}
+	earlySymbolTable.push_back(lang::Symbol{
+	    .name = value.name.lexeme,
+	    .mangledName = value.name.lexeme,
+	    .type = lang::Symbol::SymbolType::Variable,
+	    .scope = "",
+	    .internal = false,
+	    .object = &value,
+	});
 }
 void TopLevelResolver::visitWhileStatement(const ast::While &value) {
 	messageBag.error(value.getToken(), "BUG",
