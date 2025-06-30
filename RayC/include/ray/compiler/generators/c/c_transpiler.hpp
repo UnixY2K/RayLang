@@ -30,7 +30,7 @@ using SymbolTable = std::vector<Symbol>;
 
 class CTranspilerGenerator : public ast::StatementVisitor,
                              public ast::ExpressionVisitor {
-	MessageBag errorBag;
+	MessageBag messageBag;
 	std::stringstream output;
 	size_t ident = 0;
 
@@ -45,7 +45,7 @@ class CTranspilerGenerator : public ast::StatementVisitor,
 	passes::mangling::NameMangler nameMangler;
 
   public:
-	CTranspilerGenerator(std::string filePath) : errorBag(filePath) {}
+	CTranspilerGenerator(std::string filePath) : messageBag(filePath) {}
 
 	void resolve(const std::vector<std::unique_ptr<ast::Statement>> &statement,
 	             std::vector<lang::StructDefinition> structDefinitions,
