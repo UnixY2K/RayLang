@@ -86,13 +86,6 @@ void CTranspilerGenerator::resolve(
 		output << std::format("{}typedef struct {}", currentIdent(),
 		                      structDeclaration.mangledName);
 		output << std::format(" {};\n", structDeclaration.mangledName);
-		this->symbolTable.push_back(Symbol{
-		    .name = structDeclaration.name,
-		    .mangledName = structDeclaration.mangledName,
-		    .type = Symbol::SymbolType::Struct,
-		    .scope = "",
-		    .object = &structDeclaration.structObj.get(),
-		});
 	}
 	for (const auto &structDefinition : sourceUnit.structDefinitions) {
 		auto &structObj = structDefinition.structObj.get();
@@ -130,13 +123,6 @@ void CTranspilerGenerator::resolve(
 			}
 		}
 		output << ");\n";
-		this->symbolTable.push_back(Symbol{
-		    .name = functionDeclaration.name,
-		    .mangledName = functionDeclaration.mangledName,
-		    .type = Symbol::SymbolType::Function,
-		    .scope = "",
-		    .object = &function,
-		});
 	}
 	// ident++;
 	for (const auto &stmt : statement) {
@@ -696,9 +682,9 @@ CTranspilerGenerator::findCallableName(const ast::Call &callable,
 	for (const auto &symbol : symbolTable) {
 		if (symbol.name == name) {
 			switch (symbol.type) {
-			case Symbol::SymbolType::Function: {
-				if (const auto *function =
-				        dynamic_cast<const ast::Function *>(symbol.object)) {
+			case lang::Symbol::SymbolType::Function: {
+				if (const auto *function = dynamic_cast<const ast::Function *>(
+				        symbol.object.value_or(nullptr))) {
 					if (function->params.size() == callable.arguments.size()) {
 						// here we should add to a list of candidate functions
 						// than later are checked for types
@@ -723,9 +709,10 @@ CTranspilerGenerator::findStructName(const std::string_view name) const {
 	for (const auto &symbol : symbolTable) {
 		if (symbol.name == name) {
 			switch (symbol.type) {
-			case Symbol::SymbolType::Struct: {
+			case lang::Symbol::SymbolType::Struct: {
 				if (const auto *currentStruct =
-				        dynamic_cast<const ast::Struct *>(symbol.object)) {
+				        dynamic_cast<const ast::Struct *>(
+				            symbol.object.value_or(nullptr))) {
 					if (currentStruct->name.lexeme == name) {
 						// here we should add to a list of candidate functions
 						// than later are checked for types

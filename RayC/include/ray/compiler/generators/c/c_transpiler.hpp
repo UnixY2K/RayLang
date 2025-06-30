@@ -12,6 +12,7 @@
 #include <ray/compiler/lang/functionDefinition.hpp>
 #include <ray/compiler/lang/sourceUnit.hpp>
 #include <ray/compiler/lang/structDefinition.hpp>
+#include <ray/compiler/lang/symbol.hpp>
 #include <ray/compiler/lang/type.hpp>
 #include <ray/compiler/message_bag.hpp>
 #include <ray/compiler/passes/symbol_mangler.hpp>
@@ -19,15 +20,7 @@
 
 namespace ray::compiler::generator::c {
 
-struct Symbol {
-	enum class SymbolType { Function, Struct };
-	std::string name;
-	std::string mangledName;
-	SymbolType type;
-	std::string scope;
-	const ast::Statement *object;
-};
-using SymbolTable = std::vector<Symbol>;
+using SymbolTable = std::vector<lang::Symbol>;
 
 class CTranspilerGenerator : public ast::StatementVisitor,
                              public ast::ExpressionVisitor {
