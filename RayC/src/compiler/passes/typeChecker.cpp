@@ -5,6 +5,7 @@
 #include <ray/compiler/ast/expression.hpp>
 #include <ray/compiler/lang/type.hpp>
 #include <ray/compiler/lexer/token.hpp>
+#include <ray/compiler/passes/symbol_mangler.hpp>
 #include <ray/compiler/passes/typeChecker.hpp>
 
 namespace ray::compiler::analyzer {
@@ -48,10 +49,42 @@ void TypeChecker::visitExpressionStmtStatement(
 	                 std::format("visit method not implemented for {}",
 	                             value.variantName()));
 }
-void TypeChecker::visitFunctionStatement(const ast::Function &value) {
-	messageBag.error(value.getToken(), "BUG",
-	                 std::format("visit method not implemented for {}",
-	                             value.variantName()));
+void TypeChecker::visitFunctionStatement(const ast::Function &function) {
+	std::string currentModule;
+
+	std::optional<directive::LinkageDirective> linkageDirective;
+
+	for (size_t i = directivesStack.size(); i > top; i--) {
+		auto &directive = directivesStack[i - i];
+		if (auto foundLinkDirective =
+		        dynamic_cast<directive::LinkageDirective *>(directive.get())) {
+			linkageDirective = *foundLinkDirective;
+		} else {
+			messageBag.warning(
+			    directive->getToken(), "TYPE-CHECKER",
+			    std::format(
+			        "unmatched compiler directive '{}' for function '{}'",
+			        directive->directiveName(), function.name.getLexeme()));
+		}
+		directivesStack.pop_back();
+	}
+	std::string mangledFunctionName =
+	    passes::mangling::NameMangler().mangleFunction(currentModule, function,
+	                                                   linkageDirective);
+	if (function.body.has_value()) {
+		currentSourceUnit.functionDefinitions.push_back(
+		    lang::FunctionDefinition{
+		        .name = std::string(function.name.getLexeme()),
+		        .mangledName = mangledFunctionName,
+		        .function = function,
+		    });
+		function.body->visit(*this);
+	}
+	currentSourceUnit.functionDeclarations.push_back(lang::FunctionDefinition{
+	    .name = std::string(function.name.getLexeme()),
+	    .mangledName = mangledFunctionName,
+	    .function = function,
+	});
 }
 void TypeChecker::visitIfStatement(const ast::If &value) {
 	messageBag.error(value.getToken(), "BUG",

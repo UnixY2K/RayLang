@@ -131,8 +131,7 @@ int main(int argc, char **argv) {
 				generator::c::CTranspilerGenerator CTranspilerGen(sourceFile);
 
 				CTranspilerGen.resolve(statements,
-				                       typeChecker.getStructDefinitions(),
-				                       typeChecker.getFunctionDefinitons());
+				                       typeChecker.getCurrentSourceUnit());
 				if (CTranspilerGen.hasFailed()) {
 					std::cerr << std::format("{}: {}\n", "Error"_red,
 					                         "CSourceGen failed");

@@ -10,6 +10,7 @@
 #include <ray/compiler/ast/statement.hpp>
 #include <ray/compiler/directives/compilerDirective.hpp>
 #include <ray/compiler/lang/functionDefinition.hpp>
+#include <ray/compiler/lang/sourceUnit.hpp>
 #include <ray/compiler/lang/structDefinition.hpp>
 #include <ray/compiler/message_bag.hpp>
 #include <ray/compiler/passes/symbol_mangler.hpp>
@@ -48,8 +49,7 @@ class CTranspilerGenerator : public ast::StatementVisitor,
 	CTranspilerGenerator(std::string filePath) : messageBag(filePath) {}
 
 	void resolve(const std::vector<std::unique_ptr<ast::Statement>> &statement,
-	             std::vector<lang::StructDefinition> structDefinitions,
-	             std::vector<lang::FunctionDefinition> functionDefinitions);
+	             const lang::SourceUnit &sourceUnit);
 
 	bool hasFailed() const;
 	const std::vector<std::string> getErrors() const;

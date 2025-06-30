@@ -39,12 +39,7 @@ class TypeChecker : public ast::StatementVisitor,
 
 	void resolve(const std::vector<std::unique_ptr<ast::Statement>> &statement);
 
-	std::vector<lang::StructDefinition> getStructDefinitions() const {
-		return globalStructDefinitions;
-	}
-	std::vector<lang::FunctionDefinition> getFunctionDefinitons() const {
-		return globalFunctionDefinitions;
-	}
+	const lang::SourceUnit &getCurrentSourceUnit() { return currentSourceUnit; }
 
 	bool hasFailed() const;
 	const std::vector<std::string> getErrors() const;

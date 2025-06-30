@@ -6,7 +6,6 @@
 
 namespace ray::compiler::lang {
 class StructDefinition {
-
   public:
 	std::string name;
 	std::string mangledName;

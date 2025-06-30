@@ -29,8 +29,7 @@ std::string CTranspilerGenerator::currentIdent() const {
 
 void CTranspilerGenerator::resolve(
     const std::vector<std::unique_ptr<ast::Statement>> &statement,
-    std::vector<lang::StructDefinition> structDefinitions,
-    std::vector<lang::FunctionDefinition> functionDefinitions) {
+    const lang::SourceUnit &sourceUnit) {
 	output.clear();
 	symbolTable.clear();
 
@@ -83,48 +82,46 @@ void CTranspilerGenerator::resolve(
 	std::string currentModule;
 	// TODO: we currently iterate 2 times one for declaration
 	// while the other for definition
-	for (const auto &structDefinition : structDefinitions) {
+	for (const auto &structDeclaration : sourceUnit.structDeclarations) {
 		output << std::format("{}typedef struct {}", currentIdent(),
-		                      structDefinition.mangledName);
-		output << std::format(" {};\n", structDefinition.mangledName);
+		                      structDeclaration.mangledName);
+		output << std::format(" {};\n", structDeclaration.mangledName);
 		this->symbolTable.push_back(Symbol{
-		    .name = structDefinition.name,
-		    .mangledName = structDefinition.mangledName,
+		    .name = structDeclaration.name,
+		    .mangledName = structDeclaration.mangledName,
 		    .type = Symbol::SymbolType::Struct,
 		    .scope = "",
-		    .object = &structDefinition.structObj.get(),
+		    .object = &structDeclaration.structObj.get(),
 		});
 	}
-	for (const auto &structDefinition : structDefinitions) {
+	for (const auto &structDefinition : sourceUnit.structDefinitions) {
 		auto &structObj = structDefinition.structObj.get();
-		if (!structObj.declaration) {
-			output << std::format("{}typedef struct {}", currentIdent(),
-			                      structDefinition.mangledName);
-			output << " {\n";
-			ident++;
-			for (auto &member : structObj.members) {
-				member.visit(*this);
-			}
-			ident--;
-			output << std::format("{}}}", currentIdent());
-			output << std::format(" {};\n", structDefinition.mangledName);
+		output << std::format("{}typedef struct {}", currentIdent(),
+		                      structDefinition.mangledName);
+		output << " {\n";
+		ident++;
+		for (auto &member : structObj.members) {
+			member.visit(*this);
 		}
+		ident--;
+		output << std::format("{}}}", currentIdent());
+		output << std::format(" {};\n", structDefinition.mangledName);
 	}
-	for (const auto &functionDefinition : functionDefinitions) {
-		auto &function = functionDefinition.function.get();
-		if (!functionDefinition.function.get().publicVisibility) {
+	for (const auto &functionDeclaration : sourceUnit.functionDeclarations) {
+		auto &function = functionDeclaration.function.get();
+		if (!functionDeclaration.function.get().publicVisibility) {
 			output << "RAYLANG_MACRO_LINK_LOCAL ";
 			output << "static ";
-		} else if (functionDefinition.function.get().body.has_value()) {
-			if (functionDefinition.function.get().body.has_value()) {
+		} else if (functionDeclaration.function.get().body.has_value()) {
+			if (functionDeclaration.function.get().body.has_value()) {
 				output << "RAYLANG_MACRO_LINK_EXPORT ";
 			} else {
 				output << "RAYLANG_MACRO_LINK_IMPORT ";
 			}
 		}
-		functionDefinition.function.get().returnType.visit(*this);
+		functionDeclaration.function.get().returnType.visit(*this);
 
-		output << std::format("{}(", functionDefinition.mangledName);
+		output << std::format("{}(", functionDeclaration.mangledName);
 		for (size_t index = 0; index < function.params.size(); ++index) {
 			const auto &parameter = function.params[index];
 			parameter.visit(*this);
@@ -134,8 +131,8 @@ void CTranspilerGenerator::resolve(
 		}
 		output << ");\n";
 		this->symbolTable.push_back(Symbol{
-		    .name = functionDefinition.name,
-		    .mangledName = functionDefinition.mangledName,
+		    .name = functionDeclaration.name,
+		    .mangledName = functionDeclaration.mangledName,
 		    .type = Symbol::SymbolType::Function,
 		    .scope = "",
 		    .object = &function,
@@ -286,8 +283,8 @@ void CTranspilerGenerator::visitJumpStatement(const ast::Jump &jump) {
 		break;
 	default:
 		messageBag.error(jump.getToken(), "C-BACKEND",
-		               std::format("'{}' is not a supported jump type",
-		                           jump.keyword.getLexeme()));
+		                 std::format("'{}' is not a supported jump type",
+		                             jump.keyword.getLexeme()));
 		break;
 	}
 }
@@ -382,7 +379,7 @@ void CTranspilerGenerator::visitCompDirectiveStatement(
 				compDirective.child->visit(*this);
 				if (directivesStack.size() != startDirectives) {
 					messageBag.error(childValue->getToken(), "BUG",
-					               "unprocessed compiler directives");
+					                 "unprocessed compiler directives");
 				}
 				top = originalTop;
 			} else {
@@ -394,8 +391,8 @@ void CTranspilerGenerator::visitCompDirectiveStatement(
 			}
 		} else {
 			messageBag.error(compDirective.getToken(), "C-BACKEND",
-			               std::format("{} must have a child expression.",
-			                           directive.directiveName()));
+			                 std::format("{} must have a child expression.",
+			                             directive.directiveName()));
 		}
 	} else {
 		messageBag.error(
@@ -411,7 +408,7 @@ void CTranspilerGenerator::visitVariableExpression(
 void CTranspilerGenerator::visitIntrinsicExpression(
     const ast::Intrinsic &intrinsic) {
 	messageBag.error(intrinsic.name, "C-BACKEND",
-	               "visitIntrinsicExpression not implemented");
+	                 "visitIntrinsicExpression not implemented");
 }
 void CTranspilerGenerator::visitAssignExpression(const ast::Assign &value) {
 	value.lhs->visit(*this);
@@ -445,8 +442,8 @@ void CTranspilerGenerator::visitBinaryExpression(
 		break;
 	default:
 		messageBag.error(binaryExpression.op, "C-BACKEND",
-		               std::format("'{}' is not a supported binary operation",
-		                           op.getLexeme()));
+		                 std::format("'{}' is not a supported binary operation",
+		                             op.getLexeme()));
 	}
 
 	binaryExpression.right->visit(*this);
@@ -478,8 +475,8 @@ void CTranspilerGenerator::visitCallExpression(const ast::Call &callable) {
 		output << ")";
 	} else {
 		messageBag.error(callable.callee->getToken(), "C-BACKEND",
-		               std::format("'{}' is not a supported callable type",
-		                           callable.callee.get()->variantName()));
+		                 std::format("'{}' is not a supported callable type",
+		                             callable.callee.get()->variantName()));
 	}
 }
 void CTranspilerGenerator::visitIntrinsicCallExpression(
@@ -489,9 +486,9 @@ void CTranspilerGenerator::visitIntrinsicCallExpression(
 	case ray::compiler::ast::IntrinsicType::INTR_SIZEOF: {
 		if (value.arguments.size() != 1) {
 			messageBag.error(value.callee->name, "C-BACKEND",
-			               std::format("@sizeOf intrinsic expects 1 "
-			                           "argument but {} got provided",
-			                           value.arguments.size()));
+			                 std::format("@sizeOf intrinsic expects 1 "
+			                             "argument but {} got provided",
+			                             value.arguments.size()));
 		} else {
 			auto param = value.arguments[0].get();
 			if (auto type = getTypeExpression(param)) {
@@ -503,22 +500,23 @@ void CTranspilerGenerator::visitIntrinsicCallExpression(
 				}
 			} else {
 				messageBag.error(value.callee->name, "C-BACKEND",
-				               std::format("'{}' is not a Type expression",
-				                           param->variantName()));
+				                 std::format("'{}' is not a Type expression",
+				                             param->variantName()));
 			}
 		}
 		break;
 	}
 	case ray::compiler::ast::IntrinsicType::INTR_IMPORT: {
-		messageBag.error(value.callee->name, "C-BACKEND",
-		               std::format("'{}' is not implemented yet for C backend",
-		                           value.callee->name.lexeme));
+		messageBag.error(
+		    value.callee->name, "C-BACKEND",
+		    std::format("'{}' is not implemented yet for C backend",
+		                value.callee->name.lexeme));
 		break;
 	}
 	case ray::compiler::ast::IntrinsicType::INTR_UNKNOWN:
 		messageBag.error(value.callee->name, "C-BACKEND",
-		               std::format("'{}' is not a valid intrinsic",
-		                           value.callee->name.lexeme));
+		                 std::format("'{}' is not a valid intrinsic",
+		                             value.callee->name.lexeme));
 		break;
 	}
 }
@@ -595,10 +593,10 @@ void CTranspilerGenerator::visitLiteralExpression(const ast::Literal &literal) {
 		break;
 	}
 	default:
-		messageBag.error(literal.token, "C-BACKEND",
-		               std::format("'{}' ({}) is not a supported literal type",
-		                           literal.kind.getLexeme(),
-		                           literal.kind.getGlyph()));
+		messageBag.error(
+		    literal.token, "C-BACKEND",
+		    std::format("'{}' ({}) is not a supported literal type",
+		                literal.kind.getLexeme(), literal.kind.getGlyph()));
 		break;
 	}
 }
@@ -629,8 +627,8 @@ void CTranspilerGenerator::visitUnaryExpression(const ast::Unary &unary) {
 		break;
 	default:
 		messageBag.error(unary.op, "C-BACKEND",
-		               std::format("'{}' is not a supported unary operation",
-		                           unary.op.getLexeme()));
+		                 std::format("'{}' is not a supported unary operation",
+		                             unary.op.getLexeme()));
 	}
 	if (unary.isPrefix) {
 		unary.expr->visit(*this);
