@@ -64,11 +64,22 @@ std::optional<Type> Type::findScalarType(const std::string_view name) {
 	    }, // c_int
 	    {
 	        "c_size",
-	        definePlatformDependentType("c_size", 8, true),
+	        definePlatformDependentType("c_size", 8, false),
 	    }, // c_size
 	    {
 	        "c_voidptr",
-	        definePlatformDependentType("c_voidptr", 8, true),
+	        Type{
+	            true,
+	            true,
+	            true, // the size is determined by platform
+	            "c_voidptr",
+	            "c_voidptr",
+	            8, // estimated size for 64bits arch
+	            false,
+	            false, // set as false as cast is "unsafe"
+	            false,
+	            {} // no subtype
+	        }, 
 	    }, // c_voidptr
 	};
 	std::string key{name};
