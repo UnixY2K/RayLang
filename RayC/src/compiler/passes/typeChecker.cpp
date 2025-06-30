@@ -12,8 +12,6 @@ namespace ray::compiler::analyzer {
 
 void TypeChecker::resolve(
     const std::vector<std::unique_ptr<ast::Statement>> &statement) {
-	// globalStructDefinitions.clear();
-	// globalFunctionDefinitions.clear();
 	for (const auto &stmt : statement) {
 		stmt->visit(*this);
 	}
@@ -71,20 +69,16 @@ void TypeChecker::visitFunctionStatement(const ast::Function &function) {
 	std::string mangledFunctionName =
 	    passes::mangling::NameMangler().mangleFunction(currentModule, function,
 	                                                   linkageDirective);
-	if (function.body.has_value()) {
-		currentSourceUnit.functionDefinitions.push_back(
-		    lang::FunctionDefinition{
-		        .name = std::string(function.name.getLexeme()),
-		        .mangledName = mangledFunctionName,
-		        .function = function,
-		    });
-		function.body->visit(*this);
-	}
-	currentSourceUnit.functionDeclarations.push_back(lang::FunctionDefinition{
+	auto definition = lang::FunctionDefinition{
 	    .name = std::string(function.name.getLexeme()),
 	    .mangledName = mangledFunctionName,
 	    .function = function,
-	});
+	};
+	currentSourceUnit.functionDeclarations.push_back(definition);
+	if (function.body.has_value()) {
+		currentSourceUnit.functionDefinitions.push_back(definition);
+		function.body->visit(*this);
+	}
 }
 void TypeChecker::visitIfStatement(const ast::If &value) {
 	messageBag.error(value.getToken(), "BUG",

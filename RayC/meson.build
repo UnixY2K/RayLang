@@ -7,6 +7,7 @@ rayc_srcs = [
 	'src/compiler/ast/intrinsic.cpp',
 	'src/compiler/generators/c/c_transpiler.cpp',
 	'src/compiler/generators/wasm/wasm_text.cpp',
+	'src/compiler/lang/type.cpp',
 	'src/compiler/lexer/lexer_error.cpp',
 	'src/compiler/lexer/lexer.cpp',
 	'src/compiler/lexer/token.cpp',
@@ -14,7 +15,6 @@ rayc_srcs = [
 	'src/compiler/passes/topLevelResolver.cpp',
 	'src/compiler/passes/typeChecker.cpp',
 	'src/compiler/parser/parser.cpp',
-	'src/compiler/types/types.cpp',
 	'src/compiler/message_bag.cpp',
 	'src/source.cpp',
 ]

@@ -12,10 +12,10 @@
 #include <ray/compiler/lang/functionDefinition.hpp>
 #include <ray/compiler/lang/sourceUnit.hpp>
 #include <ray/compiler/lang/structDefinition.hpp>
+#include <ray/compiler/lang/type.hpp>
 #include <ray/compiler/message_bag.hpp>
 #include <ray/compiler/passes/symbol_mangler.hpp>
 #include <ray/compiler/passes/topLevelResolver.hpp>
-#include <ray/compiler/types/types.hpp>
 
 namespace ray::compiler::generator::c {
 
@@ -91,10 +91,9 @@ class CTranspilerGenerator : public ast::StatementVisitor,
 	                             const std::string_view name) const;
 	std::string findStructName(const std::string_view name) const;
 
-	std::optional<types::TypeInfo>
-	findScalarTypeInfo(const std::string_view lexeme);
-	std::optional<types::TypeInfo> findTypeInfo(const std::string_view lexeme);
-	std::optional<types::TypeInfo> getTypeExpression(const ast::Expression *);
+	std::optional<lang::Type> findScalarTypeInfo(const std::string_view lexeme);
+	std::optional<lang::Type> findTypeInfo(const std::string_view lexeme);
+	std::optional<lang::Type> getTypeExpression(const ast::Expression *);
 };
 
 } // namespace ray::compiler::generator::c

@@ -1,47 +1,52 @@
 #pragma once
 
 #include <cstddef>
-#include <memory>
 #include <optional>
 #include <string>
 
+#include <ray/util/copy_ptr.hpp>
+#include <string_view>
+
 namespace ray::compiler::lang {
+class Type;
 class Type {
 
 	bool initialized = false;
 	bool scalar = false;
-
-	void copy(const Type &other) {
-		initialized = other.initialized;
-		scalar = other.initialized;
-
-		name = other.name;
-		isConst = other.isConst;
-		isPointer = other.isPointer;
-
-		if (other.subtype) {
-			auto newSubtype = *other.subtype->get();
-			subtype = std::make_unique<Type>(newSubtype);
-		}
-	}
+	bool platformDependent = true;
 
   public:
-	Type() = default;
-	Type(const Type &other) { copy(other); }
-
 	std::string name;
-	size_t requiredBytes = 0;
+	std::string mangledName;
+	size_t calculatedSize = 0;
 	bool isConst = true;
 	bool isPointer = false;
-	std::optional<std::unique_ptr<Type>> subtype;
+	bool signedType = false;
+	std::optional<util::copy_ptr<Type>> subtype;
+
+	Type() = default;
+	Type(bool initialized, bool scalar, bool platformDependent,
+	     std::string name, std::string mangledName, size_t calculatedSize,
+	     bool isConst, bool isPointer, bool signedType,
+	     std::optional<util::copy_ptr<Type>> subType)
+	    : initialized{initialized}, scalar{scalar},
+	      platformDependent{platformDependent}, name{name},
+	      mangledName{mangledName}, calculatedSize{calculatedSize},
+	      isConst{isConst}, isPointer{isPointer}, signedType{signedType},
+	      subtype{subType} {};
 
 	void initialize() { initialized = true; }
 	bool isInitialized() const { return initialized; }
 	bool isScalar() const { return scalar; }
+	bool isPlatformDependent() const { return platformDependent; }
 
-	Type &operator=(const Type &other) {
-		copy(other);
-		return *this;
-	}
+	static std::optional<Type> findScalarType(const std::string_view name);
+
+  private:
+	static Type defineScalarType(std::string name, size_t calculatedSize,
+	                             bool signedType);
+	static Type definePlatformDependentType(std::string name,
+	                                        size_t aproximatedSize,
+	                                        bool signedType);
 };
 } // namespace ray::compiler::lang

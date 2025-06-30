@@ -13,11 +13,11 @@
 #include <ray/compiler/directives/compilerDirective.hpp>
 #include <ray/compiler/directives/linkageDirective.hpp>
 #include <ray/compiler/generators/c/c_transpiler.hpp>
+#include <ray/compiler/lang/type.hpp>
 #include <ray/compiler/lexer/token.hpp>
 #include <ray/compiler/message_bag.hpp>
 #include <ray/compiler/passes/symbol_mangler.hpp>
 #include <ray/compiler/passes/topLevelResolver.hpp>
-#include <ray/compiler/types/types.hpp>
 
 namespace ray::compiler::generator::c {
 
@@ -492,7 +492,7 @@ void CTranspilerGenerator::visitIntrinsicCallExpression(
 		} else {
 			auto param = value.arguments[0].get();
 			if (auto type = getTypeExpression(param)) {
-				if (type->platformDependent) {
+				if (type->isPlatformDependent()) {
 					output << std::format("((ssize)sizeof({}))",
 					                      type->mangledName);
 				} else {
@@ -743,11 +743,11 @@ CTranspilerGenerator::findStructName(const std::string_view name) const {
 	return "";
 }
 
-std::optional<types::TypeInfo>
+std::optional<lang::Type>
 CTranspilerGenerator::findScalarTypeInfo(const std::string_view lexeme) {
-	return types::TypeInfo::findScalarTypeInfo(lexeme);
+	return lang::Type::findScalarType(lexeme);
 }
-std::optional<types::TypeInfo>
+std::optional<lang::Type>
 CTranspilerGenerator::findTypeInfo(const std::string_view lexeme) {
 	auto scalarType = findScalarTypeInfo(lexeme);
 	if (scalarType) {
@@ -755,7 +755,7 @@ CTranspilerGenerator::findTypeInfo(const std::string_view lexeme) {
 	}
 	return {};
 }
-std::optional<types::TypeInfo>
+std::optional<lang::Type>
 CTranspilerGenerator::getTypeExpression(const ast::Expression *expression) {
 	if (auto var = dynamic_cast<const ast::Variable *>(expression)) {
 		return findTypeInfo(var->name.lexeme);
