@@ -102,10 +102,56 @@ void TypeChecker::visitStructStatement(const ast::Struct &value) {
 	                 std::format("visit method not implemented for {}",
 	                             value.variantName()));
 }
-void TypeChecker::visitCompDirectiveStatement(const ast::CompDirective &value) {
-	messageBag.error(value.getToken(), "BUG",
-	                 std::format("visit method not implemented for {}",
-	                             value.variantName()));
+void TypeChecker::visitCompDirectiveStatement(
+    const ast::CompDirective &compDirective) {
+	auto directiveToken = compDirective.name;
+	auto directiveName = compDirective.name.getLexeme();
+	if (directiveName == "Linkage") {
+		auto &attributes = compDirective.values;
+		auto directive = directive::LinkageDirective(
+		    attributes.find("name") != attributes.end() ? attributes.at("name")
+		                                                : "",
+		    attributes.find("resolution") != attributes.end()
+		        ? attributes.at("resolution") == "external"
+		        : false,
+		    attributes.find("mangling") != attributes.end()
+		        ? attributes.at("mangling") == "c"
+		              ? directive::LinkageDirective::ManglingType::C
+		              : directive::LinkageDirective::ManglingType::Unknonw
+		        : directive::LinkageDirective::ManglingType::Default,
+		    directiveToken);
+		if (compDirective.child) {
+			auto childValue = compDirective.child.get();
+			if (dynamic_cast<ast::Function *>(childValue) ||
+			    dynamic_cast<ast::Struct *>(childValue)) {
+				size_t startDirectives = directivesStack.size();
+				size_t originalTop = top + 1;
+				top = startDirectives;
+				directivesStack.push_back(
+				    std::make_unique<directive::LinkageDirective>(directive));
+				compDirective.child->visit(*this);
+				if (directivesStack.size() != startDirectives) {
+					messageBag.error(childValue->getToken(), "BUG",
+					                 "unprocessed compiler directives");
+				}
+				top = originalTop;
+			} else {
+				messageBag.error(
+				    childValue->getToken(), "TYPE-CHECKER",
+				    std::format(
+				        "{} child expression must be a function or a struct.",
+				        directive.directiveName()));
+			}
+		} else {
+			messageBag.error(compDirective.getToken(), "TYPE-CHECKER",
+			                 std::format("{} must have a child expression.",
+			                             directive.directiveName()));
+		}
+	} else {
+		messageBag.error(
+		    compDirective.getToken(), "TYPE-CHECKER",
+		    std::format("Unknown compiler directive '{}'.", directiveName));
+	}
 }
 // Expression
 void TypeChecker::visitVariableExpression(const ast::Variable &value) {

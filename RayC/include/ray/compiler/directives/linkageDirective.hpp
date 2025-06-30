@@ -19,7 +19,7 @@ class LinkageDirective : public CompilerDirective {
 	LinkageDirective(std::string overrideName, bool isExternal,
 	                 ManglingType mangling, Token token)
 	    : overrideName{overrideName}, isExternal{isExternal},
-	      mangling{mangling} {}
+	      mangling{mangling}, token(token) {}
 
 	const Token &getToken() const override { return token; }
 
