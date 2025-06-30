@@ -14,6 +14,7 @@ using namespace terminal::literals;
 
 void TopLevelResolver::resolve(
     const std::vector<std::unique_ptr<ast::Statement>> &statement) {
+	earlySymbolTable.clear();
 	globalStructDefinitions.clear();
 	globalFunctionDefinitions.clear();
 	for (const auto &stmt : statement) {

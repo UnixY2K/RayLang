@@ -13,6 +13,8 @@ class Lexer {
 	std::vector<Token> tokens;
 	std::vector<LexerError> errors;
 	size_t start = 0;
+	size_t startLine = 0;
+	size_t startColumn = 0;
 	size_t current = 0;
 	size_t line = 0;
 	size_t column = 0;

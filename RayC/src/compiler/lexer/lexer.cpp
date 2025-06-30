@@ -17,7 +17,6 @@ bool Lexer::isAtEnd() const { return current >= source.length(); };
 std::vector<Token> Lexer::scanTokens() {
 	tokens.clear();
 	errors.clear();
-	start = 0;
 	current = 0;
 	line = 1;
 	column = 0;
@@ -37,6 +36,8 @@ const std::vector<LexerError> &Lexer::getErrors() const { return errors; }
 void Lexer::scanToken() {
 	char c = advance();
 	Token::TokenType type = Token::fromChar(c);
+	startLine = line;
+	startColumn = column;
 	switch (type) {
 	// multi char tokens
 	case Token::TokenType::TOKEN_PLUS: {
@@ -238,8 +239,10 @@ char Lexer::advance() {
 
 void Lexer::addToken(Token::TokenType type) { addToken(type, ""); }
 void Lexer::addToken(Token::TokenType type, std::string literal) {
-	tokens.push_back(
-	    Token{.type = type, .lexeme = literal, .line = line, .column = column});
+	tokens.push_back(Token{.type = type,
+	                       .lexeme = literal,
+	                       .line = startLine,
+	                       .column = startColumn});
 }
 void Lexer::addToken(Token::TokenType type, std::string literal, size_t line,
                      size_t column) {

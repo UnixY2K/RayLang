@@ -1,14 +1,15 @@
 #pragma once
+#include "ray/compiler/lang/symbol.hpp"
 #include <memory>
 
 #include <ray/compiler/ast/expression.hpp>
 #include <ray/compiler/ast/statement.hpp>
 #include <ray/compiler/directives/compilerDirective.hpp>
 #include <ray/compiler/directives/linkageDirective.hpp>
-#include <ray/compiler/message_bag.hpp>
 #include <ray/compiler/lang/functionDefinition.hpp>
 #include <ray/compiler/lang/sourceUnit.hpp>
 #include <ray/compiler/lang/structDefinition.hpp>
+#include <ray/compiler/message_bag.hpp>
 
 namespace ray::compiler::analyzer {
 
@@ -18,6 +19,7 @@ class TopLevelResolver : public ast::StatementVisitor,
 
 	std::vector<std::unique_ptr<directive::CompilerDirective>> directivesStack;
 
+	std::vector<lang::Symbol> earlySymbolTable;
 	std::vector<lang::StructDefinition> globalStructDefinitions;
 	std::vector<lang::FunctionDefinition> globalFunctionDefinitions;
 	lang::SourceUnit currentSourceUnit;
