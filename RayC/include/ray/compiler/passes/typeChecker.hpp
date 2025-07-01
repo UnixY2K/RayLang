@@ -21,20 +21,16 @@ class TypeChecker : public ast::StatementVisitor,
 	std::vector<std::unique_ptr<directive::CompilerDirective>> directivesStack;
 	size_t top = 0;
 
-	std::vector<lang::StructDefinition> globalStructDefinitions;
-	std::vector<lang::FunctionDefinition> globalFunctionDefinitions;
+	lang::S1SourceUnit s1SourceUnit;
 	std::vector<lang::Type> typeStack;
 
 	lang::SourceUnit currentSourceUnit;
 	lang::ModuleStore &moduleStore;
 
   public:
-	TypeChecker(std::string filePath,
-	            std::vector<lang::StructDefinition> structDefinitions,
-	            std::vector<lang::FunctionDefinition> functionDefinitions,
+	TypeChecker(std::string filePath, lang::S1SourceUnit s1SourceUnit,
 	            lang::ModuleStore &moduleStore)
-	    : messageBag(filePath), globalStructDefinitions(structDefinitions),
-	      globalFunctionDefinitions(functionDefinitions),
+	    : messageBag(filePath), s1SourceUnit(s1SourceUnit),
 	      moduleStore(moduleStore) {}
 
 	void resolve(const std::vector<std::unique_ptr<ast::Statement>> &statement);

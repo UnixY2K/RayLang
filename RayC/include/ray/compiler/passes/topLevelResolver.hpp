@@ -1,5 +1,4 @@
 #pragma once
-#include "ray/compiler/lang/symbol.hpp"
 #include <memory>
 
 #include <ray/compiler/ast/expression.hpp>
@@ -9,6 +8,7 @@
 #include <ray/compiler/lang/functionDefinition.hpp>
 #include <ray/compiler/lang/sourceUnit.hpp>
 #include <ray/compiler/lang/structDefinition.hpp>
+#include <ray/compiler/lang/symbol.hpp>
 #include <ray/compiler/message_bag.hpp>
 
 namespace ray::compiler::analyzer {
@@ -20,21 +20,14 @@ class TopLevelResolver : public ast::StatementVisitor,
 	std::vector<std::unique_ptr<directive::CompilerDirective>> directivesStack;
 
 	std::vector<lang::Symbol> earlySymbolTable;
-	std::vector<lang::StructDefinition> globalStructDefinitions;
-	std::vector<lang::FunctionDefinition> globalFunctionDefinitions;
-	lang::SourceUnit currentSourceUnit;
+	lang::S1SourceUnit currentS1SourceUnit;
 	size_t top = 0;
 
   public:
 	TopLevelResolver(std::string filePath) : messageBag(filePath) {}
 	void resolve(const std::vector<std::unique_ptr<ast::Statement>> &statement);
 
-	std::vector<lang::StructDefinition> getStructDefinitions() const {
-		return globalStructDefinitions;
-	}
-	std::vector<lang::FunctionDefinition> getFunctionDefinitons() const {
-		return globalFunctionDefinitions;
-	}
+	lang::S1SourceUnit getSourceUnit() const;
 
 	bool hasFailed() const;
 	const std::vector<std::string> getErrors() const;

@@ -7,6 +7,7 @@ rayc_srcs = [
 	'src/compiler/ast/intrinsic.cpp',
 	'src/compiler/generators/c/c_transpiler.cpp',
 	'src/compiler/generators/wasm/wasm_text.cpp',
+	'src/compiler/lang/sourceUnit.cpp',
 	'src/compiler/lang/type.cpp',
 	'src/compiler/lexer/lexer_error.cpp',
 	'src/compiler/lexer/lexer.cpp',

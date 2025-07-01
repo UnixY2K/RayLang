@@ -1,4 +1,4 @@
-#include "ray/compiler/lang/symbol.hpp"
+
 #include <format>
 #include <iostream>
 
@@ -6,7 +6,9 @@
 #include <ray/compiler/ast/expression.hpp>
 #include <ray/compiler/ast/statement.hpp>
 #include <ray/compiler/lang/functionDefinition.hpp>
+#include <ray/compiler/lang/sourceUnit.hpp>
 #include <ray/compiler/lang/structDefinition.hpp>
+#include <ray/compiler/lang/symbol.hpp>
 #include <ray/compiler/passes/symbol_mangler.hpp>
 #include <ray/compiler/passes/topLevelResolver.hpp>
 
@@ -16,8 +18,7 @@ using namespace terminal::literals;
 void TopLevelResolver::resolve(
     const std::vector<std::unique_ptr<ast::Statement>> &statement) {
 	earlySymbolTable.clear();
-	globalStructDefinitions.clear();
-	globalFunctionDefinitions.clear();
+	currentS1SourceUnit.clear();
 	for (const auto &stmt : statement) {
 		stmt->visit(*this);
 	}
@@ -29,6 +30,10 @@ void TopLevelResolver::resolve(
 			                         directive->directiveName());
 		}
 	}
+}
+
+lang::S1SourceUnit TopLevelResolver::getSourceUnit() const {
+	return currentS1SourceUnit;
 }
 
 bool TopLevelResolver::hasFailed() const { return messageBag.failed(); }
@@ -74,11 +79,12 @@ void TopLevelResolver::visitFunctionStatement(const ast::Function &function) {
 	std::string mangledFunctionName =
 	    passes::mangling::NameMangler().mangleFunction(currentModule, function,
 	                                                   linkageDirective);
-	globalFunctionDefinitions.push_back(lang::FunctionDefinition{
-	    .name = std::string(function.name.getLexeme()),
-	    .mangledName = mangledFunctionName,
-	    .function = function,
-	});
+	currentS1SourceUnit.functionDefinitions.push_back(
+	    lang::S1FunctionDefinition{
+	        .name = std::string(function.name.getLexeme()),
+	        .mangledName = mangledFunctionName,
+	        .returnType = function.returnType.name.lexeme,
+	    });
 	if (function.body.has_value()) {
 		function.body->visit(*this);
 	}
@@ -131,10 +137,15 @@ void TopLevelResolver::visitStructStatement(const ast::Struct &structObj) {
 	std::string mangledStructName =
 	    passes::mangling::NameMangler().mangleStruct(currentModule, structObj,
 	                                                 linkageDirective);
-	globalStructDefinitions.push_back(lang::StructDefinition{
+	std::vector<lang::S1StructMember> members;
+	if(!structObj.declaration){
+		
+	}
+	currentS1SourceUnit.structDefinitions.push_back(lang::S1StructDefinition{
 	    .name = std::string(structObj.name.getLexeme()),
 	    .mangledName = mangledStructName,
-	    .structObj = structObj,
+	    .isDefinition = structObj.declaration,
+	    .members = members,
 	});
 }
 void TopLevelResolver::visitCompDirectiveStatement(
