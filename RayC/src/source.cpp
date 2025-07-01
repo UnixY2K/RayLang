@@ -20,6 +20,11 @@
 #include <ray/compiler/lang/moduleStore.hpp>
 #include <ray/compiler/lang/sourceUnit.hpp>
 
+// wingdi.h is included somewhere and is defining ERROR and as macro...
+#ifdef ERROR
+#undef ERROR
+#endif
+
 using namespace ray::compiler;
 
 using namespace ray::compiler::terminal::literals;
