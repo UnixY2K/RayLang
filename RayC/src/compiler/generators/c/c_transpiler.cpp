@@ -13,6 +13,7 @@
 #include <ray/compiler/directives/compilerDirective.hpp>
 #include <ray/compiler/directives/linkageDirective.hpp>
 #include <ray/compiler/generators/c/c_transpiler.hpp>
+#include <ray/compiler/lang/functionDefinition.hpp>
 #include <ray/compiler/lang/type.hpp>
 #include <ray/compiler/lexer/token.hpp>
 #include <ray/compiler/message_bag.hpp>
@@ -100,25 +101,21 @@ void CTranspilerGenerator::resolve(
 		output << std::format("{}}}", currentIdent());
 		output << std::format(" {};\n", structDefinition.mangledName);
 	}
-	for (const auto &functionDeclaration : sourceUnit.functionDeclarations) {
-		auto &function = functionDeclaration.function.get();
-		if (!functionDeclaration.function.get().publicVisibility) {
+	for (const lang::FunctionDeclaration &functionDeclaration :
+	     sourceUnit.functionDeclarations) {
+		if (!functionDeclaration.publicVisibility) {
 			output << "RAYLANG_MACRO_LINK_LOCAL ";
 			output << "static ";
-		} else if (functionDeclaration.function.get().body.has_value()) {
-			if (functionDeclaration.function.get().body.has_value()) {
-				output << "RAYLANG_MACRO_LINK_EXPORT ";
-			} else {
-				output << "RAYLANG_MACRO_LINK_IMPORT ";
-			}
 		}
-		functionDeclaration.function.get().returnType.visit(*this);
+		// function.get().returnType.visit(*this);
 
 		output << std::format("{}(", functionDeclaration.mangledName);
-		for (size_t index = 0; index < function.params.size(); ++index) {
-			const auto &parameter = function.params[index];
-			parameter.visit(*this);
-			if (index < function.params.size() - 1) {
+		for (size_t index = 0; index < functionDeclaration.parameters.size();
+		     ++index) {
+			const auto &parameter = functionDeclaration.parameters[index];
+			// parameter.visit(*this);
+			output << std::format("{}", parameter.parameterType.name);
+			if (index < functionDeclaration.parameters.size() - 1) {
 				output << ", ";
 			}
 		}

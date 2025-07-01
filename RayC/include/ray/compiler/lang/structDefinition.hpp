@@ -1,16 +1,32 @@
 #pragma once
+#include <cstddef>
 #include <functional>
 #include <string>
 
 #include <msgpack.hpp>
 
 #include <ray/compiler/ast/statement.hpp>
+#include <ray/compiler/lang/type.hpp>
 
 namespace ray::compiler::lang {
-class StructDefinition {
+class StructDeclaration {
   public:
 	std::string name;
 	std::string mangledName;
+};
+class StructMember {
+  public:
+	bool publicAccess;
+	std::string name;
+	Type type;
+
+	size_t calculateSize() const { return type.calculatedSize; }
+};
+class Struct {
+  public:
+	std::string name;
+	std::string mangledName;
+	std::vector<Type> members;
 	std::reference_wrapper<const ast::Struct> structObj;
 };
 class S1StructMember {

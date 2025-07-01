@@ -1,4 +1,5 @@
 #pragma once
+#include <sstream>
 #include <string>
 
 #include <msgpack.hpp>
@@ -9,10 +10,10 @@
 namespace ray::compiler::lang {
 class SourceUnit {
   public:
-	std::vector<StructDefinition> structDeclarations;
-	std::vector<FunctionDefinition> functionDeclarations;
+	std::vector<StructDeclaration> structDeclarations;
+	std::vector<Struct> structDefinitions;
 
-	std::vector<StructDefinition> structDefinitions;
+	std::vector<FunctionDeclaration> functionDeclarations;
 	std::vector<FunctionDefinition> functionDefinitions;
 };
 
@@ -23,11 +24,10 @@ class S1SourceUnit {
 
 	std::vector<S1FunctionDeclaration> functionDeclarations;
 
-
 	void clear();
 
 	std::string exportSourceUnit() const;
-	static S1SourceUnit importSourceUnit();
+	static S1SourceUnit importSourceUnit(std::stringstream &stream);
 
 	MSGPACK_DEFINE(structDeclarations, structDefinitions, functionDeclarations);
 };

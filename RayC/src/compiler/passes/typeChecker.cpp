@@ -1,4 +1,5 @@
 
+#include "ray/compiler/lang/functionDefinition.hpp"
 #include <cstddef>
 #include <format>
 
@@ -69,12 +70,17 @@ void TypeChecker::visitFunctionStatement(const ast::Function &function) {
 	std::string mangledFunctionName =
 	    passes::mangling::NameMangler().mangleFunction(currentModule, function,
 	                                                   linkageDirective);
+	auto declaration = lang::FunctionDeclaration{
+	    .name = std::string(function.name.getLexeme()),
+	    .mangledName = mangledFunctionName,
+	};
 	auto definition = lang::FunctionDefinition{
 	    .name = std::string(function.name.getLexeme()),
 	    .mangledName = mangledFunctionName,
 	    .function = function,
 	};
-	currentSourceUnit.functionDeclarations.push_back(definition);
+
+	currentSourceUnit.functionDeclarations.push_back(declaration);
 	if (function.body.has_value()) {
 		currentSourceUnit.functionDefinitions.push_back(definition);
 		function.body->visit(*this);

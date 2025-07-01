@@ -1,3 +1,4 @@
+#include <istream>
 #include <sstream>
 #include <vector>
 
@@ -23,9 +24,14 @@ std::string S1SourceUnit::exportSourceUnit() const {
 	return result.str();
 }
 
-S1SourceUnit S1SourceUnit::importSourceUnit() {
+S1SourceUnit S1SourceUnit::importSourceUnit(std::stringstream &stream) {
 	S1SourceUnit result;
+	std::string data = stream.str();
 
+	msgpack::object_handle oh = msgpack::unpack(data.data(), data.size());
+	msgpack::object obj = oh.get();
+
+	obj.convert(result);
 	return result;
 }
 } // namespace ray::compiler::lang
