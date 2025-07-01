@@ -21,7 +21,9 @@ rayc_srcs = [
 ]
 rayc_args = []
 rayc_link = []
-rayc_deps = []
+rayc_deps = [
+	msgpack_dep,
+]
 rayc_defs = []
 
 if get_option('cli_terminal_color_support')

@@ -1,6 +1,8 @@
 #pragma once
 #include <string>
 
+#include <msgpack.hpp>
+
 #include <ray/compiler/lang/functionDefinition.hpp>
 #include <ray/compiler/lang/structDefinition.hpp>
 
@@ -16,15 +18,17 @@ class SourceUnit {
 
 class S1SourceUnit {
   public:
-	std::vector<S1StructDefinition> structDeclarations;
-	std::vector<S1FunctionDefinition> functionDeclarations;
-
+	std::vector<S1StructDeclaration> structDeclarations;
 	std::vector<S1StructDefinition> structDefinitions;
-	std::vector<S1FunctionDefinition> functionDefinitions;
+
+	std::vector<S1FunctionDeclaration> functionDeclarations;
+
 
 	void clear();
 
 	std::string exportSourceUnit() const;
 	static S1SourceUnit importSourceUnit();
+
+	MSGPACK_DEFINE(structDeclarations, structDefinitions, functionDeclarations);
 };
 } // namespace ray::compiler::lang

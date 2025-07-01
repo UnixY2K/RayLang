@@ -2,6 +2,8 @@
 #include <functional>
 #include <string>
 
+#include <msgpack.hpp>
+
 #include <ray/compiler/ast/statement.hpp>
 #include <ray/compiler/lang/type.hpp>
 
@@ -16,11 +18,13 @@ class FunctionDefinition {
 	Type returnType;
 };
 
-class S1FunctionDefinition {
+class S1FunctionDeclaration {
 
   public:
 	std::string name;
 	std::string mangledName;
 	std::string returnType;
+
+	MSGPACK_DEFINE(name, mangledName, returnType);
 };
 } // namespace ray::compiler::lang

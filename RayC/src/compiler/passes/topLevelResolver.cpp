@@ -79,8 +79,8 @@ void TopLevelResolver::visitFunctionStatement(const ast::Function &function) {
 	std::string mangledFunctionName =
 	    passes::mangling::NameMangler().mangleFunction(currentModule, function,
 	                                                   linkageDirective);
-	currentS1SourceUnit.functionDefinitions.push_back(
-	    lang::S1FunctionDefinition{
+	currentS1SourceUnit.functionDeclarations.push_back(
+	    lang::S1FunctionDeclaration{
 	        .name = std::string(function.name.getLexeme()),
 	        .mangledName = mangledFunctionName,
 	        .returnType = function.returnType.name.lexeme,
@@ -137,16 +137,20 @@ void TopLevelResolver::visitStructStatement(const ast::Struct &structObj) {
 	std::string mangledStructName =
 	    passes::mangling::NameMangler().mangleStruct(currentModule, structObj,
 	                                                 linkageDirective);
-	std::vector<lang::S1StructMember> members;
-	if(!structObj.declaration){
-		
-	}
-	currentS1SourceUnit.structDefinitions.push_back(lang::S1StructDefinition{
+
+	currentS1SourceUnit.structDeclarations.push_back(lang::S1StructDeclaration{
 	    .name = std::string(structObj.name.getLexeme()),
 	    .mangledName = mangledStructName,
-	    .isDefinition = structObj.declaration,
-	    .members = members,
 	});
+	if (!structObj.declaration) {
+		std::vector<lang::S1StructMember> members;
+		currentS1SourceUnit.structDefinitions.push_back(
+		    lang::S1StructDefinition{
+		        .name = std::string(structObj.name.getLexeme()),
+		        .mangledName = mangledStructName,
+		        .members = members,
+		    });
+	}
 }
 void TopLevelResolver::visitCompDirectiveStatement(
     const ast::CompDirective &compDirective) {

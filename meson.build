@@ -6,6 +6,11 @@ project(
     license: 'BSD-3',
 )
 
+msgpack_dep = dependency(
+                'msgpackc-cc',
+                fallback: ['msgpackc-cxx', 'msgpack_cxx_dep']
+)
+
 subdir('RayC')
 subdir('RayVM')
 subdir('RayVM-cli')
