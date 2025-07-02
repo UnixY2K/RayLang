@@ -70,5 +70,11 @@ class TypeChecker : public ast::StatementVisitor,
 	void visitTypeExpression(const ast::Type &value) override;
 	void visitCastExpression(const ast::Cast &value) override;
 	void visitParameterExpression(const ast::Parameter &value) override;
+
+	std::optional<lang::Type> findScalarTypeInfo(const std::string_view lexeme);
+	std::optional<lang::Type> findTypeInfo(const std::string_view lexeme);
+	std::optional<lang::Type> getTypeExpression(const ast::Expression *);
+
+	lang::Type makePointerType(const lang::Type &innerType);
 };
 } // namespace ray::compiler::analyzer

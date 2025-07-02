@@ -1,9 +1,8 @@
-
-#include "ray/compiler/lang/functionDefinition.hpp"
 #include <cstddef>
 #include <format>
 
 #include <ray/compiler/ast/expression.hpp>
+#include <ray/compiler/lang/functionDefinition.hpp>
 #include <ray/compiler/lang/type.hpp>
 #include <ray/compiler/lexer/token.hpp>
 #include <ray/compiler/passes/symbol_mangler.hpp>
@@ -70,14 +69,47 @@ void TypeChecker::visitFunctionStatement(const ast::Function &function) {
 	std::string mangledFunctionName =
 	    passes::mangling::NameMangler().mangleFunction(currentModule, function,
 	                                                   linkageDirective);
+
+	std::vector<lang::FunctionParameter> parameters;
+	for (const auto &parameter : function.params) {
+		size_t tsSize = typeStack.size();
+		parameter.type.visit(*this);
+		if (tsSize >= typeStack.size()) {
+			messageBag.error(parameter.getToken(), "TYPE-CHECKER-BUG",
+			                 std::format("could not inspect type for {}",
+			                             parameter.type.name.lexeme));
+			continue;
+		}
+
+		lang::Type parameterType = typeStack.back();
+		typeStack.pop_back();
+		parameters.push_back({
+		    .name = parameter.name.lexeme,
+		    .parameterType = parameterType,
+		});
+	}
+
+	size_t tsSize = typeStack.size();
+	function.returnType.visit(*this);
+	if (tsSize >= typeStack.size()) {
+		return;
+	}
+
+	auto returnType = typeStack.back();
+	typeStack.pop_back();
+
 	auto declaration = lang::FunctionDeclaration{
 	    .name = std::string(function.name.getLexeme()),
 	    .mangledName = mangledFunctionName,
+	    .parameters = parameters,
+	    .publicVisibility = function.publicVisibility,
+	    .returnType = returnType,
 	};
 	auto definition = lang::FunctionDefinition{
 	    .name = std::string(function.name.getLexeme()),
 	    .mangledName = mangledFunctionName,
 	    .function = function,
+	    .returnType = returnType,
 	};
 
 	currentSourceUnit.functionDeclarations.push_back(declaration);
@@ -289,10 +321,31 @@ void TypeChecker::visitArrayAccessExpression(const ast::ArrayAccess &value) {
 	                 std::format("visit method not implemented for {}",
 	                             value.variantName()));
 }
-void TypeChecker::visitTypeExpression(const ast::Type &value) {
-	messageBag.error(value.getToken(), "BUG",
-	                 std::format("visit method not implemented for {}",
-	                             value.variantName()));
+void TypeChecker::visitTypeExpression(const ast::Type &typeExpr) {
+	size_t tsSize = typeStack.size();
+	if (typeExpr.isPointer) {
+		typeExpr.subtype->get()->visit(*this);
+		if (tsSize >= typeStack.size()) {
+			// type not found and error was already reported
+			return;
+		}
+		auto innerType = typeStack.back();
+		typeStack.pop_back();
+		lang::Type pointerType = makePointerType(innerType);
+		pointerType.isConst = typeExpr.isConst;
+		typeStack.push_back(pointerType);
+	} else {
+		auto result = findTypeInfo(typeExpr.name.lexeme);
+		if (result.has_value()) {
+			lang::Type obtainedType = result.value();
+			obtainedType.isConst = typeExpr.isConst;
+			typeStack.push_back(obtainedType);
+		} else {
+			messageBag.error(
+			    typeExpr.getToken(), "TYPE-CHECKER",
+			    std::format("type not found for {}", typeExpr.name.lexeme));
+		}
+	}
 }
 void TypeChecker::visitCastExpression(const ast::Cast &value) {
 	messageBag.error(value.getToken(), "BUG",
@@ -303,5 +356,49 @@ void TypeChecker::visitParameterExpression(const ast::Parameter &value) {
 	messageBag.error(value.getToken(), "BUG",
 	                 std::format("visit method not implemented for {}",
 	                             value.variantName()));
+}
+
+std::optional<lang::Type>
+TypeChecker::findScalarTypeInfo(const std::string_view lexeme) {
+	return lang::Type::findScalarType(lexeme);
+}
+std::optional<lang::Type>
+TypeChecker::findTypeInfo(const std::string_view lexeme) {
+	auto scalarType = findScalarTypeInfo(lexeme);
+	if (scalarType) {
+		return scalarType;
+	}
+	return {};
+}
+std::optional<lang::Type>
+TypeChecker::getTypeExpression(const ast::Expression *expression) {
+	if (auto var = dynamic_cast<const ast::Variable *>(expression)) {
+		return findTypeInfo(var->name.lexeme);
+	}
+	return {};
+}
+
+lang::Type TypeChecker::makePointerType(const lang::Type &innerType) {
+	return lang::Type(true,
+	                  // a pointer is not a scalar as it is an address memory
+	                  // that references an object
+	                  false,
+	                  // technically platform dependent on pointer definition
+	                  true,
+	                  // define the name as pointer
+	                  std::format("pointer", innerType.name),
+	                  // for now lets just copy the type name
+	                  std::format("pointer", innerType.name),
+	                  // we need to get this from the platform in the future
+	                  // for now assuming 64bits/8bytes
+	                  8,
+	                  // if the pointer type is const or not is decided later
+	                  false,
+	                  // we are a pointer type
+	                  true,
+	                  // a pointer is not a signed type
+	                  false,
+	                  // our inner pointer type
+	                  {innerType});
 }
 } // namespace ray::compiler::analyzer

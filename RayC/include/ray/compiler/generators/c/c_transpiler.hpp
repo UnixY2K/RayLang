@@ -80,6 +80,8 @@ class CTranspilerGenerator : public ast::StatementVisitor,
 	void visitParameterExpression(const ast::Parameter &value) override;
 
   private:
+	void visitType(const lang::Type &type);
+
 	std::string findCallableName(const ast::Call &callable,
 	                             const std::string_view name) const;
 	std::string findStructName(const std::string_view name) const;

@@ -66,14 +66,14 @@ void CTranspilerGenerator::resolve(
 			output << "RAYLANG_MACRO_LINK_LOCAL ";
 			output << "static ";
 		}
-		// function.get().returnType.visit(*this);
+		visitType(functionDeclaration.returnType);
 
-		output << std::format("{}(", functionDeclaration.mangledName);
+		output << std::format(" {}(", functionDeclaration.mangledName);
 		for (size_t index = 0; index < functionDeclaration.parameters.size();
 		     ++index) {
 			const auto &parameter = functionDeclaration.parameters[index];
-			// parameter.visit(*this);
-			output << std::format("{}", parameter.parameterType.name);
+			visitType(parameter.parameterType);
+			output << std::format(" {}", parameter.name);
 			if (index < functionDeclaration.parameters.size() - 1) {
 				output << ", ";
 			}
@@ -628,6 +628,16 @@ void CTranspilerGenerator::visitParameterExpression(
     const ast::Parameter &param) {
 	param.type.visit(*this);
 	output << std::format("{}", param.name.lexeme);
+}
+
+void CTranspilerGenerator::visitType(const lang::Type &type) {
+	if (type.isPointer) {
+		visitType(*type.subtype.value());
+		output << "*";
+	}
+	else{
+		output << type.mangledName;
+	}
 }
 
 std::string
