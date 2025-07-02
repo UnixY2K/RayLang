@@ -79,8 +79,12 @@ std::optional<Type> Type::findScalarType(const std::string_view name) {
 	            false, // set as false as cast is "unsafe"
 	            false,
 	            {} // no subtype
-	        }, 
-	    }, // c_voidptr
+	        },
+	    },  // c_voidptr
+	    {
+			"()",
+			defineScalarType("()", 0, false),
+		}, //unit type
 	};
 	std::string key{name};
 	return map.contains(key) ? std::optional<Type>(map.at(key)) : std::nullopt;

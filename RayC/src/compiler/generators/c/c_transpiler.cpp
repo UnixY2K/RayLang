@@ -631,6 +631,11 @@ void CTranspilerGenerator::visitParameterExpression(
 }
 
 void CTranspilerGenerator::visitType(const lang::Type &type) {
+	// for unit type we just use void
+	if(type.name == "()"){
+		output << "void";
+		return;
+	}
 	if (type.isPointer) {
 		visitType(*type.subtype.value());
 		output << "*";
