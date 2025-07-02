@@ -1,3 +1,4 @@
+#include <cstddef>
 #include <format>
 #include <memory>
 #include <optional>
@@ -370,8 +371,8 @@ ast::Function Parser::function(std::string kind, bool publicVisiblity) {
 
 	auto previousToken = previous();
 
-	auto returnToken =
-	    types::makeUnitTypeToken(previous().line, previous().column);
+	size_t newColumn = previous().column + previous().getLexeme().size();
+	auto returnToken = types::makeUnitTypeToken(previous().line, newColumn);
 	ast::Type returnType{
 	    returnToken, true, false, {}, returnToken,
 	};
