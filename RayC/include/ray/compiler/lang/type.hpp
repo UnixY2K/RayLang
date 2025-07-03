@@ -42,6 +42,10 @@ class Type {
 
 	static std::optional<Type> findScalarType(const std::string_view name);
 
+	// allows to define a struct type, if definition is external then the size
+	// is 0 and can only be referenced as a pointer
+	static Type defineStructType(std::string name, size_t aproximatedSize, bool platformDependent);
+
   private:
 	static Type defineScalarType(std::string name, size_t calculatedSize,
 	                             bool signedType);

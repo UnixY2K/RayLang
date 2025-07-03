@@ -26,7 +26,7 @@ class Struct {
   public:
 	std::string name;
 	std::string mangledName;
-	std::vector<Type> members;
+	std::vector<StructMember> members;
 	std::reference_wrapper<const ast::Struct> structObj;
 };
 class S1StructMember {

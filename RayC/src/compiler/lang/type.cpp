@@ -80,14 +80,36 @@ std::optional<Type> Type::findScalarType(const std::string_view name) {
 	            false,
 	            {} // no subtype
 	        },
-	    },  // c_voidptr
+	    }, // c_voidptr
 	    {
-			"()",
-			defineScalarType("()", 0, false),
-		}, //unit type
+	        "()",
+	        defineScalarType("()", 0, false),
+	    }, // unit type
 	};
 	std::string key{name};
 	return map.contains(key) ? std::optional<Type>(map.at(key)) : std::nullopt;
+}
+
+Type Type::defineStructType(std::string name, size_t aproximatedSize,
+                            bool platformDependent) {
+	return Type{
+	    true,
+	    false,
+	    // is platform dependent only if one of the struct members
+	    // is platform dependent, we need to fix this in the future
+	    // by having the compiler define the platform depentent scalars
+	    // such as the C types, or make them conditionally defined types at
+	    // compile time
+	    platformDependent,
+	    name,
+	    name, //
+	    aproximatedSize,
+	    false,
+	    false,
+	    false,
+		// we do not have subtypes for structs as we are not structs
+	    {}, //
+	};
 }
 
 Type Type::defineScalarType(std::string name, size_t calculatedSize,

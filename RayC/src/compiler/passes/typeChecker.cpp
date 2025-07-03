@@ -3,6 +3,7 @@
 
 #include <ray/compiler/ast/expression.hpp>
 #include <ray/compiler/lang/functionDefinition.hpp>
+#include <ray/compiler/lang/structDefinition.hpp>
 #include <ray/compiler/lang/type.hpp>
 #include <ray/compiler/lexer/token.hpp>
 #include <ray/compiler/passes/symbol_mangler.hpp>
@@ -13,7 +14,29 @@ namespace ray::compiler::analyzer {
 void TypeChecker::resolve(
     const std::vector<std::unique_ptr<ast::Statement>> &statement) {
 	for (const auto &stmt : statement) {
+		size_t tsStack = typeStack.size();
 		stmt->visit(*this);
+		// we need to check the added types to the stack to see if they are
+		// structs
+		while (typeStack.size() > tsStack) {
+			auto type = typeStack.back();
+			typeStack.pop_back();
+			if (!type.isScalar()) {
+				// TODO: optimize this search
+				// the types could have a reference to the specific struct
+				for (const auto &structDeclaration :
+				     currentSourceUnit.structDeclarations) {
+					if (structDeclaration.name == type.name) {
+						currentSourceUnit.globalStructTypes[type.name] = type;
+					}
+				}
+			} else {
+				messageBag.error(
+				    stmt->getToken(), "TYPE-CHECKER-BUG",
+				    std::format("unevaluated type value in stack for '{}'",
+				                stmt->variantName()));
+			}
+		}
 	}
 
 	for (auto &directive : directivesStack) {
@@ -83,6 +106,14 @@ void TypeChecker::visitFunctionStatement(const ast::Function &function) {
 
 		lang::Type parameterType = typeStack.back();
 		typeStack.pop_back();
+		if (parameterType.calculatedSize == 0) {
+			messageBag.error(
+			    parameter.type.getToken(), "TYPE-CHECKER",
+			    std::format("cannot return a type with unknown size for '{}'",
+			                parameterType.name));
+			return;
+		}
+
 		parameters.push_back({
 		    .name = parameter.name.lexeme,
 		    .parameterType = parameterType,
@@ -94,9 +125,15 @@ void TypeChecker::visitFunctionStatement(const ast::Function &function) {
 	if (tsSize >= typeStack.size()) {
 		return;
 	}
-
 	auto returnType = typeStack.back();
 	typeStack.pop_back();
+	if (returnType.calculatedSize == 0) {
+		messageBag.error(
+		    function.returnType.getToken(), "TYPE-CHECKER",
+		    std::format("cannot return a type with unknown size for '{}'",
+		                returnType.name));
+		return;
+	}
 
 	auto declaration = lang::FunctionDeclaration{
 	    .name = std::string(function.name.getLexeme()),
@@ -162,10 +199,78 @@ void TypeChecker::visitWhileStatement(const ast::While &value) {
 	                 std::format("visit method not implemented for {}",
 	                             value.variantName()));
 }
-void TypeChecker::visitStructStatement(const ast::Struct &value) {
-	messageBag.error(value.getToken(), "BUG",
-	                 std::format("visit method not implemented for {}",
-	                             value.variantName()));
+void TypeChecker::visitStructStatement(const ast::Struct &structObj) {
+	std::string currentModule;
+
+	std::optional<directive::LinkageDirective> linkageDirective;
+
+	for (size_t i = directivesStack.size(); i > top; i--) {
+		auto &directive = directivesStack[i - i];
+		if (auto foundLinkDirective =
+		        dynamic_cast<directive::LinkageDirective *>(directive.get())) {
+			linkageDirective = *foundLinkDirective;
+		} else {
+			messageBag.warning(
+			    directive->getToken(), "TYPE-CHECKER",
+			    std::format("unmatched compiler directive '{}' for function.\n",
+			                directive->directiveName()));
+		}
+		directivesStack.pop_back();
+	}
+
+	std::string structName = std::string(structObj.name.getLexeme());
+	std::string mangledStructName =
+	    passes::mangling::NameMangler().mangleStruct(currentModule, structObj,
+	                                                 linkageDirective);
+
+	size_t structSize = 0;
+	bool platformDependent = false;
+
+	if (!structObj.declaration) {
+		std::vector<lang::StructMember> members;
+		for (const auto &member : structObj.members) {
+			size_t tsSize = typeStack.size();
+			member.visit(*this);
+			if (tsSize >= typeStack.size()) {
+				messageBag.error(
+				    member.getToken(), "TYPE-CHECKER",
+				    std::format("could not get type information for '{}'",
+				                member.name.lexeme));
+				return;
+			}
+
+			lang::Type memberType = typeStack.back();
+			typeStack.pop_back();
+			auto newMember = lang::StructMember{
+			    // for now set it as false, we will take care of it later
+			    .publicAccess = false,
+			    .name = member.name.lexeme,
+			    .type = memberType,
+			};
+			members.push_back(newMember);
+		}
+
+		auto newStruct = lang::Struct{
+		    .name = structName,
+		    .mangledName = mangledStructName,
+		    .members = members,
+		    .structObj = structObj,
+		};
+		if (structSize != 0) {
+			// push it to the type stack the top evaluator is responsible to
+			// define
+			// it at its own level and potentially mangle its name again
+			currentSourceUnit.structDefinitions.push_back(newStruct);
+		}
+	}
+
+	auto structType =
+	    lang::Type::defineStructType(structName, structSize, platformDependent);
+	currentSourceUnit.structDeclarations.push_back(lang::StructDeclaration{
+	    .name = structName,
+	    .mangledName = mangledStructName,
+	});
+	typeStack.push_back(structType);
 }
 void TypeChecker::visitCompDirectiveStatement(
     const ast::CompDirective &compDirective) {
@@ -363,12 +468,13 @@ TypeChecker::findScalarTypeInfo(const std::string_view lexeme) {
 	return lang::Type::findScalarType(lexeme);
 }
 std::optional<lang::Type>
-TypeChecker::findTypeInfo(const std::string_view lexeme) {
-	auto scalarType = findScalarTypeInfo(lexeme);
+TypeChecker::findTypeInfo(const std::string_view typeName) {
+	auto scalarType = findScalarTypeInfo(typeName);
 	if (scalarType) {
 		return scalarType;
 	}
-	return {};
+	// a defined type in the source unit cannot shadow a primitive/scalar type
+	return currentSourceUnit.findStructType(std::string(typeName));
 }
 std::optional<lang::Type>
 TypeChecker::getTypeExpression(const ast::Expression *expression) {

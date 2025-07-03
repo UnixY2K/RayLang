@@ -6,6 +6,8 @@
 
 #include <ray/compiler/lang/functionDefinition.hpp>
 #include <ray/compiler/lang/structDefinition.hpp>
+#include <ray/compiler/lang/type.hpp>
+#include <unordered_map>
 
 namespace ray::compiler::lang {
 class SourceUnit {
@@ -15,6 +17,10 @@ class SourceUnit {
 
 	std::vector<FunctionDeclaration> functionDeclarations;
 	std::vector<FunctionDefinition> functionDefinitions;
+
+	std::unordered_map<std::string, lang::Type> globalStructTypes;
+
+	std::optional<lang::Type> findStructType(const std::string &typeName) const;
 };
 
 class S1SourceUnit {
