@@ -1,24 +1,31 @@
 #pragma once
 #include <sstream>
 #include <string>
+#include <unordered_map>
 
 #include <msgpack.hpp>
 
 #include <ray/compiler/lang/functionDefinition.hpp>
 #include <ray/compiler/lang/structDefinition.hpp>
 #include <ray/compiler/lang/type.hpp>
-#include <unordered_map>
 
 namespace ray::compiler::lang {
+class Scope {
+  public:
+	std::unordered_map<std::string, lang::Type> variables;
+
+	bool defineStruct(Type type);
+};
 class SourceUnit {
   public:
+	std::vector<Scope> scopes = {Scope{}};
+	// all functions and structs have a declaration vector
+	// that comes from the previous top level resolver
 	std::vector<StructDeclaration> structDeclarations;
-	std::vector<Struct> structDefinitions;
-
 	std::vector<FunctionDeclaration> functionDeclarations;
-	std::vector<FunctionDefinition> functionDefinitions;
 
-	std::unordered_map<std::string, lang::Type> globalStructTypes;
+	std::vector<Struct> structDefinitions;
+	std::vector<FunctionDefinition> functionDefinitions;
 
 	std::optional<lang::Type> findStructType(const std::string &typeName) const;
 };

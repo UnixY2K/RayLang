@@ -15,7 +15,7 @@ void TypeChecker::resolve(
     const std::vector<std::unique_ptr<ast::Statement>> &statement) {
 	for (const auto &stmt : statement) {
 		size_t tsStack = typeStack.size();
-		stmt->visit(*this);
+		resolve(*stmt);
 		// we need to check the added types to the stack to see if they are
 		// structs
 		while (typeStack.size() > tsStack) {
@@ -27,7 +27,12 @@ void TypeChecker::resolve(
 				for (const auto &structDeclaration :
 				     currentSourceUnit.structDeclarations) {
 					if (structDeclaration.name == type.name) {
-						currentSourceUnit.globalStructTypes[type.name] = type;
+						if (!currentScope.get().defineStruct(type)) {
+							messageBag.error(
+							    stmt->getToken(), "TYPE-CHECKER",
+							    std::format("cannot redefine type '{}'",
+							                type.name));
+						}
 					}
 				}
 			} else {
@@ -44,6 +49,13 @@ void TypeChecker::resolve(
 		                   std::format("unused compiler directive {}",
 		                               directive->directiveName()));
 	}
+}
+
+void TypeChecker::resolve(const ast::Statement &statement) {
+	statement.visit(*this);
+}
+void TypeChecker::resolve(const ast::Expression &expression) {
+	expression.visit(*this);
 }
 
 bool TypeChecker::hasFailed() const { return messageBag.failed(); }
@@ -96,7 +108,7 @@ void TypeChecker::visitFunctionStatement(const ast::Function &function) {
 	std::vector<lang::FunctionParameter> parameters;
 	for (const auto &parameter : function.params) {
 		size_t tsSize = typeStack.size();
-		parameter.type.visit(*this);
+		resolve(parameter.type);
 		if (tsSize >= typeStack.size()) {
 			messageBag.error(parameter.getToken(), "TYPE-CHECKER-BUG",
 			                 std::format("could not inspect type for {}",
@@ -109,8 +121,9 @@ void TypeChecker::visitFunctionStatement(const ast::Function &function) {
 		if (parameterType.calculatedSize == 0) {
 			messageBag.error(
 			    parameter.type.getToken(), "TYPE-CHECKER",
-			    std::format("cannot pass parameter type with unknown size for '{}'",
-			                parameterType.name));
+			    std::format(
+			        "cannot pass parameter type with unknown size for '{}'",
+			        parameterType.name));
 			return;
 		}
 
@@ -121,7 +134,7 @@ void TypeChecker::visitFunctionStatement(const ast::Function &function) {
 	}
 
 	size_t tsSize = typeStack.size();
-	function.returnType.visit(*this);
+	resolve(function.returnType);
 	if (tsSize >= typeStack.size()) {
 		return;
 	}
@@ -152,7 +165,7 @@ void TypeChecker::visitFunctionStatement(const ast::Function &function) {
 	currentSourceUnit.functionDeclarations.push_back(declaration);
 	if (function.body.has_value()) {
 		currentSourceUnit.functionDefinitions.push_back(definition);
-		function.body->visit(*this);
+		resolve(function.body.value());
 	}
 }
 void TypeChecker::visitIfStatement(const ast::If &value) {
@@ -176,7 +189,7 @@ void TypeChecker::visitVarStatement(const ast::Var &value) {
 	auto initializationType = lang::Type{};
 	if (value.initializer.has_value()) {
 		auto &initializer = *value.initializer.value().get();
-		initializer.visit(*this);
+		resolve(initializer);
 		if (currentTop > typeStack.size()) {
 			initializationType = typeStack.back();
 		} else {
@@ -230,7 +243,7 @@ void TypeChecker::visitStructStatement(const ast::Struct &structObj) {
 		std::vector<lang::StructMember> members;
 		for (const auto &member : structObj.members) {
 			size_t tsSize = typeStack.size();
-			member.visit(*this);
+			resolve(member);
 			if (tsSize >= typeStack.size()) {
 				messageBag.error(
 				    member.getToken(), "TYPE-CHECKER",
@@ -299,7 +312,7 @@ void TypeChecker::visitCompDirectiveStatement(
 				top = startDirectives;
 				directivesStack.push_back(
 				    std::make_unique<directive::LinkageDirective>(directive));
-				compDirective.child->visit(*this);
+				resolve(*compDirective.child);
 				if (directivesStack.size() != startDirectives) {
 					messageBag.error(childValue->getToken(), "BUG",
 					                 "unprocessed compiler directives");
@@ -363,7 +376,7 @@ void TypeChecker::visitIntrinsicCallExpression(
 		} else {
 			auto param = value.arguments[0].get();
 			size_t currentTop = typeStack.size();
-			param->visit(*this);
+			resolve(*param);
 			if (currentTop >= typeStack.size()) {
 				auto type = typeStack.back();
 				typeStack.pop_back();
@@ -429,7 +442,7 @@ void TypeChecker::visitArrayAccessExpression(const ast::ArrayAccess &value) {
 void TypeChecker::visitTypeExpression(const ast::Type &typeExpr) {
 	size_t tsSize = typeStack.size();
 	if (typeExpr.isPointer) {
-		typeExpr.subtype->get()->visit(*this);
+		resolve(*typeExpr.subtype.value());
 		if (tsSize >= typeStack.size()) {
 			// type not found and error was already reported
 			return;

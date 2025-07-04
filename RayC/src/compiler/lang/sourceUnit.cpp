@@ -12,11 +12,28 @@
 
 namespace ray::compiler::lang {
 
+bool lang::Scope::defineStruct(Type type) {
+	// check if is a new struct
+	if (variables.contains(type.name)) {
+		const auto &varType = variables.at(type.name);
+		if (!varType.isScalar() && varType.calculatedSize > 0) {
+			// we cannot redefine a known non scalar type
+			return false;
+		}
+	}
+	// non found, redefine it
+	variables[type.name] = type;
+	return true;
+}
+
 std::optional<lang::Type>
 SourceUnit::findStructType(const std::string &typeName) const {
-	return globalStructTypes.contains(typeName)
-	           ? std::optional<lang::Type>(globalStructTypes.at(typeName))
-	           : std::nullopt;
+	for (const auto &scope : scopes) {
+		if (scope.variables.contains(typeName)) {
+			return scope.variables.at(typeName);
+		}
+	}
+	return {};
 }
 
 void S1SourceUnit::clear() {
