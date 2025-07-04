@@ -109,7 +109,7 @@ void TypeChecker::visitFunctionStatement(const ast::Function &function) {
 		if (parameterType.calculatedSize == 0) {
 			messageBag.error(
 			    parameter.type.getToken(), "TYPE-CHECKER",
-			    std::format("cannot return a type with unknown size for '{}'",
+			    std::format("cannot pass parameter type with unknown size for '{}'",
 			                parameterType.name));
 			return;
 		}
@@ -127,7 +127,7 @@ void TypeChecker::visitFunctionStatement(const ast::Function &function) {
 	}
 	auto returnType = typeStack.back();
 	typeStack.pop_back();
-	if (returnType.calculatedSize == 0) {
+	if (!returnType.isScalar() && returnType.calculatedSize == 0) {
 		messageBag.error(
 		    function.returnType.getToken(), "TYPE-CHECKER",
 		    std::format("cannot return a type with unknown size for '{}'",
