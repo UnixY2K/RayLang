@@ -369,9 +369,10 @@ void TypeChecker::visitIntrinsicCallExpression(
 	switch (value.callee->intrinsic) {
 	case ray::compiler::ast::IntrinsicType::INTR_SIZEOF: {
 		if (value.arguments.size() != 1) {
-			messageBag.error(value.callee->name, "TYPE",
-			                 std::format("@sizeOf intrinsic expects 1 "
+			messageBag.error(value.callee->name, "TYPE-CHECKER",
+			                 std::format("{} intrinsic expects 1 "
 			                             "argument but {} got provided",
+			                             value.callee->name.lexeme,
 			                             value.arguments.size()));
 		} else {
 			auto param = value.arguments[0].get();
@@ -391,14 +392,23 @@ void TypeChecker::visitIntrinsicCallExpression(
 		break;
 	}
 	case ray::compiler::ast::IntrinsicType::INTR_IMPORT: {
-		messageBag.error(
-		    value.callee->name, "TYPE",
-		    std::format("'{}' is not implemented yet for type checker",
-		                value.callee->name.lexeme));
+		if (value.arguments.size() != 1) {
+			messageBag.error(value.callee->name, "TYPE-CHECKER",
+			                 std::format("{} intrinsic expects 1 "
+			                             "argument but {} got provided",
+			                             value.callee->name.lexeme,
+			                             value.arguments.size()));
+		} else {
+			messageBag.error(
+			    value.callee->name, "TYPE-CHECKER",
+			    std::format("'{}' is not implemented yet for type checker",
+			                value.callee->name.lexeme));
+		}
+
 		break;
 	}
 	case ray::compiler::ast::IntrinsicType::INTR_UNKNOWN:
-		messageBag.error(value.callee->name, "TYPE",
+		messageBag.error(value.callee->name, "TYPE-CHECKER",
 		                 std::format("'{}' is not a valid intrinsic",
 		                             value.callee->name.lexeme));
 		break;
