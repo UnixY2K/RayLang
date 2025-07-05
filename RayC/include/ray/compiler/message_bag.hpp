@@ -36,14 +36,23 @@ class MessageBag {
 	void warning(const Token token, std::string_view category,
 	             std::string_view message);
 
+	void bug(size_t line, size_t column, std::string_view category,
+	         std::string_view message);
+
+	void bug(const Token token, std::string_view category,
+	         std::string_view message);
+
 	bool failed() const;
 	const std::vector<std::string> getErrors() const;
 	const std::vector<std::string> getWarnings() const;
+	const std::vector<std::string> getBugs() const;
 
   private:
 	void reportError(size_t line, size_t column, std::string_view where,
 	                 std::string_view category, std::string_view message);
 	void reportWarning(size_t line, size_t column, std::string_view where,
+	                   std::string_view category, std::string_view message);
+	void reportBug(size_t line, size_t column, std::string_view where,
 	                   std::string_view category, std::string_view message);
 };
 

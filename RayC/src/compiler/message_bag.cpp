@@ -41,6 +41,21 @@ void MessageBag::warning(const Token token, std::string_view category,
 	}
 }
 
+void MessageBag::bug(size_t line, size_t column, std::string_view category,
+                     std::string_view message) {
+	reportBug(line, column, "", category, message);
+}
+
+void MessageBag::bug(const Token token, std::string_view category,
+                     std::string_view message) {
+	if (token.type == Token::TokenType::TOKEN_EOF) {
+		reportBug(token.line, token.column, " at end", category, message);
+	} else {
+		reportBug(token.line, token.column,
+		          std::format("at '{}'", token.getLexeme()), category, message);
+	}
+}
+
 bool MessageBag::failed() const { return !errors.empty(); }
 const std::vector<std::string> MessageBag::getErrors() const { return errors; }
 const std::vector<std::string> MessageBag::getWarnings() const {
@@ -59,6 +74,13 @@ void MessageBag::reportWarning(size_t line, size_t column,
                                std::string_view category,
                                std::string_view message) {
 	errors.push_back(std::format("{}|{} [{}:{}:{}] {}: {}\n", "Warning"_yellow,
+	                             terminal::red(category), filepath, line,
+	                             column, where, message));
+}
+void MessageBag::reportBug(size_t line, size_t column, std::string_view where,
+                           std::string_view category,
+                           std::string_view message) {
+	errors.push_back(std::format("{}|{} [{}:{}:{}] {}: {}\n", "Bug"_red,
 	                             terminal::red(category), filepath, line,
 	                             column, where, message));
 }

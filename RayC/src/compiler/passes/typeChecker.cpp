@@ -1,5 +1,8 @@
 #include <cstddef>
+#include <cstdio>
 #include <format>
+#include <optional>
+#include <vector>
 
 #include <ray/compiler/ast/expression.hpp>
 #include <ray/compiler/lang/functionDefinition.hpp>
@@ -12,15 +15,13 @@
 namespace ray::compiler::analyzer {
 
 void TypeChecker::resolve(
-    const std::vector<std::unique_ptr<ast::Statement>> &statement) {
-	for (const auto &stmt : statement) {
-		size_t tsStack = typeStack.size();
-		resolve(*stmt);
+    const std::vector<std::unique_ptr<ast::Statement>> &statements) {
+	for (const auto &stmt : statements) {
+		auto stmtType = resolveType(*stmt);
 		// we need to check the added types to the stack to see if they are
 		// structs
-		while (typeStack.size() > tsStack) {
-			auto type = typeStack.back();
-			typeStack.pop_back();
+		if (stmtType.has_value()) {
+			auto type = stmtType.value();
 			if (!type.isScalar()) {
 				// TODO: optimize this search
 				// the types could have a reference to the specific struct
@@ -36,8 +37,8 @@ void TypeChecker::resolve(
 					}
 				}
 			} else {
-				messageBag.error(
-				    stmt->getToken(), "TYPE-CHECKER-BUG",
+				messageBag.bug(
+				    stmt->getToken(), "TYPE-CHECKER",
 				    std::format("unevaluated type value in stack for '{}'",
 				                stmt->variantName()));
 			}
@@ -49,13 +50,14 @@ void TypeChecker::resolve(
 		                   std::format("unused compiler directive {}",
 		                               directive->directiveName()));
 	}
-}
 
-void TypeChecker::resolve(const ast::Statement &statement) {
-	statement.visit(*this);
-}
-void TypeChecker::resolve(const ast::Expression &expression) {
-	expression.visit(*this);
+	if (typeStack.size() > 0) {
+		Token errorToken{Token::TokenType::TOKEN_EOF,
+		                 std::string(Token::glyph(Token::TokenType::TOKEN_EOF)),
+		                 0, 0};
+		messageBag.bug(errorToken, "TYPE-CHECKER",
+		               std::format("type stack evaluation error"));
+	}
 }
 
 bool TypeChecker::hasFailed() const { return messageBag.failed(); }
@@ -66,21 +68,27 @@ const std::vector<std::string> TypeChecker::getWarnings() const {
 	return messageBag.getWarnings();
 }
 
-void TypeChecker::visitBlockStatement(const ast::Block &value) {
-	messageBag.error(value.getToken(), "BUG",
-	                 std::format("visit method not implemented for {}",
-	                             value.variantName()));
+void TypeChecker::visitBlockStatement(const ast::Block &block) {
+	std::vector<lang::Type> types;
+	for (const auto &statement : block.statements) {
+		auto stmtTypes = resolveTypes(*statement);
+		types.reserve(types.size() + stmtTypes.size());
+		types.insert(types.end(), stmtTypes.begin(), stmtTypes.end());
+	}
+
+	typeStack.reserve(typeStack.size() + types.size());
+	typeStack.insert(typeStack.end(), types.begin(), types.end());
 }
 void TypeChecker::visitTerminalExprStatement(const ast::TerminalExpr &value) {
-	messageBag.error(value.getToken(), "BUG",
-	                 std::format("visit method not implemented for {}",
-	                             value.variantName()));
+	messageBag.bug(value.getToken(), "TYPE-CHECKER",
+	               std::format("visit method not implemented for {}",
+	                           value.variantName()));
 }
 void TypeChecker::visitExpressionStmtStatement(
     const ast::ExpressionStmt &value) {
-	messageBag.error(value.getToken(), "BUG",
-	                 std::format("visit method not implemented for {}",
-	                             value.variantName()));
+	messageBag.bug(value.getToken(), "TYPE-CHECKER",
+	               std::format("visit method not implemented for {}",
+	                           value.variantName()));
 }
 void TypeChecker::visitFunctionStatement(const ast::Function &function) {
 	std::string currentModule;
@@ -107,17 +115,14 @@ void TypeChecker::visitFunctionStatement(const ast::Function &function) {
 
 	std::vector<lang::FunctionParameter> parameters;
 	for (const auto &parameter : function.params) {
-		size_t tsSize = typeStack.size();
-		resolve(parameter.type);
-		if (tsSize >= typeStack.size()) {
-			messageBag.error(parameter.getToken(), "TYPE-CHECKER-BUG",
-			                 std::format("could not inspect type for {}",
-			                             parameter.type.name.lexeme));
+		auto paramType = resolveType(parameter.type);
+		if (!paramType.has_value()) {
+			messageBag.bug(parameter.getToken(), "TYPE-CHECKER",
+			               std::format("could not inspect type for {}",
+			                           parameter.type.name.lexeme));
 			continue;
 		}
-
-		lang::Type parameterType = typeStack.back();
-		typeStack.pop_back();
+		auto parameterType = paramType.value();
 		if (parameterType.calculatedSize == 0) {
 			messageBag.error(
 			    parameter.type.getToken(), "TYPE-CHECKER",
@@ -133,13 +138,11 @@ void TypeChecker::visitFunctionStatement(const ast::Function &function) {
 		});
 	}
 
-	size_t tsSize = typeStack.size();
-	resolve(function.returnType);
-	if (tsSize >= typeStack.size()) {
+	auto functionReturnType = resolveType(function.returnType);
+	if (!functionReturnType.has_value()) {
 		return;
 	}
-	auto returnType = typeStack.back();
-	typeStack.pop_back();
+	auto returnType = functionReturnType.value();
 	if (!returnType.isScalar() && returnType.calculatedSize == 0) {
 		messageBag.error(
 		    function.returnType.getToken(), "TYPE-CHECKER",
@@ -165,18 +168,19 @@ void TypeChecker::visitFunctionStatement(const ast::Function &function) {
 	currentSourceUnit.functionDeclarations.push_back(declaration);
 	if (function.body.has_value()) {
 		currentSourceUnit.functionDefinitions.push_back(definition);
-		resolve(function.body.value());
+		resolveTypes(function.body.value());
 	}
+	// TODO: return a function pointer type with an specific signature
 }
 void TypeChecker::visitIfStatement(const ast::If &value) {
-	messageBag.error(value.getToken(), "BUG",
-	                 std::format("visit method not implemented for {}",
-	                             value.variantName()));
+	messageBag.bug(value.getToken(), "TYPE-CHECKER",
+	               std::format("visit method not implemented for {}",
+	                           value.variantName()));
 }
 void TypeChecker::visitJumpStatement(const ast::Jump &value) {
-	messageBag.error(value.getToken(), "BUG",
-	                 std::format("visit method not implemented for {}",
-	                             value.variantName()));
+	messageBag.bug(value.getToken(), "TYPE-CHECKER",
+	               std::format("visit method not implemented for {}",
+	                           value.variantName()));
 }
 void TypeChecker::visitVarStatement(const ast::Var &value) {
 	auto type = lang::Type{};
@@ -185,19 +189,12 @@ void TypeChecker::visitVarStatement(const ast::Var &value) {
 		// initialization code
 	}
 
-	size_t currentTop = typeStack.size();
 	auto initializationType = lang::Type{};
 	if (value.initializer.has_value()) {
 		auto &initializer = *value.initializer.value().get();
-		resolve(initializer);
-		if (currentTop > typeStack.size()) {
-			initializationType = typeStack.back();
-		} else {
-			messageBag.error(
-			    initializer.getToken(), "BUG-TYPE-CHECKER",
-			    std::format(
-			        "evaluated value initializer did not yield a type {}",
-			        initializer.variantName()));
+		auto initType = resolveType(initializer);
+		if (initType.has_value()) {
+			initializationType = initType.value();
 		}
 	}
 
@@ -208,9 +205,9 @@ void TypeChecker::visitVarStatement(const ast::Var &value) {
 	}
 }
 void TypeChecker::visitWhileStatement(const ast::While &value) {
-	messageBag.error(value.getToken(), "BUG",
-	                 std::format("visit method not implemented for {}",
-	                             value.variantName()));
+	messageBag.bug(value.getToken(), "TYPE-CHECKER",
+	               std::format("visit method not implemented for {}",
+	                           value.variantName()));
 }
 void TypeChecker::visitStructStatement(const ast::Struct &structObj) {
 	std::string currentModule;
@@ -242,9 +239,8 @@ void TypeChecker::visitStructStatement(const ast::Struct &structObj) {
 	if (!structObj.declaration) {
 		std::vector<lang::StructMember> members;
 		for (const auto &member : structObj.members) {
-			size_t tsSize = typeStack.size();
-			resolve(member);
-			if (tsSize >= typeStack.size()) {
+			auto memberType = resolveType(member);
+			if (!memberType.has_value()) {
 				messageBag.error(
 				    member.getToken(), "TYPE-CHECKER",
 				    std::format("could not get type information for '{}'",
@@ -252,13 +248,11 @@ void TypeChecker::visitStructStatement(const ast::Struct &structObj) {
 				return;
 			}
 
-			lang::Type memberType = typeStack.back();
-			typeStack.pop_back();
 			auto newMember = lang::StructMember{
 			    // for now set it as false, we will take care of it later
 			    .publicAccess = false,
 			    .name = member.name.lexeme,
-			    .type = memberType,
+			    .type = memberType.value(),
 			};
 			members.push_back(newMember);
 		}
@@ -312,11 +306,15 @@ void TypeChecker::visitCompDirectiveStatement(
 				top = startDirectives;
 				directivesStack.push_back(
 				    std::make_unique<directive::LinkageDirective>(directive));
-				resolve(*compDirective.child);
-				if (directivesStack.size() != startDirectives) {
-					messageBag.error(childValue->getToken(), "BUG",
-					                 "unprocessed compiler directives");
+				auto directiveType = resolveType(*compDirective.child);
+				if (directiveType.has_value()) {
+					typeStack.push_back(directiveType.value());
 				}
+				if (directivesStack.size() != startDirectives) {
+					messageBag.bug(childValue->getToken(), "TYPE-CHECKER",
+					               "unprocessed compiler directives");
+				}
+
 				top = originalTop;
 			} else {
 				messageBag.error(
@@ -338,128 +336,120 @@ void TypeChecker::visitCompDirectiveStatement(
 }
 // Expression
 void TypeChecker::visitVariableExpression(const ast::Variable &value) {
-	messageBag.error(value.getToken(), "BUG",
-	                 std::format("visit method not implemented for {}",
-	                             value.variantName()));
+	messageBag.bug(value.getToken(), "TYPE-CHECKER",
+	               std::format("visit method not implemented for {}",
+	                           value.variantName()));
 }
 void TypeChecker::visitIntrinsicExpression(const ast::Intrinsic &value) {
-	messageBag.error(value.getToken(), "BUG",
-	                 std::format("visit method not implemented for {}",
-	                             value.variantName()));
+	messageBag.bug(value.getToken(), "TYPE-CHECKER",
+	               std::format("visit method not implemented for {}",
+	                           value.variantName()));
 }
 void TypeChecker::visitAssignExpression(const ast::Assign &value) {
-	messageBag.error(value.getToken(), "BUG",
-	                 std::format("visit method not implemented for {}",
-	                             value.variantName()));
+	messageBag.bug(value.getToken(), "TYPE-CHECKER",
+	               std::format("visit method not implemented for {}",
+	                           value.variantName()));
 }
 void TypeChecker::visitBinaryExpression(const ast::Binary &value) {
-	messageBag.error(value.getToken(), "BUG",
-	                 std::format("visit method not implemented for {}",
-	                             value.variantName()));
+	messageBag.bug(value.getToken(), "TYPE-CHECKER",
+	               std::format("visit method not implemented for {}",
+	                           value.variantName()));
 }
 void TypeChecker::visitCallExpression(const ast::Call &value) {
 
-	messageBag.error(value.getToken(), "BUG",
-	                 std::format("visit method not implemented for {}",
-	                             value.variantName()));
+	messageBag.bug(value.getToken(), "TYPE-CHECKER",
+	               std::format("visit method not implemented for {}",
+	                           value.variantName()));
 }
 void TypeChecker::visitIntrinsicCallExpression(
-    const ast::IntrinsicCall &value) {
+    const ast::IntrinsicCall &intrinsicCall) {
 
-	switch (value.callee->intrinsic) {
+	switch (intrinsicCall.callee->intrinsic) {
 	case ray::compiler::ast::IntrinsicType::INTR_SIZEOF: {
-		if (value.arguments.size() != 1) {
-			messageBag.error(value.callee->name, "TYPE-CHECKER",
-			                 std::format("{} intrinsic expects 1 "
-			                             "argument but {} got provided",
-			                             value.callee->name.lexeme,
-			                             value.arguments.size()));
+		if (intrinsicCall.arguments.size() != 1) {
+			messageBag.error(
+			    intrinsicCall.callee->name, "TYPE-CHECKER",
+			    std::format(
+			        "{} intrinsic expects 1 argument but {} got provided",
+			        intrinsicCall.callee->name.lexeme,
+			        intrinsicCall.arguments.size()));
 		} else {
-			auto param = value.arguments[0].get();
-			size_t currentTop = typeStack.size();
-			resolve(*param);
-			if (currentTop >= typeStack.size()) {
-				auto type = typeStack.back();
-				typeStack.pop_back();
-			} else {
-				messageBag.error(
-				    value.callee->name, "BUG-TYPE-CHECKER",
-				    std::format("@sizeOf parameter did not yield any value "
-				                " {}",
-				                param->variantName()));
+			auto param = intrinsicCall.arguments[0].get();
+			auto paramType = resolveType(*param);
+			if (paramType.has_value()) {
+				// TODO: check the type and then return the size type
 			}
 		}
 		break;
 	}
 	case ray::compiler::ast::IntrinsicType::INTR_IMPORT: {
-		if (value.arguments.size() != 1) {
-			messageBag.error(value.callee->name, "TYPE-CHECKER",
+		if (intrinsicCall.arguments.size() != 1) {
+			messageBag.error(intrinsicCall.callee->name, "TYPE-CHECKER",
 			                 std::format("{} intrinsic expects 1 "
 			                             "argument but {} got provided",
-			                             value.callee->name.lexeme,
-			                             value.arguments.size()));
+			                             intrinsicCall.callee->name.lexeme,
+			                             intrinsicCall.arguments.size()));
 		} else {
 			messageBag.error(
-			    value.callee->name, "TYPE-CHECKER",
+			    intrinsicCall.callee->name, "TYPE-CHECKER",
 			    std::format("'{}' is not implemented yet for type checker",
-			                value.callee->name.lexeme));
+			                intrinsicCall.callee->name.lexeme));
 		}
 
 		break;
 	}
 	case ray::compiler::ast::IntrinsicType::INTR_UNKNOWN:
-		messageBag.error(value.callee->name, "TYPE-CHECKER",
+		messageBag.error(intrinsicCall.callee->name, "TYPE-CHECKER",
 		                 std::format("'{}' is not a valid intrinsic",
-		                             value.callee->name.lexeme));
+		                             intrinsicCall.callee->name.lexeme));
 		break;
 	}
 }
 void TypeChecker::visitGetExpression(const ast::Get &value) {
-	messageBag.error(value.getToken(), "BUG",
-	                 std::format("visit method not implemented for {}",
-	                             value.variantName()));
+	messageBag.bug(value.getToken(), "TYPE-CHECKER",
+	               std::format("visit method not implemented for {}",
+	                           value.variantName()));
 }
 void TypeChecker::visitGroupingExpression(const ast::Grouping &value) {
-	messageBag.error(value.getToken(), "BUG",
-	                 std::format("visit method not implemented for {}",
-	                             value.variantName()));
+	messageBag.bug(value.getToken(), "TYPE-CHECKER",
+	               std::format("visit method not implemented for {}",
+	                           value.variantName()));
 }
 void TypeChecker::visitLiteralExpression(const ast::Literal &value) {
-	messageBag.error(value.getToken(), "BUG",
-	                 std::format("visit method not implemented for {}",
-	                             value.variantName()));
+	messageBag.bug(value.getToken(), "TYPE-CHECKER",
+	               std::format("visit method not implemented for {}",
+	                           value.variantName()));
 }
 void TypeChecker::visitLogicalExpression(const ast::Logical &value) {
-	messageBag.error(value.getToken(), "BUG",
-	                 std::format("visit method not implemented for {}",
-	                             value.variantName()));
+	messageBag.bug(value.getToken(), "TYPE-CHECKER",
+	               std::format("visit method not implemented for {}",
+	                           value.variantName()));
 }
 void TypeChecker::visitSetExpression(const ast::Set &value) {
-	messageBag.error(value.getToken(), "BUG",
-	                 std::format("visit method not implemented for {}",
-	                             value.variantName()));
+	messageBag.bug(value.getToken(), "TYPE-CHECKER",
+	               std::format("visit method not implemented for {}",
+	                           value.variantName()));
 }
 void TypeChecker::visitUnaryExpression(const ast::Unary &value) {
-	messageBag.error(value.getToken(), "BUG",
-	                 std::format("visit method not implemented for {}",
-	                             value.variantName()));
+	messageBag.bug(value.getToken(), "TYPE-CHECKER",
+	               std::format("visit method not implemented for {}",
+	                           value.variantName()));
 }
 void TypeChecker::visitArrayAccessExpression(const ast::ArrayAccess &value) {
-	messageBag.error(value.getToken(), "BUG",
-	                 std::format("visit method not implemented for {}",
-	                             value.variantName()));
+	messageBag.bug(value.getToken(), "TYPE-CHECKER",
+	               std::format("visit method not implemented for {}",
+	                           value.variantName()));
 }
 void TypeChecker::visitTypeExpression(const ast::Type &typeExpr) {
-	size_t tsSize = typeStack.size();
 	if (typeExpr.isPointer) {
-		resolve(*typeExpr.subtype.value());
-		if (tsSize >= typeStack.size()) {
-			// type not found and error was already reported
+		auto innerType = resolveType(*typeExpr.subtype.value());
+		if (!innerType.has_value()) {
+			messageBag.error(typeExpr.getToken(), "TYPE-CHECKER",
+			                 std::format("could not evaluate type for {}",
+			                             typeExpr.getToken().getLexeme()));
 			return;
 		}
-		auto innerType = typeStack.back();
-		typeStack.pop_back();
-		lang::Type pointerType = makePointerType(innerType);
+		lang::Type pointerType = makePointerType(innerType.value());
 		pointerType.isConst = typeExpr.isConst;
 		typeStack.push_back(pointerType);
 	} else {
@@ -476,14 +466,75 @@ void TypeChecker::visitTypeExpression(const ast::Type &typeExpr) {
 	}
 }
 void TypeChecker::visitCastExpression(const ast::Cast &value) {
-	messageBag.error(value.getToken(), "BUG",
-	                 std::format("visit method not implemented for {}",
-	                             value.variantName()));
+	messageBag.bug(value.getToken(), "TYPE-CHECKER",
+	               std::format("visit method not implemented for {}",
+	                           value.variantName()));
 }
 void TypeChecker::visitParameterExpression(const ast::Parameter &value) {
-	messageBag.error(value.getToken(), "BUG",
-	                 std::format("visit method not implemented for {}",
-	                             value.variantName()));
+	messageBag.bug(value.getToken(), "TYPE-CHECKER",
+	               std::format("visit method not implemented for {}",
+	                           value.variantName()));
+}
+
+std::optional<lang::Type>
+TypeChecker::resolveType(const ast::Statement &statement) {
+	auto types = resolveTypes(statement);
+
+	if (types.size() > 1) {
+		messageBag.bug(
+		    statement.getToken(), "TYPE-CHECKER",
+		    std::format("'{}' yield multiple values", statement.variantName()));
+	}
+
+	return types.size() > 0 ? std::optional<lang::Type>(types[0])
+	                        : std::nullopt;
+}
+std::optional<lang::Type>
+TypeChecker::resolveType(const ast::Expression &expression) {
+	auto types = resolveTypes(expression);
+
+	if (types.size() > 1) {
+		messageBag.bug(expression.getToken(), "TYPE-CHECKER",
+		               std::format("'{}' yield multiple values",
+		                           expression.variantName()));
+	}
+
+	return types.size() > 0 ? std::optional<lang::Type>(types[0])
+	                        : std::nullopt;
+}
+std::vector<lang::Type>
+TypeChecker::resolveTypes(const ast::Statement &statement) {
+	std::vector<lang::Type> returnTypes;
+	size_t tsSize = typeStack.size();
+	statement.visit(*this);
+	while (typeStack.size() > tsSize) {
+		auto returnType = typeStack.back();
+		typeStack.pop_back();
+		returnTypes.push_back(returnType);
+	}
+	if (returnTypes.size() < 1) {
+		messageBag.bug(statement.getToken(), "TYPE-CHECKER",
+		               std::format("'{}' did not yield any return type",
+		                           statement.variantName()));
+	}
+	return returnTypes;
+}
+std::vector<lang::Type>
+TypeChecker::resolveTypes(const ast::Expression &expression) {
+	std::vector<lang::Type> returnTypes;
+	size_t tsSize = typeStack.size();
+	expression.visit(*this);
+	while (typeStack.size() > tsSize) {
+		auto returnType = typeStack.back();
+		typeStack.pop_back();
+		returnTypes.push_back(returnType);
+	}
+	if (returnTypes.size() < 1) {
+		messageBag.bug(expression.getToken(), "TYPE-CHECKER",
+		               std::format("'{}' did not yield any return type",
+		                           expression.variantName()));
+	}
+	return returnTypes;
 }
 
 std::optional<lang::Type>

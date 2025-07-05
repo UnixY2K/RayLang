@@ -1,6 +1,7 @@
 #pragma once
 #include <functional>
 #include <memory>
+#include <optional>
 
 #include <ray/compiler/ast/expression.hpp>
 #include <ray/compiler/ast/statement.hpp>
@@ -37,8 +38,6 @@ class TypeChecker : public ast::StatementVisitor,
 	      moduleStore(moduleStore) {}
 
 	void resolve(const std::vector<std::unique_ptr<ast::Statement>> &statement);
-	void resolve(const ast::Statement &statement);
-	void resolve(const ast::Expression &expression);
 
 	const lang::SourceUnit &getCurrentSourceUnit() { return currentSourceUnit; }
 
@@ -75,6 +74,11 @@ class TypeChecker : public ast::StatementVisitor,
 	void visitTypeExpression(const ast::Type &value) override;
 	void visitCastExpression(const ast::Cast &value) override;
 	void visitParameterExpression(const ast::Parameter &value) override;
+
+	std::optional<lang::Type> resolveType(const ast::Statement &statement);
+	std::optional<lang::Type> resolveType(const ast::Expression &expression);
+	std::vector<lang::Type> resolveTypes(const ast::Statement &statement);
+	std::vector<lang::Type> resolveTypes(const ast::Expression &expression);
 
 	std::optional<lang::Type> findScalarTypeInfo(const std::string_view lexeme);
 	std::optional<lang::Type> findTypeInfo(const std::string_view lexeme);
