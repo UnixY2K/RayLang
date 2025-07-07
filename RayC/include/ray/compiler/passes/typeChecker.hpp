@@ -82,7 +82,6 @@ class TypeChecker : public ast::StatementVisitor,
 
 	std::optional<lang::Type> findScalarTypeInfo(const std::string_view lexeme);
 	std::optional<lang::Type> findTypeInfo(const std::string_view lexeme);
-	std::optional<lang::Type> getTypeExpression(const ast::Expression *);
 
 	lang::Type makePointerType(const lang::Type &innerType);
 };

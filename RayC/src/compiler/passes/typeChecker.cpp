@@ -3,6 +3,7 @@
 #include <format>
 #include <optional>
 #include <sstream>
+#include <string_view>
 #include <vector>
 
 #include <ray/compiler/ast/expression.hpp>
@@ -80,10 +81,24 @@ void TypeChecker::visitBlockStatement(const ast::Block &block) {
 	typeStack.reserve(typeStack.size() + types.size());
 	typeStack.insert(typeStack.end(), types.begin(), types.end());
 }
-void TypeChecker::visitTerminalExprStatement(const ast::TerminalExpr &value) {
-	messageBag.bug(value.getToken(), "TYPE-CHECKER",
-	               std::format("visit method not implemented for {}",
-	                           value.variantName()));
+void TypeChecker::visitTerminalExprStatement(
+    const ast::TerminalExpr &terminalExpr) {
+	if (terminalExpr.expression.has_value()) {
+		const auto &returnExpr = *terminalExpr.expression.value();
+		auto returnType = resolveType(returnExpr);
+		if (returnType.has_value()) {
+			typeStack.push_back(returnType.value());
+		} else {
+			messageBag.error(
+			    returnExpr.getToken(), "TYPE-CHECKER",
+			    std::format("{} child expression did not yield a value '{}'",
+			                terminalExpr.variantName(),
+			                returnExpr.variantName()));
+		}
+		return;
+	}
+
+	typeStack.push_back(lang::Type::defineStmtType());
 }
 void TypeChecker::visitExpressionStmtStatement(
     const ast::ExpressionStmt &exprStmt) {
@@ -194,16 +209,25 @@ void TypeChecker::visitJumpStatement(const ast::Jump &value) {
 	               std::format("visit method not implemented for {}",
 	                           value.variantName()));
 }
-void TypeChecker::visitVarStatement(const ast::Var &value) {
+void TypeChecker::visitVarStatement(const ast::Var &variable) {
 	auto type = lang::Type{};
 
-	if (value.type.token.type != Token::TokenType::TOKEN_UNINITIALIZED) {
-		// initialization code
+	if (variable.type.token.type != Token::TokenType::TOKEN_UNINITIALIZED) {
+		const auto &variableType = variable.type;
+		std::string_view typeName = variableType.name.lexeme;
+		auto foundType = resolveType(variableType);
+		if (!foundType.has_value()) {
+			messageBag.error(
+			    variable.type.getToken(), "TYPE-ERROR",
+			    std::format("'{}' does not name an existing type", typeName));
+		} else {
+			type = foundType.value();
+		}
 	}
 
 	auto initializationType = lang::Type{};
-	if (value.initializer.has_value()) {
-		auto &initializer = *value.initializer.value().get();
+	if (variable.initializer.has_value()) {
+		auto &initializer = *variable.initializer.value().get();
 		auto initType = resolveType(initializer);
 		if (initType.has_value()) {
 			initializationType = initType.value();
@@ -211,9 +235,9 @@ void TypeChecker::visitVarStatement(const ast::Var &value) {
 	}
 
 	if (!(type.isInitialized() || initializationType.isInitialized())) {
-		messageBag.error(value.getToken(), "TYPE-ERROR",
-		                 "variable does not have a type assigned nor an valid "
-		                 "initialization");
+		messageBag.error(
+		    variable.getToken(), "TYPE-ERROR",
+		    "variable does not have a type assigned nor an valid initialization");
 	}
 }
 void TypeChecker::visitWhileStatement(const ast::While &value) {
@@ -561,13 +585,6 @@ TypeChecker::findTypeInfo(const std::string_view typeName) {
 	}
 	// a defined type in the source unit cannot shadow a primitive/scalar type
 	return currentSourceUnit.findStructType(std::string(typeName));
-}
-std::optional<lang::Type>
-TypeChecker::getTypeExpression(const ast::Expression *expression) {
-	if (auto var = dynamic_cast<const ast::Variable *>(expression)) {
-		return findTypeInfo(var->name.lexeme);
-	}
-	return {};
 }
 
 lang::Type TypeChecker::makePointerType(const lang::Type &innerType) {
