@@ -2,6 +2,7 @@
 #include <cstdio>
 #include <format>
 #include <optional>
+#include <sstream>
 #include <vector>
 
 #include <ray/compiler/ast/expression.hpp>
@@ -171,6 +172,15 @@ void TypeChecker::visitFunctionStatement(const ast::Function &function) {
 		resolveTypes(function.body.value());
 	}
 	// TODO: return a function pointer type with an specific signature
+	std::stringstream signature;
+	for (size_t i = 0; i < parameters.size(); ++i) {
+		signature << parameters[i].parameterType.name;
+		if (i + 1 < parameters.size()) {
+			signature << ",";
+		}
+	}
+	auto functionType = lang::Type::defineFunctionType(signature.str());
+	typeStack.push_back(functionType);
 }
 void TypeChecker::visitIfStatement(const ast::If &value) {
 	messageBag.bug(value.getToken(), "TYPE-CHECKER",
@@ -199,9 +209,9 @@ void TypeChecker::visitVarStatement(const ast::Var &value) {
 	}
 
 	if (!(type.isInitialized() || initializationType.isInitialized())) {
-		messageBag.error(
-		    value.getToken(), "TYPE-ERROR",
-		    "variable does not have a type assigned nor an initialization");
+		messageBag.error(value.getToken(), "TYPE-ERROR",
+		                 "variable does not have a type assigned nor an valid "
+		                 "initialization");
 	}
 }
 void TypeChecker::visitWhileStatement(const ast::While &value) {

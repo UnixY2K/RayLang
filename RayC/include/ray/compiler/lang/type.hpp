@@ -3,9 +3,9 @@
 #include <cstddef>
 #include <optional>
 #include <string>
+#include <string_view>
 
 #include <ray/util/copy_ptr.hpp>
-#include <string_view>
 
 namespace ray::compiler::lang {
 class Type;
@@ -44,7 +44,12 @@ class Type {
 
 	// allows to define a struct type, if definition is external then the size
 	// is 0 and can only be referenced as a pointer
-	static Type defineStructType(std::string name, size_t aproximatedSize, bool platformDependent);
+	static Type defineStructType(std::string name, size_t aproximatedSize,
+	                             bool platformDependent);
+	// defines a new function pointer type
+	// TODO: have a lang::FunctionType that defines the required signature data
+	// for the function so this data can be used by the compiler
+	static Type defineFunctionType(std::string signature);
 
   private:
 	static Type defineScalarType(std::string name, size_t calculatedSize,

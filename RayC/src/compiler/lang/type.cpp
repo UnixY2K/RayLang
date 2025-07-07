@@ -1,3 +1,4 @@
+#include <format>
 #include <optional>
 #include <unordered_map>
 
@@ -107,9 +108,35 @@ Type Type::defineStructType(std::string name, size_t aproximatedSize,
 	    false,
 	    false,
 	    false,
-		// we do not have subtypes for structs as we are not structs
+	    // we do not have subtypes for structs as we are not structs
 	    {}, //
 	};
+}
+
+Type Type::defineFunctionType(std::string signature) {
+	std::string pointerName = std::format("fn({})", signature);
+	return lang::Type(
+	    true,
+	    // a pointer is not a scalar as it is an address memory
+	    // that references an object
+	    false,
+	    // technically platform dependent on pointer definition
+	    true,
+	    // define the name as pointer
+	    pointerName,
+	    // for now lets just copy the type name, even if is not valid
+	    pointerName,
+	    // we need to get this from the platform in the future
+	    // for now assuming 64bits/8bytes
+	    8,
+	    // if the pointer type is const or not is decided later
+	    false,
+	    // we are a pointer type
+	    true,
+	    // a pointer is not a signed type
+	    false,
+	    // our inner pointer type
+	    {});
 }
 
 Type Type::defineScalarType(std::string name, size_t calculatedSize,
