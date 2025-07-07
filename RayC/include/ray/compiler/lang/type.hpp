@@ -50,6 +50,9 @@ class Type {
 	// TODO: have a lang::FunctionType that defines the required signature data
 	// for the function so this data can be used by the compiler
 	static Type defineFunctionType(std::string signature);
+	// returns a type that is not instatiable and cannot be used
+	// used by statements in the type checker
+	static Type defineStmtType();
 
   private:
 	static Type defineScalarType(std::string name, size_t calculatedSize,

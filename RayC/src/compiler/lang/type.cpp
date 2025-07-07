@@ -139,6 +139,24 @@ Type Type::defineFunctionType(std::string signature) {
 	    {});
 }
 
+Type Type::defineStmtType() {
+	return Type{
+	    // an statement does not even return an initialized type
+	    false,
+	    true,
+	    false,
+	    // name cannot be mangled and referenced
+	    "%<stmt>%",
+	    "%<stmt>%",
+	    // size is 0 so it cannot be passed
+	    0,
+	    false,
+	    false,
+	    false,
+	    {}, //
+	};
+}
+
 Type Type::defineScalarType(std::string name, size_t calculatedSize,
                             bool signedType) {
 	return Type{

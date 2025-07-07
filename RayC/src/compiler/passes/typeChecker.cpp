@@ -86,10 +86,12 @@ void TypeChecker::visitTerminalExprStatement(const ast::TerminalExpr &value) {
 	                           value.variantName()));
 }
 void TypeChecker::visitExpressionStmtStatement(
-    const ast::ExpressionStmt &value) {
-	messageBag.bug(value.getToken(), "TYPE-CHECKER",
-	               std::format("visit method not implemented for {}",
-	                           value.variantName()));
+    const ast::ExpressionStmt &exprStmt) {
+	// an expression statement consumes the type and does not return a type
+	// so it is an type of size 0 that cannot even be instatiated nor used
+	resolveType(*exprStmt.expression);
+
+	typeStack.push_back(lang::Type::defineStmtType());
 }
 void TypeChecker::visitFunctionStatement(const ast::Function &function) {
 	std::string currentModule;
