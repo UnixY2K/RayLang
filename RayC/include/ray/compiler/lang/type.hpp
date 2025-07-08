@@ -40,6 +40,8 @@ class Type {
 	bool isScalar() const { return scalar; }
 	bool isPlatformDependent() const { return platformDependent; }
 
+	bool operator==(const Type &other) const;
+
 	static std::optional<Type> findScalarType(const std::string_view name);
 
 	// allows to define a struct type, if definition is external then the size

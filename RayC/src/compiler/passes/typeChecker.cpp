@@ -199,10 +199,27 @@ void TypeChecker::visitFunctionStatement(const ast::Function &function) {
 	auto functionType = lang::Type::defineFunctionType(signature.str());
 	typeStack.push_back(functionType);
 }
-void TypeChecker::visitIfStatement(const ast::If &value) {
-	messageBag.bug(value.getToken(), "TYPE-CHECKER",
-	               std::format("visit method not implemented for {}",
-	                           value.variantName()));
+void TypeChecker::visitIfStatement(const ast::If &ifStmt) {
+	auto conditionType = resolveType(*ifStmt.condition);
+	if (!conditionType.has_value()) {
+		messageBag.error(ifStmt.condition->getToken(), "TYPE-CHECKER",
+		                 "non boolean condition");
+	} else {
+		auto boolType = findScalarTypeInfo("bool");
+		boolType->isConst = true;
+		// for now lets just stricly validate if is the same
+		// TODO: enable coercions
+		if (!(conditionType.value() == boolType.value())) {
+			messageBag.error(ifStmt.condition->getToken(), "TYPE-CHECKER",
+			                 "condition does not coerce into a bool type");
+		}
+	}
+	resolveType(*ifStmt.thenBranch);
+	if (ifStmt.elseBranch.has_value()) {
+		resolveType(*ifStmt.elseBranch.value());
+	}
+
+	typeStack.push_back(lang::Type::defineStmtType());
 }
 void TypeChecker::visitJumpStatement(const ast::Jump &value) {
 	messageBag.bug(value.getToken(), "TYPE-CHECKER",

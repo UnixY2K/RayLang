@@ -5,6 +5,23 @@
 #include <ray/compiler/lang/type.hpp>
 namespace ray::compiler::lang {
 
+bool Type::operator==(const Type &other) const {
+	if (initialized == other.initialized &&             //
+	    scalar == other.scalar &&                       //
+	    platformDependent == other.platformDependent && //
+	    name == other.name &&                           //
+	    mangledName == other.mangledName &&             //
+	    calculatedSize == other.calculatedSize &&       //
+	    isConst == other.isConst &&                     //
+	    isPointer == other.isPointer &&                 //
+	    signedType == other.signedType &&               //
+	    subtype.has_value() == other.subtype.has_value()) {
+		return subtype.has_value() ? *subtype.value() == *other.subtype.value()
+								   : true;
+	}
+	return false;
+}
+
 std::optional<Type> Type::findScalarType(const std::string_view name) {
 	static std::unordered_map<std::string, Type> map = {
 	    {
