@@ -403,10 +403,53 @@ void TypeChecker::visitAssignExpression(const ast::Assign &value) {
 	               std::format("visit method not implemented for {}",
 	                           value.variantName()));
 }
-void TypeChecker::visitBinaryExpression(const ast::Binary &value) {
-	messageBag.bug(value.getToken(), "TYPE-CHECKER",
-	               std::format("visit method not implemented for {}",
-	                           value.variantName()));
+void TypeChecker::visitBinaryExpression(const ast::Binary &binaryExpr) {
+	auto leftType = resolveType(*binaryExpr.left);
+	auto rightType = resolveType(*binaryExpr.right);
+
+	if (!(leftType.has_value() && rightType.has_value())) {
+		if (!leftType.has_value()) {
+			messageBag.error(
+			    binaryExpr.left->getToken(), "TYPE-CHECKER",
+			    std::format("left expression did not yield an expression"));
+		}
+
+		if (!rightType.has_value()) {
+			messageBag.error(
+			    binaryExpr.right->getToken(), "TYPE-CHECKER",
+			    std::format("right expression did not yield an expression"));
+		}
+		return;
+	}
+
+	auto op = binaryExpr.op;
+	switch (op.type) {
+	case Token::TokenType::TOKEN_PLUS:
+	case Token::TokenType::TOKEN_MINUS:
+	case Token::TokenType::TOKEN_STAR:
+	case Token::TokenType::TOKEN_SLASH:
+	case Token::TokenType::TOKEN_PERCENT:
+	case Token::TokenType::TOKEN_AMPERSAND:
+	case Token::TokenType::TOKEN_PIPE:
+	case Token::TokenType::TOKEN_CARET:
+	case Token::TokenType::TOKEN_LESS_LESS:
+	case Token::TokenType::TOKEN_GREAT_GREAT:
+	case Token::TokenType::TOKEN_EQUAL_EQUAL:
+	case Token::TokenType::TOKEN_BANG_EQUAL:
+	case Token::TokenType::TOKEN_LESS:
+	case Token::TokenType::TOKEN_GREAT:
+	case Token::TokenType::TOKEN_LESS_EQUAL:
+	case Token::TokenType::TOKEN_GREAT_EQUAL:
+		// currently assume the the type is the same as left expression type
+		if (leftType.has_value()) {
+			typeStack.push_back(leftType.value());
+		}
+		break;
+	default:
+		messageBag.error(binaryExpr.op, "TYPE-CHECKER",
+		                 std::format("'{}' is not a supported binary operation",
+		                             op.getLexeme()));
+	}
 }
 void TypeChecker::visitCallExpression(const ast::Call &value) {
 
@@ -463,10 +506,13 @@ void TypeChecker::visitGetExpression(const ast::Get &value) {
 	               std::format("visit method not implemented for {}",
 	                           value.variantName()));
 }
-void TypeChecker::visitGroupingExpression(const ast::Grouping &value) {
-	messageBag.bug(value.getToken(), "TYPE-CHECKER",
-	               std::format("visit method not implemented for {}",
-	                           value.variantName()));
+void TypeChecker::visitGroupingExpression(const ast::Grouping &groupingExpr) {
+	// the type of the grouping is just the child of the inner expression
+	auto innerType = resolveType(*groupingExpr.expression);
+
+	if (innerType.has_value()) {
+		typeStack.push_back(innerType.value());
+	}
 }
 void TypeChecker::visitLiteralExpression(const ast::Literal &value) {
 	messageBag.bug(value.getToken(), "TYPE-CHECKER",
