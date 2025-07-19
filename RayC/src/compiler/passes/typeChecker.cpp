@@ -214,17 +214,39 @@ void TypeChecker::visitIfStatement(const ast::If &ifStmt) {
 			                 "condition does not coerce into a bool type");
 		}
 	}
-	resolveType(*ifStmt.thenBranch);
+	auto thenRType = resolveType(*ifStmt.thenBranch);
+	auto thenType = thenRType.has_value() ? thenRType.value()
+	                                      : lang::Type::defineStmtType();
 	if (ifStmt.elseBranch.has_value()) {
-		resolveType(*ifStmt.elseBranch.value());
+		auto elseRType = resolveType(*ifStmt.elseBranch.value());
+		auto elseType = elseRType.has_value() ? elseRType.value()
+		                                      : lang::Type::defineStmtType();
+		// the types should match
+		if (!(thenType == elseType)) {
+			messageBag.error(
+			    ifStmt.getToken(), "TYPE-CHECKER",
+			    std::format("code branches have different types ({}|{})",
+			                thenType.name, elseType.name));
+		}
 	}
 
-	typeStack.push_back(lang::Type::defineStmtType());
+	// return whatever our internal evaluation yield
+
+	typeStack.push_back(thenType);
 }
-void TypeChecker::visitJumpStatement(const ast::Jump &value) {
-	messageBag.bug(value.getToken(), "TYPE-CHECKER",
-	               std::format("visit method not implemented for {}",
-	                           value.variantName()));
+void TypeChecker::visitJumpStatement(const ast::Jump &jumpStmt) {
+	// if our expression is a return we need to return its optional value
+	// for anything else we do not care about its type
+	if (jumpStmt.token.type == Token::TokenType::TOKEN_RETURN) {
+		if (jumpStmt.value.has_value()) {
+			auto type = resolveType(*jumpStmt.value.value());
+			if (type.has_value()) {
+				typeStack.push_back(type.value());
+				return;
+			}
+		}
+	}
+	typeStack.push_back(lang::Type::defineStmtType());
 }
 void TypeChecker::visitVarStatement(const ast::Var &variable) {
 	auto type = lang::Type{};
