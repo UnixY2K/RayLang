@@ -566,10 +566,17 @@ void TypeChecker::visitSetExpression(const ast::Set &value) {
 	               std::format("visit method not implemented for {}",
 	                           value.variantName()));
 }
-void TypeChecker::visitUnaryExpression(const ast::Unary &value) {
-	messageBag.bug(value.getToken(), "TYPE-CHECKER",
-	               std::format("visit method not implemented for {}",
-	                           value.variantName()));
+void TypeChecker::visitUnaryExpression(const ast::Unary &unaryExpr) {
+	// assume that it returns the same type until we implement operator overload
+	// where we will treat each operator a a function
+
+	auto innerType = resolveType(*unaryExpr.expr);
+	if (!innerType.has_value()) {
+		messageBag.error(unaryExpr.getToken(), "TYPE-CHECKER",
+		                 "inner expression did not yield a type");
+		return;
+	}
+	typeStack.push_back(innerType.value());
 }
 void TypeChecker::visitArrayAccessExpression(const ast::ArrayAccess &value) {
 	messageBag.bug(value.getToken(), "TYPE-CHECKER",
