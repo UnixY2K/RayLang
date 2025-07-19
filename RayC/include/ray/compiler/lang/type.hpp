@@ -56,6 +56,11 @@ class Type {
 	// used by statements in the type checker
 	static Type defineStmtType();
 
+	// converts a number expression into the smallest number type
+	// available by the compiler
+	static std::optional<Type>
+	getNumberLiteralType(const std::string_view lexeme);
+
   private:
 	static Type defineScalarType(std::string name, size_t calculatedSize,
 	                             bool signedType);

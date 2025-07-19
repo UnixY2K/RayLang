@@ -17,7 +17,7 @@ bool Type::operator==(const Type &other) const {
 	    signedType == other.signedType &&               //
 	    subtype.has_value() == other.subtype.has_value()) {
 		return subtype.has_value() ? *subtype.value() == *other.subtype.value()
-								   : true;
+		                           : true;
 	}
 	return false;
 }
@@ -172,6 +172,11 @@ Type Type::defineStmtType() {
 	    false,
 	    {}, //
 	};
+}
+
+std::optional<Type> Type::getNumberLiteralType(const std::string_view lexeme) {
+	// stub method
+	return {};
 }
 
 Type Type::defineScalarType(std::string name, size_t calculatedSize,

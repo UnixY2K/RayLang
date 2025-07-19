@@ -514,10 +514,25 @@ void TypeChecker::visitGroupingExpression(const ast::Grouping &groupingExpr) {
 		typeStack.push_back(innerType.value());
 	}
 }
-void TypeChecker::visitLiteralExpression(const ast::Literal &value) {
-	messageBag.bug(value.getToken(), "TYPE-CHECKER",
-	               std::format("visit method not implemented for {}",
-	                           value.variantName()));
+void TypeChecker::visitLiteralExpression(const ast::Literal &literalExpr) {
+	switch (literalExpr.kind.type) {
+
+	case Token::TokenType::TOKEN_NUMBER: {
+		auto type = lang::Type::getNumberLiteralType(literalExpr.token.lexeme);
+		if (!type.has_value()) {
+			messageBag.error(
+			    literalExpr.getToken(), "TYPE-CHECKER",
+			    std::format("'{}' cannot be hold in any scalar number type",
+			                literalExpr.getToken().getLexeme()));
+			return;
+		}
+		typeStack.push_back(type.value());
+	}
+	default:
+		messageBag.error(literalExpr.getToken(), "TYPE-CHECKER",
+		                 std::format("'{}' is not a valid literal type",
+		                             literalExpr.getToken().getLexeme()));
+	}
 }
 void TypeChecker::visitLogicalExpression(const ast::Logical &value) {
 	messageBag.bug(value.getToken(), "TYPE-CHECKER",
