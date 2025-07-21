@@ -1,3 +1,4 @@
+#include <cstddef>
 #include <istream>
 #include <optional>
 #include <sstream>
@@ -22,6 +23,47 @@ bool lang::Scope::defineStruct(Type type) {
 	}
 	// non found, redefine it
 	variables[type.name] = type;
+	return true;
+}
+
+bool lang::Scope::defineFunction(FunctionDeclaration declaration) {
+
+	if (variables.contains(declaration.name)) {
+		return false;
+	}
+
+	if (!functions.contains(declaration.name)) {
+		functions[declaration.name] = std::vector<FunctionDeclaration>{};
+	}
+
+	auto &declarations = functions.at(declaration.name);
+	if (!declarations.empty() && declarations[0].signature.returnType !=
+	                                 declaration.signature.returnType) {
+		// this should be probably an enum with an error code
+		return false;
+	}
+
+	for (auto &declaration : declarations) {
+		bool matching = false;
+		if (declaration.signature.parameters.size() ==
+		    declaration.signature.parameters.size()) {
+			for (size_t paramIndex = 0;
+			     paramIndex < declaration.signature.parameters.size();
+			     paramIndex++) {
+				if (declaration.signature.parameters[paramIndex] !=
+				    declaration.signature.parameters[paramIndex]) {
+					matching = false;
+					break;
+				}
+			}
+		}
+		if (matching) {
+			return false;
+		}
+	}
+
+	declarations.push_back(declaration);
+
 	return true;
 }
 

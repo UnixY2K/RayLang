@@ -27,7 +27,7 @@ void TypeChecker::resolve(
 		switch (symbol.type) {
 		case lang::S1Symbol::SymbolType::Function: {
 			lang::FunctionDeclaration declaration;
-			currentScope.get().defineFunction(symbol.name, declaration);
+			currentScope.get().defineFunction(declaration);
 			break;
 		}
 		case lang::S1Symbol::SymbolType::Struct: {
@@ -196,15 +196,22 @@ void TypeChecker::visitFunctionStatement(const ast::Function &function) {
 	auto declaration = lang::FunctionDeclaration{
 	    .name = std::string(function.name.getLexeme()),
 	    .mangledName = mangledFunctionName,
-	    .parameters = parameters,
 	    .publicVisibility = function.publicVisibility,
-	    .returnType = returnType,
+	    .signature =
+	        lang::FunctionSignature{
+	            .returnType = returnType,
+	            .parameters = parameters,
+	        },
 	};
 	auto definition = lang::FunctionDefinition{
 	    .name = std::string(function.name.getLexeme()),
 	    .mangledName = mangledFunctionName,
 	    .function = function,
-	    .returnType = returnType,
+	    .signature =
+	        lang::FunctionSignature{
+	            .returnType = returnType,
+	            .parameters = parameters,
+	        },
 	};
 
 	currentSourceUnit.functionDeclarations.push_back(declaration);

@@ -14,15 +14,23 @@ class FunctionParameter {
   public:
 	std::string name;
 	Type parameterType;
+
+	bool operator==(const FunctionParameter &other) const {
+		return name == other.name && parameterType == other.parameterType;
+	}
+};
+
+struct FunctionSignature {
+	Type returnType;
+	std::vector<FunctionParameter> parameters;
 };
 
 class FunctionDeclaration {
   public:
 	std::string name;
 	std::string mangledName;
-	std::vector<FunctionParameter> parameters;
 	bool publicVisibility;
-	Type returnType;
+	FunctionSignature signature;
 };
 
 class FunctionDefinition {
@@ -30,7 +38,7 @@ class FunctionDefinition {
 	std::string name;
 	std::string mangledName;
 	std::reference_wrapper<const ast::Function> function;
-	Type returnType;
+	FunctionSignature signature;
 };
 
 class S1FunctionParameter {
