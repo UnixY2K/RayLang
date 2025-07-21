@@ -17,8 +17,10 @@ namespace ray::compiler::lang {
 class Scope {
   public:
 	std::unordered_map<std::string, lang::Type> variables;
+	std::unordered_map<std::string, lang::Type> functions;
 
 	bool defineStruct(Type type);
+	bool defineFunction(std::string name, FunctionDeclaration declaration);
 };
 class SourceUnit {
   public:

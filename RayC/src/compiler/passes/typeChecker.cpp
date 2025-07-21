@@ -8,6 +8,7 @@
 
 #include <ray/compiler/ast/expression.hpp>
 #include <ray/compiler/lang/functionDefinition.hpp>
+#include <ray/compiler/lang/sourceUnit.hpp>
 #include <ray/compiler/lang/structDefinition.hpp>
 #include <ray/compiler/lang/type.hpp>
 #include <ray/compiler/lexer/token.hpp>
@@ -18,6 +19,29 @@ namespace ray::compiler::analyzer {
 
 void TypeChecker::resolve(
     const std::vector<std::unique_ptr<ast::Statement>> &statements) {
+
+	// before iterating our statements we need to populate our symbol table with
+	// the top level statements
+
+	for (const auto &symbol : s1SourceUnit.rootScope.symbols) {
+		switch (symbol.type) {
+		case lang::S1Symbol::SymbolType::Function: {
+			lang::FunctionDeclaration declaration;
+			currentScope.get().defineFunction(symbol.name, declaration);
+			break;
+		}
+		case lang::S1Symbol::SymbolType::Struct: {
+			break;
+		}
+		case lang::S1Symbol::SymbolType::Variable: {
+			break;
+		}
+		case lang::S1Symbol::SymbolType::Parameter: {
+			break;
+		}
+		}
+	}
+
 	for (const auto &stmt : statements) {
 		auto stmtType = resolveType(*stmt);
 		// we need to check the added types to the stack to see if they are
