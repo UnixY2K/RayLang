@@ -37,9 +37,11 @@ SourceUnit::findStructType(const std::string &typeName) const {
 
 void S1SourceUnit::clear() {
 	structDefinitions.clear();
+	structDeclarations.clear();
+
 	functionDeclarations.clear();
 
-	structDeclarations.clear();
+	rootScope.clear();
 }
 
 std::string S1SourceUnit::exportSourceUnit() const {

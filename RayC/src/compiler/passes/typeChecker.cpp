@@ -433,13 +433,13 @@ void TypeChecker::visitBinaryExpression(const ast::Binary &binaryExpr) {
 		if (!leftType.has_value()) {
 			messageBag.error(
 			    binaryExpr.left->getToken(), "TYPE-CHECKER",
-			    std::format("left expression did not yield an expression"));
+			    std::format("left expression did not yield a value"));
 		}
 
 		if (!rightType.has_value()) {
 			messageBag.error(
 			    binaryExpr.right->getToken(), "TYPE-CHECKER",
-			    std::format("right expression did not yield an expression"));
+			    std::format("right expression did not yield a value"));
 		}
 		return;
 	}

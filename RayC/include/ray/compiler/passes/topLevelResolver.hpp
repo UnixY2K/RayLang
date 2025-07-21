@@ -19,7 +19,7 @@ class TopLevelResolver : public ast::StatementVisitor,
 
 	std::vector<std::unique_ptr<directive::CompilerDirective>> directivesStack;
 
-	std::vector<lang::Symbol> earlySymbolTable;
+	
 	lang::S1SourceUnit currentS1SourceUnit;
 	size_t top = 0;
 
