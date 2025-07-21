@@ -549,11 +549,13 @@ void TypeChecker::visitLiteralExpression(const ast::Literal &literalExpr) {
 			return;
 		}
 		typeStack.push_back(type.value());
+		break;
 	}
 	default:
 		messageBag.error(literalExpr.getToken(), "TYPE-CHECKER",
 		                 std::format("'{}' is not a valid literal type",
 		                             literalExpr.getToken().getLexeme()));
+		break;
 	}
 }
 void TypeChecker::visitLogicalExpression(const ast::Logical &value) {

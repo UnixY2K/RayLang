@@ -1,3 +1,7 @@
+#include <charconv>
+#include <cstddef>
+#include <cstdint>
+#include <cstdlib>
 #include <format>
 #include <optional>
 #include <unordered_map>
@@ -175,8 +179,91 @@ Type Type::defineStmtType() {
 }
 
 std::optional<Type> Type::getNumberLiteralType(const std::string_view lexeme) {
-	// stub method
-	return {};
+	// for now assume that is the largest type
+	// at a later step we will worry about smaller types like f32 or the integer
+	// sides
+	bool floatingPoint = false;
+	bool signedNumber = false;
+	size_t minimalBits = 8;
+	size_t pos = 0;
+	if (lexeme.empty()) {
+		return std::nullopt;
+	}
+
+	const char sign = lexeme[0];
+	if (sign == '+' || sign == '-') {
+		signedNumber = sign == '-';
+		pos++;
+	}
+
+	for (; pos < lexeme.size(); pos++) {
+		const char digit = lexeme[pos];
+		if (digit == '.') {
+			floatingPoint = true;
+			break;
+		}
+	}
+
+	const char *parse_start_ptr = lexeme.data();
+	const char *parse_end_ptr = lexeme.data() + lexeme.size();
+
+	if (floatingPoint) {
+		// TODO
+		minimalBits = 64;
+	} else {
+		if (signedNumber) {
+			int64_t sParsedVal;
+			auto [ptr, ec] =
+			    std::from_chars(parse_start_ptr, parse_end_ptr, sParsedVal);
+			if (ec == std::errc::invalid_argument ||
+			    ec == std::errc::result_out_of_range) {
+				return std::nullopt;
+			}
+			if (sParsedVal >= std::numeric_limits<int8_t>::min()) {
+				minimalBits = 8;
+			} else if (sParsedVal >= std::numeric_limits<int16_t>::min()) {
+				minimalBits = 16;
+			} else if (sParsedVal >= std::numeric_limits<int32_t>::min()) {
+				minimalBits = 32;
+			} else if (sParsedVal >= std::numeric_limits<int64_t>::min()) {
+				minimalBits = 64;
+			}
+		} else {
+			uint64_t uParsedVal;
+			auto [ptr, ec] =
+			    std::from_chars(parse_start_ptr, parse_end_ptr, uParsedVal);
+			if (ec == std::errc::invalid_argument ||
+			    ec == std::errc::result_out_of_range) {
+				return std::nullopt;
+			}
+			if (uParsedVal <=
+			    static_cast<uint64_t>(std::numeric_limits<uint8_t>::max())) {
+				minimalBits = 8;
+			} else if (uParsedVal <=
+			           static_cast<uint64_t>(
+			               std::numeric_limits<uint16_t>::max())) {
+				minimalBits = 16;
+			} else if (uParsedVal <=
+			           static_cast<uint64_t>(
+			               std::numeric_limits<uint32_t>::max())) {
+				minimalBits = 32;
+			} else if (uParsedVal <=
+			           static_cast<uint64_t>(
+			               std::numeric_limits<uint64_t>::max())) {
+				minimalBits = 64;
+			}
+		}
+	}
+
+	std::string typeLexeme = std::format(
+	    "{}{}",
+	    floatingPoint ? "f"
+	    : signedNumber
+	        ? "s" // This logic will be updated based on actual parsed value
+	        : "u",
+	    minimalBits);
+
+	return findScalarType(typeLexeme);
 }
 
 Type Type::defineScalarType(std::string name, size_t calculatedSize,
