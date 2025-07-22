@@ -4,6 +4,7 @@
 #include <optional>
 #include <string>
 #include <string_view>
+#include <vector>
 
 #include <ray/util/copy_ptr.hpp>
 
@@ -22,18 +23,21 @@ class Type {
 	bool isConst = true;
 	bool isPointer = false;
 	bool signedType = false;
+	bool overloaded = false;
 	std::optional<util::copy_ptr<Type>> subtype;
+	std::vector<util::copy_ptr<Type>> signature;
 
 	Type() = default;
 	Type(bool initialized, bool scalar, bool platformDependent,
 	     std::string name, std::string mangledName, size_t calculatedSize,
-	     bool isConst, bool isPointer, bool signedType,
-	     std::optional<util::copy_ptr<Type>> subType)
+	     bool isConst, bool isPointer, bool signedType, bool overloaded,
+	     std::optional<util::copy_ptr<Type>> subType,
+	     std::vector<util::copy_ptr<Type>> signature)
 	    : initialized{initialized}, scalar{scalar},
 	      platformDependent{platformDependent}, name{name},
 	      mangledName{mangledName}, calculatedSize{calculatedSize},
 	      isConst{isConst}, isPointer{isPointer}, signedType{signedType},
-	      subtype{subType} {};
+	      overloaded{overloaded}, subtype{subType}, signature{signature} {};
 
 	void initialize() { initialized = true; }
 	bool isInitialized() const { return initialized; }
@@ -51,7 +55,8 @@ class Type {
 	// defines a new function pointer type
 	// TODO: have a lang::FunctionType that defines the required signature data
 	// for the function so this data can be used by the compiler
-	static Type defineFunctionType(std::string signature);
+	static Type defineFunctionType(Type returnType,
+	                               std::vector<util::copy_ptr<Type>> signature);
 	// returns a type that is not instatiable and cannot be used
 	// used by statements in the type checker
 	static Type defineStmtType();

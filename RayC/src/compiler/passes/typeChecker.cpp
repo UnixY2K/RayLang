@@ -2,7 +2,6 @@
 #include <cstdio>
 #include <format>
 #include <optional>
-#include <sstream>
 #include <string_view>
 #include <vector>
 
@@ -15,6 +14,7 @@
 #include <ray/compiler/lexer/token.hpp>
 #include <ray/compiler/passes/symbol_mangler.hpp>
 #include <ray/compiler/passes/typeChecker.hpp>
+#include <ray/util/copy_ptr.hpp>
 
 namespace ray::compiler::analyzer {
 
@@ -148,14 +148,13 @@ void TypeChecker::visitFunctionStatement(const ast::Function &function) {
 	}
 
 	// TODO: return a function pointer type with an specific signature
-	std::stringstream signature;
-	for (size_t i = 0; i < declaration->signature.parameters.size(); ++i) {
-		signature << declaration->signature.parameters[i].parameterType.name;
-		if (i + 1 < declaration->signature.parameters.size()) {
-			signature << ",";
-		}
+
+	std::vector<util::copy_ptr<lang::Type>> paramTypes;
+	for (const auto &param : declaration->signature.parameters) {
+		paramTypes.push_back(util::copy_ptr<lang::Type>(param.parameterType));
 	}
-	auto functionType = lang::Type::defineFunctionType(signature.str());
+	auto functionType = lang::Type::defineFunctionType(
+	    declaration->signature.returnType, paramTypes);
 	typeStack.push_back(functionType);
 }
 void TypeChecker::visitIfStatement(const ast::If &ifStmt) {
@@ -377,9 +376,16 @@ void TypeChecker::visitVariableExpression(const ast::Variable &variableExpr) {
 		return;
 	}
 
-	if (currentScope.get().functions.contains(variableExpr.name.lexeme)) {
-
-		return;
+	// we just keep a cound of at most 2 to see if we return its type pointer or
+	// an overloadedFunction Type
+	size_t found = 0;
+	for (const auto &functionDefinition :
+	     currentSourceUnit.functionDefinitions) {
+		if (functionDefinition.declaration.name == variableExpr.name.lexeme) {
+			lang::Type functionPlaceholder;
+			//typeStack.push_back(functionPlaceholder);
+			 found++;
+		}
 	}
 
 	messageBag.error(variableExpr.getToken(), "TYPE-CHECKER",
@@ -667,6 +673,7 @@ TypeChecker::findTypeInfo(const std::string_view typeName) {
 }
 
 lang::Type TypeChecker::makePointerType(const lang::Type &innerType) {
+	// TODO: move this to a separate code section
 	return lang::Type(true,
 	                  // a pointer is not a scalar as it is an address memory
 	                  // that references an object
@@ -683,11 +690,12 @@ lang::Type TypeChecker::makePointerType(const lang::Type &innerType) {
 	                  // if the pointer type is const or not is decided later
 	                  false,
 	                  // we are a pointer type
-	                  true,
-	                  // a pointer is not a signed type
-	                  false,
-	                  // our inner pointer type
-	                  {innerType});
+	                  true,        // pointer
+	                  false,       // non signed
+	                  false,       // non overloaded
+	                  {innerType}, // inner type
+	                  {}           // no signature
+	);
 }
 
 std::optional<lang::FunctionDeclaration>
