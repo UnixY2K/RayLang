@@ -7,6 +7,7 @@
 #include <vector>
 
 #include <ray/compiler/ast/expression.hpp>
+#include <ray/compiler/ast/statement.hpp>
 #include <ray/compiler/lang/functionDefinition.hpp>
 #include <ray/compiler/lang/sourceUnit.hpp>
 #include <ray/compiler/lang/structDefinition.hpp>
@@ -20,25 +21,21 @@ namespace ray::compiler::analyzer {
 void TypeChecker::resolve(
     const std::vector<std::unique_ptr<ast::Statement>> &statements) {
 
-	// before iterating our statements we need to populate our symbol table with
-	// the top level statements
+	for (const auto &stmt : statements) {
+		if (const auto functionExpr =
+		        dynamic_cast<const ast::Function *>(stmt.get())) {
 
-	for (const auto &symbol : s1SourceUnit.rootScope.symbols) {
-		switch (symbol.type) {
-		case lang::S1Symbol::SymbolType::Function: {
-			lang::FunctionDeclaration declaration;
-			currentScope.get().defineFunction(declaration);
-			break;
-		}
-		case lang::S1Symbol::SymbolType::Struct: {
-			break;
-		}
-		case lang::S1Symbol::SymbolType::Variable: {
-			break;
-		}
-		case lang::S1Symbol::SymbolType::Parameter: {
-			break;
-		}
+			auto parameters = std::vector<lang::FunctionParameter>{};
+
+			auto declaration = resolveFunctionDeclaration(*functionExpr);
+			if (declaration.has_value()) {
+				auto functionDefinition = lang::FunctionDefinition{
+				    .declaration = declaration.value(),
+				    .function = *functionExpr,
+				};
+				this->currentSourceUnit.functionDefinitions.push_back(
+				    functionDefinition);
+			}
 		}
 	}
 
@@ -133,97 +130,28 @@ void TypeChecker::visitExpressionStmtStatement(
 	typeStack.push_back(lang::Type::defineStmtType());
 }
 void TypeChecker::visitFunctionStatement(const ast::Function &function) {
-	std::string currentModule;
 
-	std::optional<directive::LinkageDirective> linkageDirective;
+	auto declaration = resolveFunctionDeclaration(function);
+	if (!declaration) {
 
-	for (size_t i = directivesStack.size(); i > top; i--) {
-		auto &directive = directivesStack[i - i];
-		if (auto foundLinkDirective =
-		        dynamic_cast<directive::LinkageDirective *>(directive.get())) {
-			linkageDirective = *foundLinkDirective;
-		} else {
-			messageBag.warning(
-			    directive->getToken(), "TYPE-CHECKER",
-			    std::format(
-			        "unmatched compiler directive '{}' for function '{}'",
-			        directive->directiveName(), function.name.getLexeme()));
+	} else {
+		auto definition = lang::FunctionDefinition{
+		    .declaration = declaration.value(),
+		    .function = function,
+		};
+
+		currentSourceUnit.functionDeclarations.push_back(declaration.value());
+		if (function.body.has_value()) {
+			currentSourceUnit.functionDefinitions.push_back(definition);
+			resolveTypes(function.body.value());
 		}
-		directivesStack.pop_back();
-	}
-	std::string mangledFunctionName =
-	    passes::mangling::NameMangler().mangleFunction(currentModule, function,
-	                                                   linkageDirective);
-
-	std::vector<lang::FunctionParameter> parameters;
-	for (const auto &parameter : function.params) {
-		auto paramType = resolveType(parameter.type);
-		if (!paramType.has_value()) {
-			messageBag.bug(parameter.getToken(), "TYPE-CHECKER",
-			               std::format("could not inspect type for {}",
-			                           parameter.type.name.lexeme));
-			continue;
-		}
-		auto parameterType = paramType.value();
-		if (parameterType.calculatedSize == 0) {
-			messageBag.error(
-			    parameter.type.getToken(), "TYPE-CHECKER",
-			    std::format(
-			        "cannot pass parameter type with unknown size for '{}'",
-			        parameterType.name));
-			return;
-		}
-
-		parameters.push_back({
-		    .name = parameter.name.lexeme,
-		    .parameterType = parameterType,
-		});
 	}
 
-	auto functionReturnType = resolveType(function.returnType);
-	if (!functionReturnType.has_value()) {
-		return;
-	}
-	auto returnType = functionReturnType.value();
-	if (!returnType.isScalar() && returnType.calculatedSize == 0) {
-		messageBag.error(
-		    function.returnType.getToken(), "TYPE-CHECKER",
-		    std::format("cannot return a type with unknown size for '{}'",
-		                returnType.name));
-		return;
-	}
-
-	auto declaration = lang::FunctionDeclaration{
-	    .name = std::string(function.name.getLexeme()),
-	    .mangledName = mangledFunctionName,
-	    .publicVisibility = function.publicVisibility,
-	    .signature =
-	        lang::FunctionSignature{
-	            .returnType = returnType,
-	            .parameters = parameters,
-	        },
-	};
-	auto definition = lang::FunctionDefinition{
-	    .name = std::string(function.name.getLexeme()),
-	    .mangledName = mangledFunctionName,
-	    .function = function,
-	    .signature =
-	        lang::FunctionSignature{
-	            .returnType = returnType,
-	            .parameters = parameters,
-	        },
-	};
-
-	currentSourceUnit.functionDeclarations.push_back(declaration);
-	if (function.body.has_value()) {
-		currentSourceUnit.functionDefinitions.push_back(definition);
-		resolveTypes(function.body.value());
-	}
 	// TODO: return a function pointer type with an specific signature
 	std::stringstream signature;
-	for (size_t i = 0; i < parameters.size(); ++i) {
-		signature << parameters[i].parameterType.name;
-		if (i + 1 < parameters.size()) {
+	for (size_t i = 0; i < declaration->signature.parameters.size(); ++i) {
+		signature << declaration->signature.parameters[i].parameterType.name;
+		if (i + 1 < declaration->signature.parameters.size()) {
 			signature << ",";
 		}
 	}
@@ -441,10 +369,24 @@ void TypeChecker::visitCompDirectiveStatement(
 	}
 }
 // Expression
-void TypeChecker::visitVariableExpression(const ast::Variable &value) {
-	messageBag.bug(value.getToken(), "TYPE-CHECKER",
-	               std::format("visit method not implemented for {}",
-	                           value.variantName()));
+void TypeChecker::visitVariableExpression(const ast::Variable &variableExpr) {
+
+	if (currentScope.get().variables.contains(variableExpr.name.lexeme)) {
+		auto type = currentScope.get().variables.at(variableExpr.name.lexeme);
+		typeStack.push_back(type);
+		return;
+	}
+
+	if (currentScope.get().functions.contains(variableExpr.name.lexeme)) {
+
+		return;
+	}
+
+	messageBag.error(variableExpr.getToken(), "TYPE-CHECKER",
+	                 std::format("unknown symbol '{}'",
+	                             variableExpr.getToken().getLexeme()));
+	// we did not find anything so do not bother and report an error
+	return;
 }
 void TypeChecker::visitIntrinsicExpression(const ast::Intrinsic &value) {
 	messageBag.bug(value.getToken(), "TYPE-CHECKER",
@@ -504,11 +446,8 @@ void TypeChecker::visitBinaryExpression(const ast::Binary &binaryExpr) {
 		                             op.getLexeme()));
 	}
 }
-void TypeChecker::visitCallExpression(const ast::Call &value) {
-
-	messageBag.bug(value.getToken(), "TYPE-CHECKER",
-	               std::format("visit method not implemented for {}",
-	                           value.variantName()));
+void TypeChecker::visitCallExpression(const ast::Call &callExpr) {
+	auto calleeType = resolveType(*callExpr.callee);
 }
 void TypeChecker::visitIntrinsicCallExpression(
     const ast::IntrinsicCall &intrinsicCall) {
@@ -750,4 +689,87 @@ lang::Type TypeChecker::makePointerType(const lang::Type &innerType) {
 	                  // our inner pointer type
 	                  {innerType});
 }
+
+std::optional<lang::FunctionDeclaration>
+TypeChecker::resolveFunctionDeclaration(const ast::Function &function) {
+	std::string currentModule;
+
+	std::optional<directive::LinkageDirective> linkageDirective;
+
+	for (size_t i = directivesStack.size(); i > top; i--) {
+		auto &directive = directivesStack[i - i];
+		if (auto foundLinkDirective =
+		        dynamic_cast<directive::LinkageDirective *>(directive.get())) {
+			linkageDirective = *foundLinkDirective;
+		} else {
+			messageBag.warning(
+			    directive->getToken(), "TYPE-CHECKER",
+			    std::format(
+			        "unmatched compiler directive '{}' for function '{}'",
+			        directive->directiveName(), function.name.getLexeme()));
+		}
+		directivesStack.pop_back();
+	}
+	std::string mangledFunctionName =
+	    passes::mangling::NameMangler().mangleFunction(currentModule, function,
+	                                                   linkageDirective);
+
+	std::vector<lang::FunctionParameter> parameters;
+	bool failed = false;
+	for (const auto &parameter : function.params) {
+		auto paramType = resolveType(parameter.type);
+		if (!paramType.has_value()) {
+			messageBag.bug(parameter.getToken(), "TYPE-CHECKER",
+			               std::format("could not inspect type for {}",
+			                           parameter.type.name.lexeme));
+			failed = true;
+			continue;
+		}
+		auto parameterType = paramType.value();
+		if (parameterType.calculatedSize == 0) {
+			messageBag.error(
+			    parameter.type.getToken(), "TYPE-CHECKER",
+			    std::format(
+			        "cannot pass parameter type with unknown size for '{}'",
+			        parameterType.name));
+			failed = true;
+			continue;
+		}
+
+		parameters.push_back({
+		    .name = parameter.name.lexeme,
+		    .parameterType = parameterType,
+		});
+	}
+
+	auto functionReturnType = resolveType(function.returnType);
+	if (!functionReturnType.has_value()) {
+		return std::nullopt;
+	}
+	auto returnType = functionReturnType.value();
+	if (!returnType.isScalar() && returnType.calculatedSize == 0) {
+		messageBag.error(
+		    function.returnType.getToken(), "TYPE-CHECKER",
+		    std::format("cannot return a type with unknown size for '{}'",
+		                returnType.name));
+		failed = true;
+	}
+
+	if (failed) {
+		return std::nullopt;
+	}
+
+	auto declaration = lang::FunctionDeclaration{
+	    .name = std::string(function.name.getLexeme()),
+	    .mangledName = mangledFunctionName,
+	    .publicVisibility = function.publicVisibility,
+	    .signature =
+	        lang::FunctionSignature{
+	            .returnType = returnType,
+	            .parameters = parameters,
+	        },
+	};
+	return declaration;
+}
+
 } // namespace ray::compiler::analyzer

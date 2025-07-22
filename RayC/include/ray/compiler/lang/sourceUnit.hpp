@@ -43,7 +43,7 @@ struct S1Symbol {
 	std::string name;
 	// contains additional type info such as parameters or inner fields
 	// for functions it is (returnType, ...paramType)
-	std::string signature;
+	std::vector<std::string> signature;
 };
 
 struct S1SymbolTable;

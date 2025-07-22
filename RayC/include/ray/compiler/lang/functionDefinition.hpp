@@ -25,20 +25,16 @@ struct FunctionSignature {
 	std::vector<FunctionParameter> parameters;
 };
 
-class FunctionDeclaration {
-  public:
+struct FunctionDeclaration {
 	std::string name;
 	std::string mangledName;
 	bool publicVisibility;
 	FunctionSignature signature;
 };
 
-class FunctionDefinition {
-  public:
-	std::string name;
-	std::string mangledName;
+struct FunctionDefinition {
+	FunctionDeclaration declaration;
 	std::reference_wrapper<const ast::Function> function;
-	FunctionSignature signature;
 };
 
 class S1FunctionParameter {

@@ -78,6 +78,16 @@ void TopLevelResolver::visitFunctionStatement(const ast::Function &function) {
 	std::string mangledFunctionName =
 	    passes::mangling::NameMangler().mangleFunction(currentModule, function,
 	                                                   linkageDirective);
+
+	std::vector<std::string> signature = {function.returnType.name.lexeme};
+	for (const auto &param : function.params) {
+		signature.push_back(param.type.name.lexeme);
+	}
+	currentS1SourceUnit.rootScope.symbols.push_back(lang::S1Symbol{
+		.type = lang::S1Symbol::SymbolType::Function,
+		.name = std::string(function.name.getLexeme()),
+		.signature = signature,
+	});
 	currentS1SourceUnit.functionDeclarations.push_back(
 	    lang::S1FunctionDeclaration{
 	        .name = std::string(function.name.getLexeme()),
