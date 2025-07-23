@@ -378,19 +378,28 @@ void TypeChecker::visitVariableExpression(const ast::Variable &variableExpr) {
 
 	// we just keep a cound of at most 2 to see if we return its type pointer or
 	// an overloadedFunction Type
-	size_t found = 0;
+	lang::Type functionType;
 	for (const auto &functionDefinition :
 	     currentSourceUnit.functionDefinitions) {
 		if (functionDefinition.declaration.name == variableExpr.name.lexeme) {
-			lang::Type functionPlaceholder;
-			//typeStack.push_back(functionPlaceholder);
-			 found++;
+			if (!functionType.isInitialized()) {
+				functionType =
+				    functionDefinition.declaration.signature.getFunctionType();
+			} else {
+				functionType = functionDefinition.declaration.signature
+				                   .getOverloadedFunctionType();
+				break;
+			}
 		}
 	}
 
-	messageBag.error(variableExpr.getToken(), "TYPE-CHECKER",
-	                 std::format("unknown symbol '{}'",
-	                             variableExpr.getToken().getLexeme()));
+	if (functionType.isInitialized()) {
+		typeStack.push_back(functionType);
+	} else {
+		messageBag.error(variableExpr.getToken(), "TYPE-CHECKER",
+		                 std::format("unknown symbol '{}'",
+		                             variableExpr.getToken().getLexeme()));
+	}
 	// we did not find anything so do not bother and report an error
 	return;
 }
@@ -454,6 +463,12 @@ void TypeChecker::visitBinaryExpression(const ast::Binary &binaryExpr) {
 }
 void TypeChecker::visitCallExpression(const ast::Call &callExpr) {
 	auto calleeType = resolveType(*callExpr.callee);
+	if (!calleeType.has_value()) {
+		messageBag.error(callExpr.getToken(), "TYPE-CHECKER",
+		                 std::format("unknown callee type for {}",
+		                             callExpr.callee->getToken().getLexeme()));
+		return;
+	}
 }
 void TypeChecker::visitIntrinsicCallExpression(
     const ast::IntrinsicCall &intrinsicCall) {

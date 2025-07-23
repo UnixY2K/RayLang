@@ -1,4 +1,5 @@
 #pragma once
+#include "ray/util/copy_ptr.hpp"
 #include <functional>
 #include <string>
 
@@ -23,6 +24,18 @@ class FunctionParameter {
 struct FunctionSignature {
 	Type returnType;
 	std::vector<FunctionParameter> parameters;
+
+	Type getFunctionType() const {
+		std::vector<util::copy_ptr<Type>> signature;
+		for (const auto &parameter : parameters) {
+			signature.push_back(parameter.parameterType);
+		}
+		return lang::Type::defineFunctionType(returnType, signature);
+	}
+
+	Type getOverloadedFunctionType() const {
+		return lang::Type::defineOverloadedFunctionType(returnType);
+	}
 };
 
 struct FunctionDeclaration {

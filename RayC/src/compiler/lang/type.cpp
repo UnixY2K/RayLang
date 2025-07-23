@@ -163,6 +163,31 @@ Type Type::defineFunctionType(Type returnType,
 	);
 }
 
+Type Type::defineOverloadedFunctionType(Type returnType) {
+	return lang::Type(
+	    true,
+	    // a pointer is not a scalar as it is an address memory
+	    // that references an object
+	    false,
+	    // technically platform dependent on pointer definition
+	    true,
+	    // define the name as pointer
+	    "//fn-overload",
+	    "//fn-overload", // TODO: make a symbol mangler
+	    // we need to get this from the platform in the future
+	    // for now assuming 64bits/8bytes
+	    8,     // TODO: make this be obtained from platform configuration
+	    false, // if the pointer type is const or not is decided later
+	    true,  // a funciton is a just an memory address(pointer)
+	    false, // non signed, is a pointer
+	    false, // we hold a function pointer so it is not overloaded
+
+	    returnType, // same as a function type
+	    {}          // no signature data as the parent expression has to
+	                // resolve the desired overload
+	);
+}
+
 Type Type::defineStmtType() {
 	return Type{
 	    // an statement does not even return an initialized type

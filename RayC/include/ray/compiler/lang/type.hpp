@@ -52,11 +52,11 @@ class Type {
 	// is 0 and can only be referenced as a pointer
 	static Type defineStructType(std::string name, size_t aproximatedSize,
 	                             bool platformDependent);
-	// defines a new function pointer type
-	// TODO: have a lang::FunctionType that defines the required signature data
-	// for the function so this data can be used by the compiler
+	// defines a new function type
 	static Type defineFunctionType(Type returnType,
 	                               std::vector<util::copy_ptr<Type>> signature);
+	// defines a type that specifies that it is an overloaded function type
+	static Type defineOverloadedFunctionType(Type returnType);
 	// returns a type that is not instatiable and cannot be used
 	// used by statements in the type checker
 	static Type defineStmtType();
