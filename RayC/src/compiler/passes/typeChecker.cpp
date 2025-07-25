@@ -29,12 +29,8 @@ void TypeChecker::resolve(
 
 			auto declaration = resolveFunctionDeclaration(*functionExpr);
 			if (declaration.has_value()) {
-				auto functionDefinition = lang::FunctionDefinition{
-				    .declaration = declaration.value(),
-				    .function = *functionExpr,
-				};
-				this->currentSourceUnit.functionDefinitions.push_back(
-				    functionDefinition);
+				currentSourceUnit.functionDeclarations.push_back(
+				    declaration.value());
 			}
 		}
 	}
@@ -140,7 +136,8 @@ void TypeChecker::visitFunctionStatement(const ast::Function &function) {
 		    .function = function,
 		};
 
-		currentSourceUnit.functionDeclarations.push_back(declaration.value());
+		// declaration was already defined, so it does not require to be defined
+		// again, just the body
 		if (function.body.has_value()) {
 			currentSourceUnit.functionDefinitions.push_back(definition);
 			resolveTypes(function.body.value());
@@ -379,15 +376,14 @@ void TypeChecker::visitVariableExpression(const ast::Variable &variableExpr) {
 	// we just keep a cound of at most 2 to see if we return its type pointer or
 	// an overloadedFunction Type
 	lang::Type functionType;
-	for (const auto &functionDefinition :
-	     currentSourceUnit.functionDefinitions) {
-		if (functionDefinition.declaration.name == variableExpr.name.lexeme) {
+	for (const auto &functionDeclaration :
+	     currentSourceUnit.functionDeclarations) {
+		if (functionDeclaration.name == variableExpr.name.lexeme) {
 			if (!functionType.isInitialized()) {
-				functionType =
-				    functionDefinition.declaration.signature.getFunctionType();
+				functionType = functionDeclaration.signature.getFunctionType();
 			} else {
-				functionType = functionDefinition.declaration.signature
-				                   .getOverloadedFunctionType();
+				functionType =
+				    functionDeclaration.signature.getOverloadedFunctionType();
 				break;
 			}
 		}
@@ -462,13 +458,67 @@ void TypeChecker::visitBinaryExpression(const ast::Binary &binaryExpr) {
 	}
 }
 void TypeChecker::visitCallExpression(const ast::Call &callExpr) {
-	auto calleeType = resolveType(*callExpr.callee);
-	if (!calleeType.has_value()) {
+	auto calleeTypeResult = resolveType(*callExpr.callee);
+	if (!calleeTypeResult.has_value()) {
 		messageBag.error(callExpr.getToken(), "TYPE-CHECKER",
 		                 std::format("unknown callee type for {}",
 		                             callExpr.callee->getToken().getLexeme()));
 		return;
 	}
+	auto calleeType = calleeTypeResult.value();
+	if (calleeType.overloaded) {
+		messageBag.bug(callExpr.getToken(), "TYPE-CHECKER",
+		               std::format("overloaded functions not supported yet"));
+		return;
+	}
+	if (!calleeType.signature.has_value()) {
+		messageBag.error(
+		    callExpr.getToken(), "TYPE-CHECKER",
+		    std::format("expression does not have a valid signature for '{}'",
+		                callExpr.getToken().getLexeme()));
+		return;
+	} else {
+		// non overloaded, so we need to validate the parameters
+		if (callExpr.arguments.size() != calleeType.signature->size()) {
+			messageBag.error(
+			    callExpr.getToken(), "TYPE-CHECKER",
+			    std::format(
+			        "parameter number mismatch for '{}', provided {}, but {} were required",
+			        callExpr.getToken().getLexeme(), callExpr.arguments.size(),
+			        calleeType.signature->size()));
+		}
+		for (size_t i = 0; i < callExpr.arguments.size(); i++) {
+			const auto &callerParamExpr = *callExpr.arguments[i];
+			const auto callerParamTypeResult = resolveType(callerParamExpr);
+			const auto &calleeParamType = *calleeType.signature.value()[i];
+
+			if (!callerParamTypeResult.has_value()) {
+				messageBag.error(
+				    callerParamExpr.getToken(), "TYPE-CHECKER",
+				    std::format("argument does not yield a valid type for '{}'",
+				                callerParamExpr.getToken().getLexeme()));
+				return;
+			}
+			const auto &callerParamType = callerParamTypeResult.value();
+
+			if (callerParamType != callerParamType) {
+				messageBag.error(
+				    callerParamExpr.getToken(), "TYPE-CHECKER",
+				    std::format(
+				        "argument #'{}' does not matches the expected type {} vs {}",
+				        i, callerParamType.name, calleeParamType.name));
+				return;
+			}
+		}
+	}
+
+	if (!calleeType.subtype.has_value()) {
+		messageBag.bug(
+		    callExpr.getToken(), "TYPE-CHECKER",
+		    std::format("expression does not have a return type for '{}'",
+		                callExpr.getToken().getLexeme()));
+	}
+	typeStack.push_back(*calleeType.subtype.value());
 }
 void TypeChecker::visitIntrinsicCallExpression(
     const ast::IntrinsicCall &intrinsicCall) {
@@ -530,6 +580,13 @@ void TypeChecker::visitGroupingExpression(const ast::Grouping &groupingExpr) {
 void TypeChecker::visitLiteralExpression(const ast::Literal &literalExpr) {
 	switch (literalExpr.kind.type) {
 
+	case Token::TokenType::TOKEN_STRING: {
+		messageBag.bug(
+		    literalExpr.getToken(), "TYPE-CHECKER",
+		    std::format("string literal expression not supported yet",
+		                literalExpr.getToken().getLexeme()));
+		break;
+	}
 	case Token::TokenType::TOKEN_NUMBER: {
 		auto type = lang::Type::getNumberLiteralType(literalExpr.token.lexeme);
 		if (!type.has_value()) {

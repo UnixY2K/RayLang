@@ -25,7 +25,7 @@ class Type {
 	bool signedType = false;
 	bool overloaded = false;
 	std::optional<util::copy_ptr<Type>> subtype;
-	std::vector<util::copy_ptr<Type>> signature;
+	std::optional<std::vector<util::copy_ptr<Type>>> signature;
 
 	Type() = default;
 	Type(bool initialized, bool scalar, bool platformDependent,

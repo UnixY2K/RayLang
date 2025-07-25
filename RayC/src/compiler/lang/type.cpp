@@ -147,19 +147,18 @@ Type Type::defineFunctionType(Type returnType,
 	    false,
 	    // technically platform dependent on pointer definition
 	    true,
-	    // define the name as pointer
-	    "//fn",
-	    "//fn", // TODO: make a symbol mangler
+	    "//fn", // define the name as pointer
+	    "//fn", // TODO: make a symbol mangler separate to type info
 	    // we need to get this from the platform in the future
 	    // for now assuming 64bits/8bytes
-	    8,     // TODO: make this be obtained from platform configuration
-	    false, // if the pointer type is const or not is decided later
-	    true,  // a funciton is a just an memory address(pointer)
-	    false, // non signed, is a pointer
-	    false, // we hold a function pointer so it is not overloaded
-	    // our inner pointer type
-	    returnType,
-	    signature //
+	    8,          // TODO: make this be obtained from platform configuration
+	    false,      // if the pointer type is const or not is decided later
+	    true,       // a funciton is a just an memory address(pointer)
+	    false,      // non signed, is a pointer
+	    false,      // we hold a function pointer so it is not overloaded
+	    returnType, // contains the return value of the caller
+	    signature // signature data is always provided so the caller can know it
+	              // is valid to call it
 	);
 }
 
@@ -176,12 +175,11 @@ Type Type::defineOverloadedFunctionType(Type returnType) {
 	    "//fn-overload", // TODO: make a symbol mangler
 	    // we need to get this from the platform in the future
 	    // for now assuming 64bits/8bytes
-	    8,     // TODO: make this be obtained from platform configuration
-	    false, // if the pointer type is const or not is decided later
-	    true,  // a funciton is a just an memory address(pointer)
-	    false, // non signed, is a pointer
-	    false, // we hold a function pointer so it is not overloaded
-
+	    8,          // TODO: make this be obtained from platform configuration
+	    false,      // if the pointer type is const or not is decided later
+	    true,       // a funciton is a just an memory address(pointer)
+	    false,      // non signed, is a pointer
+	    true,       // we hold a function pointer so it is not overloaded
 	    returnType, // same as a function type
 	    {}          // no signature data as the parent expression has to
 	                // resolve the desired overload
