@@ -21,6 +21,8 @@ class Scope {
 
 	bool defineStruct(Type type);
 	bool defineFunction(FunctionDeclaration declaration);
+	bool defineLocalVariable(const std::string_view name,
+	                         const lang::Type type);
 };
 class SourceUnit {
   public:

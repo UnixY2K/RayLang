@@ -314,7 +314,7 @@ ast::Var Parser::varDeclaration(std::string kind) {
 	    name.column,
 	};
 	ast::Type type = ast::Type{
-	    typeToken, true, false, {}, typeToken,
+	    typeToken, false, false, {}, typeToken,
 	};
 	if (match({Token::TokenType::TOKEN_COLON})) {
 		// array type
@@ -374,7 +374,7 @@ ast::Function Parser::function(std::string kind, bool publicVisiblity) {
 	size_t newColumn = previous().column + previous().getLexeme().size();
 	auto returnToken = types::makeUnitTypeToken(previous().line, newColumn);
 	ast::Type returnType{
-	    returnToken, true, false, {}, returnToken,
+	    returnToken, false, false, {}, returnToken,
 	};
 
 	if (match({Token::TokenType::TOKEN_ARROW})) {
@@ -621,7 +621,7 @@ ast::Type Parser::typeExpression() {
 		          std::format("[{}]",
 		                      arrayStartToken.lexeme + arrayType.name.lexeme),
 		          arrayStartToken.line, arrayStartToken.column},
-		    !is_mutable,
+		    is_mutable,
 		    true,
 		    std::make_unique<ast::Type>(std::move(arrayType)),
 		    arrayStartToken,
@@ -634,7 +634,7 @@ ast::Type Parser::typeExpression() {
 	while (match({Token::TokenType::TOKEN_STAR})) {
 		subType = std::make_unique<ast::Type>(ast::Type{
 		    typeToken,
-		    !is_mutable,
+		    is_mutable,
 		    isPointer,
 		    std::move(subType),
 		    typeToken,
@@ -643,7 +643,7 @@ ast::Type Parser::typeExpression() {
 		typeToken.lexeme += previous().getGlyph();
 	}
 	return ast::Type{
-	    typeToken, !is_mutable, isPointer, std::move(subType), typeToken,
+	    typeToken, is_mutable, isPointer, std::move(subType), typeToken,
 	};
 }
 

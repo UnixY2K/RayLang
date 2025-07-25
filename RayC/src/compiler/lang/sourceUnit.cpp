@@ -67,6 +67,15 @@ bool lang::Scope::defineFunction(FunctionDeclaration declaration) {
 	return true;
 }
 
+bool lang::Scope::defineLocalVariable(const std::string_view name, const lang::Type type) {
+	std::string key(name);
+	if (variables.contains(key)) {
+		return false;
+	}
+	variables[key] = type;
+	return true;
+}
+
 std::optional<lang::Type>
 SourceUnit::findStructType(const std::string &typeName) const {
 	for (const auto &scope : scopes) {

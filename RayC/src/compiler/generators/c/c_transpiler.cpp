@@ -585,7 +585,7 @@ void CTranspilerGenerator::visitArrayAccessExpression(
 	output << "]";
 }
 void CTranspilerGenerator::visitTypeExpression(const ast::Type &type) {
-	if (type.isConst && type.name.type != Token::TokenType::TOKEN_TYPE_UNIT &&
+	if (!type.isMutable && type.name.type != Token::TokenType::TOKEN_TYPE_UNIT &&
 	    !type.isPointer) {
 		output << "const ";
 	}

@@ -146,7 +146,7 @@ def main():
              "Set			= std::unique_ptr<Expression> object, Token name, Token assignmentOp, std::unique_ptr<Expression> value",
              "Unary			= Token op, bool isPrefix, std::unique_ptr<Expression> expr",
              "ArrayAccess	= std::unique_ptr<Expression> array, std::unique_ptr<Expression> index",
-             "Type			= Token name, bool isConst, bool isPointer, std::optional<std::unique_ptr<Type>> subtype",
+             "Type			= Token name, bool isMutable, bool isPointer, std::optional<std::unique_ptr<Type>> subtype",
              "Cast			= std::unique_ptr<Expression> expression, Type type",
              "Parameter		= Token name, Type type",
             ])

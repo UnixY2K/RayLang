@@ -10,18 +10,35 @@
 namespace ray::compiler::lang {
 
 bool Type::operator==(const Type &other) const {
-	if (initialized == other.initialized &&             //
-	    scalar == other.scalar &&                       //
-	    platformDependent == other.platformDependent && //
-	    name == other.name &&                           //
-	    mangledName == other.mangledName &&             //
-	    calculatedSize == other.calculatedSize &&       //
-	    isConst == other.isConst &&                     //
-	    isPointer == other.isPointer &&                 //
-	    signedType == other.signedType &&               //
-	    subtype.has_value() == other.subtype.has_value()) {
-		return subtype.has_value() ? *subtype.value() == *other.subtype.value()
-		                           : true;
+	if (initialized == other.initialized &&                  //
+	    scalar == other.scalar &&                            //
+	    platformDependent == other.platformDependent &&      //
+	    name == other.name &&                                //
+	    mangledName == other.mangledName &&                  //
+	    calculatedSize == other.calculatedSize &&            //
+	    isMutable == other.isMutable &&                      //
+	    isPointer == other.isPointer &&                      //
+	    signedType == other.signedType &&                    //
+	    subtype.has_value() == other.subtype.has_value() &&  //
+	    signature.has_value() == other.signature.has_value() //
+	) {
+		if (subtype.has_value() && *subtype.value() != *other.subtype.value()) {
+			return false;
+		}
+		if (signature.has_value()) {
+			const auto &lhsSignature = signature.value();
+			const auto &rhsSignature = other.signature.value();
+
+			if (lhsSignature.size() != rhsSignature.size()) {
+				return false;
+			}
+			for (size_t i = 0; i < lhsSignature.size(); i++) {
+				if (*lhsSignature[i] != *rhsSignature[i]) {
+					return false;
+				}
+			}
+		}
+		return true;
 	}
 	return false;
 }
@@ -212,7 +229,7 @@ std::optional<Type> Type::getNumberLiteralType(const std::string_view lexeme) {
 	// sides
 	bool floatingPoint = false;
 	bool signedNumber = false;
-	size_t minimalBits = 8;
+	size_t minimalBits = 32;
 	size_t pos = 0;
 	if (lexeme.empty()) {
 		return std::nullopt;
@@ -247,13 +264,9 @@ std::optional<Type> Type::getNumberLiteralType(const std::string_view lexeme) {
 			    ec == std::errc::result_out_of_range) {
 				return std::nullopt;
 			}
-			if (sParsedVal >= std::numeric_limits<int8_t>::min()) {
-				minimalBits = 8;
-			} else if (sParsedVal >= std::numeric_limits<int16_t>::min()) {
-				minimalBits = 16;
-			} else if (sParsedVal >= std::numeric_limits<int32_t>::min()) {
-				minimalBits = 32;
-			} else if (sParsedVal >= std::numeric_limits<int64_t>::min()) {
+
+			// if our number is greater than the limit of 32 bits upgrade to 64
+			if (sParsedVal < std::numeric_limits<int32_t>::min()) {
 				minimalBits = 64;
 			}
 		} else {
@@ -264,20 +277,18 @@ std::optional<Type> Type::getNumberLiteralType(const std::string_view lexeme) {
 			    ec == std::errc::result_out_of_range) {
 				return std::nullopt;
 			}
+			// check the smallest type of (s32->u32(default size)->s64->u64)
 			if (uParsedVal <=
-			    static_cast<uint64_t>(std::numeric_limits<uint8_t>::max())) {
-				minimalBits = 8;
+			    static_cast<uint64_t>(std::numeric_limits<int32_t>::max())) {
+				signedNumber = true;
 			} else if (uParsedVal <=
 			           static_cast<uint64_t>(
-			               std::numeric_limits<uint16_t>::max())) {
-				minimalBits = 16;
-			} else if (uParsedVal <=
+			               std::numeric_limits<int64_t>::max())) {
+				signedNumber = true;
+				minimalBits = 64;
+			} else if (uParsedVal >
 			           static_cast<uint64_t>(
 			               std::numeric_limits<uint32_t>::max())) {
-				minimalBits = 32;
-			} else if (uParsedVal <=
-			           static_cast<uint64_t>(
-			               std::numeric_limits<uint64_t>::max())) {
 				minimalBits = 64;
 			}
 		}
@@ -297,18 +308,18 @@ std::optional<Type> Type::getNumberLiteralType(const std::string_view lexeme) {
 Type Type::defineScalarType(std::string name, size_t calculatedSize,
                             bool signedType) {
 	return Type{
-	    true,           //
-	    true,           //
-	    false,          //
-	    name,           //
-	    name,           //
-	    calculatedSize, //
-	    false,
-	    false,      //
-	    false,      //
-	    signedType, //
-	    {},         //
-	    {},
+	    true,           // initialized type
+	    true,           // it is an scalar type
+	    false,          // is not platform dependent
+	    name,           // specified name
+	    name,           //	 scalar types do not have mangled type
+	    calculatedSize, // size is known even without platform information
+	    false,          // by default all scalar types are const
+	    false,          // is not a pointer type
+	    signedType,     //	only signed if specified
+	    false,          // no overload
+	    std::nullopt,   // no subtype
+	    std::nullopt,   // no signature
 	};
 }
 Type Type::definePlatformDependentType(std::string name, size_t aproximatedSize,
@@ -320,7 +331,7 @@ Type Type::definePlatformDependentType(std::string name, size_t aproximatedSize,
 	    name,
 	    name, //
 	    aproximatedSize,
-	    false, // non const
+	    false, // const unless told is not
 	    false, // non pointer
 	    signedType,
 	    false, // non overloaded type

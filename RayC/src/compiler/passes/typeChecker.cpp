@@ -161,7 +161,6 @@ void TypeChecker::visitIfStatement(const ast::If &ifStmt) {
 		                 "non boolean condition");
 	} else {
 		auto boolType = findScalarTypeInfo("bool");
-		boolType->isConst = true;
 		// for now lets just stricly validate if is the same
 		// TODO: enable coercions
 		if (!(conditionType.value() == boolType.value())) {
@@ -204,7 +203,7 @@ void TypeChecker::visitJumpStatement(const ast::Jump &jumpStmt) {
 	typeStack.push_back(lang::Type::defineStmtType());
 }
 void TypeChecker::visitVarStatement(const ast::Var &variable) {
-	auto type = lang::Type{};
+	auto explicitType = lang::Type{};
 
 	if (variable.type.token.type != Token::TokenType::TOKEN_UNINITIALIZED) {
 		const auto &variableType = variable.type;
@@ -212,27 +211,47 @@ void TypeChecker::visitVarStatement(const ast::Var &variable) {
 		auto foundType = resolveType(variableType);
 		if (!foundType.has_value()) {
 			messageBag.error(
-			    variable.type.getToken(), "TYPE-ERROR",
+			    variable.type.getToken(), "TYPE-CHECKER",
 			    std::format("'{}' does not name an existing type", typeName));
 		} else {
-			type = foundType.value();
+			explicitType = foundType.value();
 		}
 	}
 
-	auto initializationType = lang::Type{};
 	if (variable.initializer.has_value()) {
 		auto &initializer = *variable.initializer.value().get();
 		auto initType = resolveType(initializer);
-		if (initType.has_value()) {
-			initializationType = initType.value();
+		if (!initType.has_value()) {
+			messageBag.error(
+			    initializer.getToken(), "TYPE-CHECKER",
+			    std::format(
+			        "inialization expression did not yield a type for '{}'",
+			        initializer.getToken().getLexeme()));
+		} else {
+			const auto initializationType = initType.value();
+			if (!explicitType.isInitialized()) {
+				explicitType = initializationType;
+			} else if (explicitType != initializationType) {
+				messageBag.error(
+				    variable.getToken(), "TYPE-CHECKER",
+				    std::format(
+				        "variable initialization type does not match with explicit type for '{}': '{}' vs '{}'",
+				        variable.getToken().getLexeme(), explicitType.name,
+				        initializationType.name));
+			}
 		}
 	}
 
-	if (!(type.isInitialized() || initializationType.isInitialized())) {
-		messageBag.error(
-		    variable.getToken(), "TYPE-ERROR",
-		    "variable does not have a type assigned nor an valid initialization");
+	if (explicitType.isInitialized()) {
+		currentScope.get().defineLocalVariable(variable.name.getLexeme(),
+		                                       explicitType);
+		typeStack.push_back(explicitType);
+		return;
 	}
+
+	messageBag.error(
+	    variable.getToken(), "TYPE-CHECKER",
+	    "variable does not have a type assigned nor an valid initialization");
 }
 void TypeChecker::visitWhileStatement(const ast::While &value) {
 	messageBag.bug(value.getToken(), "TYPE-CHECKER",
@@ -429,6 +448,8 @@ void TypeChecker::visitBinaryExpression(const ast::Binary &binaryExpr) {
 	}
 
 	auto op = binaryExpr.op;
+	// TODO: once we start supporting operator overload this should be done by
+	// lookup of the overloads and get the return type of it
 	switch (op.type) {
 	case Token::TokenType::TOKEN_PLUS:
 	case Token::TokenType::TOKEN_MINUS:
@@ -643,13 +664,13 @@ void TypeChecker::visitTypeExpression(const ast::Type &typeExpr) {
 			return;
 		}
 		lang::Type pointerType = makePointerType(innerType.value());
-		pointerType.isConst = typeExpr.isConst;
+		pointerType.isMutable = typeExpr.isMutable;
 		typeStack.push_back(pointerType);
 	} else {
 		auto result = findTypeInfo(typeExpr.name.lexeme);
 		if (result.has_value()) {
 			lang::Type obtainedType = result.value();
-			obtainedType.isConst = typeExpr.isConst;
+			obtainedType.isMutable = typeExpr.isMutable;
 			typeStack.push_back(obtainedType);
 		} else {
 			messageBag.error(

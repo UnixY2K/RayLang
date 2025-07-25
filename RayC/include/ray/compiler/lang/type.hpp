@@ -20,23 +20,23 @@ class Type {
 	std::string name;
 	std::string mangledName;
 	size_t calculatedSize = 0;
-	bool isConst = true;
+	bool isMutable = false;
 	bool isPointer = false;
 	bool signedType = false;
 	bool overloaded = false;
-	std::optional<util::copy_ptr<Type>> subtype;
-	std::optional<std::vector<util::copy_ptr<Type>>> signature;
+	std::optional<util::copy_ptr<Type>> subtype = std::nullopt;
+	std::optional<std::vector<util::copy_ptr<Type>>> signature = std::nullopt;
 
 	Type() = default;
 	Type(bool initialized, bool scalar, bool platformDependent,
 	     std::string name, std::string mangledName, size_t calculatedSize,
-	     bool isConst, bool isPointer, bool signedType, bool overloaded,
+	     bool isMutable, bool isPointer, bool signedType, bool overloaded,
 	     std::optional<util::copy_ptr<Type>> subType,
-	     std::vector<util::copy_ptr<Type>> signature)
+	     std::optional<std::vector<util::copy_ptr<Type>>> signature)
 	    : initialized{initialized}, scalar{scalar},
 	      platformDependent{platformDependent}, name{name},
 	      mangledName{mangledName}, calculatedSize{calculatedSize},
-	      isConst{isConst}, isPointer{isPointer}, signedType{signedType},
+	      isMutable{isMutable}, isPointer{isPointer}, signedType{signedType},
 	      overloaded{overloaded}, subtype{subType}, signature{signature} {};
 
 	void initialize() { initialized = true; }

@@ -347,18 +347,18 @@ class ArrayAccess : public Expression {
 class Type : public Expression {
   public:
 	Token name;
-	bool isConst;
+	bool isMutable;
 	bool isPointer;
 	std::optional<std::unique_ptr<Type>> subtype;
 	Token token;
 
 	Type(Token name,
-	        bool isConst,
+	        bool isMutable,
 	        bool isPointer,
 	        std::optional<std::unique_ptr<Type>> subtype,
 	        Token token):
 		name(std::move(name)),
-		isConst(std::move(isConst)),
+		isMutable(std::move(isMutable)),
 		isPointer(std::move(isPointer)),
 		subtype(std::move(subtype)),
 		token(std::move(token)) {}
