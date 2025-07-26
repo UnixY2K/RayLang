@@ -694,10 +694,17 @@ void TypeChecker::visitCastExpression(const ast::Cast &value) {
 	               std::format("visit method not implemented for {}",
 	                           value.variantName()));
 }
-void TypeChecker::visitParameterExpression(const ast::Parameter &value) {
-	messageBag.bug(value.getToken(), "TYPE-CHECKER",
-	               std::format("visit method not implemented for {}",
-	                           value.variantName()));
+void TypeChecker::visitParameterExpression(const ast::Parameter &parameter) {
+	const auto type = resolveType(parameter.type);
+	if (!type.has_value()) {
+		messageBag.error(
+		    parameter.getToken(), "TYPE-CHECKER",
+		    std::format("parameter '{}' does not have a known type",
+		                parameter.name.getLexeme()));
+		return;
+	}
+
+	typeStack.push_back(type.value());
 }
 
 std::optional<lang::Type>
@@ -828,7 +835,7 @@ TypeChecker::resolveFunctionDeclaration(const ast::Function &function) {
 	std::vector<lang::FunctionParameter> parameters;
 	bool failed = false;
 	for (const auto &parameter : function.params) {
-		auto paramType = resolveType(parameter.type);
+		auto paramType = resolveType(parameter);
 		if (!paramType.has_value()) {
 			messageBag.bug(parameter.getToken(), "TYPE-CHECKER",
 			               std::format("could not inspect type for {}",
