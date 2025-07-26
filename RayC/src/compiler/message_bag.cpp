@@ -1,5 +1,6 @@
 #include <cstddef>
 #include <format>
+#include <sstream>
 #include <string_view>
 #include <vector>
 
@@ -20,14 +21,14 @@ void MessageBag::error(const Token token, std::string_view category,
 		reportError(token.line, token.column, " at end", category, message);
 	} else {
 		reportError(token.line, token.column,
-		            std::format("at '{}'", token.getLexeme()), category,
-		            message);
+		            std::format("at '{}'", escapeString(token.getLexeme())),
+		            category, escapeString(message));
 	}
 }
 
 void MessageBag::warning(size_t line, size_t column, std::string_view category,
                          std::string_view message) {
-	reportError(line, column, "", category, message);
+	reportError(line, column, "", category, escapeString(message));
 }
 
 void MessageBag::warning(const Token token, std::string_view category,
@@ -36,8 +37,8 @@ void MessageBag::warning(const Token token, std::string_view category,
 		reportWarning(token.line, token.column, " at end", category, message);
 	} else {
 		reportWarning(token.line, token.column,
-		              std::format("at '{}'", token.getLexeme()), category,
-		              message);
+		              std::format("at '{}'", escapeString(token.getLexeme())),
+		              category, escapeString(message));
 	}
 }
 
@@ -52,7 +53,8 @@ void MessageBag::bug(const Token token, std::string_view category,
 		reportBug(token.line, token.column, " at end", category, message);
 	} else {
 		reportBug(token.line, token.column,
-		          std::format("at '{}'", token.getLexeme()), category, message);
+		          std::format("at '{}'", escapeString(token.getLexeme())),
+		          category, message);
 	}
 }
 
@@ -83,5 +85,46 @@ void MessageBag::reportBug(size_t line, size_t column, std::string_view where,
 	errors.push_back(std::format("{}|{} [{}:{}:{}] {}: {}\n", "Bug"_red,
 	                             terminal::red(category), filepath, line,
 	                             column, where, message));
+}
+
+std::string MessageBag::escapeString(const std::string_view string) {
+	std::stringstream output;
+	for (const char c : string) {
+		switch (c) {
+		case '\a':
+			output << "\\a";
+			break;
+		case '\b':
+			output << "\\b";
+			break;
+		case '\e':
+			output << "\\e";
+			break;
+		case '\f':
+			output << "\\f";
+			break;
+		case '\n':
+			output << "\\n";
+			break;
+		case '\r':
+			output << "\\r";
+			break;
+		case '\v':
+			output << "\\v";
+			break;
+		case '\'':
+			output << "'";
+			break;
+		case '"':
+			output << '"';
+			break;
+		case '?':
+			output << '?';
+			break;
+		default:
+			output << c;
+		}
+	}
+	return output.str();
 }
 } // namespace ray::compiler

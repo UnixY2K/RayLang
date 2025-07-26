@@ -178,7 +178,7 @@ int main(int argc, char **argv) {
 		}
 
 	} catch (std::exception &ex) {
-		std::cerr << std::format("{}: {}", "UNHANDLED_ERROR"_red, ex.what());
+		std::cerr << std::format("{}: {}\n", "UNHANDLED_ERROR"_red, ex.what());
 		return -1;
 	}
 }

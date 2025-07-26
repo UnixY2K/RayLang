@@ -54,6 +54,8 @@ class MessageBag {
 	                   std::string_view category, std::string_view message);
 	void reportBug(size_t line, size_t column, std::string_view where,
 	                   std::string_view category, std::string_view message);
+
+	std::string escapeString(const std::string_view string);
 };
 
 } // namespace ray::compiler
