@@ -127,32 +127,42 @@ void TypeChecker::visitExpressionStmtStatement(
 }
 void TypeChecker::visitFunctionStatement(const ast::Function &function) {
 
-	auto declaration = resolveFunctionDeclaration(function);
-	if (!declaration) {
-
+	auto declarationResult = resolveFunctionDeclaration(function);
+	if (!declarationResult.has_value()) {
+		messageBag.error(
+		    function.getToken(), "TYPE-CHECKER",
+		    std::format("could not resolve function declaration for '{}'",
+		                function.name.getLexeme()));
 	} else {
+		const auto declaration = declarationResult.value();
 		auto definition = lang::FunctionDefinition{
-		    .declaration = declaration.value(),
+		    .declaration = declaration,
 		    .function = function,
 		};
+		std::vector<util::copy_ptr<lang::Type>> paramTypes;
+		for (const auto &param : declaration.signature.parameters) {
+			paramTypes.push_back(
+			    util::copy_ptr<lang::Type>(param.parameterType));
+		}
 
 		// declaration was already defined, so it does not require to be defined
 		// again, just the body
 		if (function.body.has_value()) {
 			currentSourceUnit.functionDefinitions.push_back(definition);
+
+			// add functions to the current scope and validate that each
+			for (const auto &param : declaration.signature.parameters) {
+				// TODO: variable definitions should be done at an earlier stage
+				currentScope.get().defineLocalVariable(param.name,
+				                                       param.parameterType);
+			}
 			resolveTypes(function.body.value());
 		}
-	}
 
-	// TODO: return a function pointer type with an specific signature
-
-	std::vector<util::copy_ptr<lang::Type>> paramTypes;
-	for (const auto &param : declaration->signature.parameters) {
-		paramTypes.push_back(util::copy_ptr<lang::Type>(param.parameterType));
+		auto functionType = lang::Type::defineFunctionType(
+		    declaration.signature.returnType, paramTypes);
+		typeStack.push_back(functionType);
 	}
-	auto functionType = lang::Type::defineFunctionType(
-	    declaration->signature.returnType, paramTypes);
-	typeStack.push_back(functionType);
 }
 void TypeChecker::visitIfStatement(const ast::If &ifStmt) {
 	auto conditionType = resolveType(*ifStmt.condition);
