@@ -46,6 +46,10 @@ bool Type::operator==(const Type &other) const {
 std::optional<Type> Type::findScalarType(const std::string_view name) {
 	static std::unordered_map<std::string, Type> map = {
 	    {
+	        "bool",
+	        defineScalarType("bool", 1, false),
+	    }, // bool
+	    {
 	        "u8",
 	        defineScalarType("u8", 1, false),
 	    }, // u8
@@ -281,14 +285,12 @@ std::optional<Type> Type::getNumberLiteralType(const std::string_view lexeme) {
 			if (uParsedVal <=
 			    static_cast<uint64_t>(std::numeric_limits<int32_t>::max())) {
 				signedNumber = true;
-			} else if (uParsedVal <=
-			           static_cast<uint64_t>(
-			               std::numeric_limits<int64_t>::max())) {
+			} else if (uParsedVal <= static_cast<uint64_t>(
+			                             std::numeric_limits<int64_t>::max())) {
 				signedNumber = true;
 				minimalBits = 64;
-			} else if (uParsedVal >
-			           static_cast<uint64_t>(
-			               std::numeric_limits<uint32_t>::max())) {
+			} else if (uParsedVal > static_cast<uint64_t>(
+			                            std::numeric_limits<uint32_t>::max())) {
 				minimalBits = 64;
 			}
 		}
