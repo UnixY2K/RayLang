@@ -156,7 +156,20 @@ void TypeChecker::visitFunctionStatement(const ast::Function &function) {
 				currentScope.get().defineLocalVariable(param.name,
 				                                       param.parameterType);
 			}
-			resolveTypes(function.body.value());
+			const auto typeR = resolveType(function.body.value());
+			if (!typeR.has_value()) {
+				messageBag.bug(function.body->getToken(), "TYPE-CHECKER",
+				               "inner body did not yield a return type");
+			} else {
+				const auto &type = typeR.value();
+				if (!type.coercercesInto(declaration.signature.returnType)) {
+					messageBag.error(
+					    function.body->getToken(), "TYPE-CHECKER",
+					    std::format(
+					        "inner body return type does not match with function return: '{}' vs '{}'",
+					        type.name, declaration.signature.returnType.name));
+				}
+			}
 		}
 
 		auto functionType = lang::Type::defineFunctionType(
@@ -712,9 +725,16 @@ TypeChecker::resolveType(const ast::Statement &statement) {
 	auto types = resolveTypes(statement);
 
 	if (types.size() > 1) {
-		messageBag.bug(
-		    statement.getToken(), "TYPE-CHECKER",
-		    std::format("'{}' yield multiple values", statement.variantName()));
+		// check wether the return types coerce
+		for (size_t i = 1; i < types.size(); i++) {
+			if (!types[0].coercercesInto(types[i])) {
+				messageBag.bug(
+				    statement.getToken(), "TYPE-CHECKER",
+				    std::format(
+				        "'{}' return types does not match for '{}' vs '{}'",
+				        statement.variantName(), types[0].name, types[i].name));
+			}
+		}
 	}
 
 	return types.size() > 0 ? std::optional<lang::Type>(types[0])

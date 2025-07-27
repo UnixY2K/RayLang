@@ -416,11 +416,6 @@ std::vector<std::unique_ptr<ast::Statement>> Parser::block() {
 	if (statements.size() < 1 ||
 	    dynamic_cast<ast::TerminalExpr *>(
 	        statements[statements.size() - 1].get()) == nullptr) {
-		statements.push_back(
-		    std::make_unique<ast::TerminalExpr>(ast::TerminalExpr{
-		        {},
-		        token,
-		    }));
 	}
 	return statements;
 }
