@@ -9,38 +9,40 @@
 #include <ray/compiler/lang/type.hpp>
 namespace ray::compiler::lang {
 
-bool Type::operator==(const Type &other) const {
-	if (initialized == other.initialized &&                  //
-	    scalar == other.scalar &&                            //
-	    platformDependent == other.platformDependent &&      //
-	    name == other.name &&                                //
-	    mangledName == other.mangledName &&                  //
-	    calculatedSize == other.calculatedSize &&            //
-	    isMutable == other.isMutable &&                      //
-	    isPointer == other.isPointer &&                      //
-	    signedType == other.signedType &&                    //
-	    subtype.has_value() == other.subtype.has_value() &&  //
-	    signature.has_value() == other.signature.has_value() //
-	) {
-		if (subtype.has_value() && *subtype.value() != *other.subtype.value()) {
+bool Type::coercercesInto(const Type &targetType) const {
+	// for now just validate wether the type is the same minus constness
+	return baseMatches(targetType) && // base has to match
+	       signatureEquals(
+	           targetType); // signature is a heavier comparison that goes last
+}
+
+bool Type::signatureEquals(const Type &targetType) const {
+	if (subtype.has_value() &&
+	    *subtype.value() != *targetType.subtype.value()) {
+		return false;
+	}
+	if (signature.has_value()) {
+		const auto &lhsSignature = signature.value();
+		const auto &rhsSignature = targetType.signature.value();
+
+		if (lhsSignature.size() != rhsSignature.size()) {
 			return false;
 		}
-		if (signature.has_value()) {
-			const auto &lhsSignature = signature.value();
-			const auto &rhsSignature = other.signature.value();
-
-			if (lhsSignature.size() != rhsSignature.size()) {
+		for (size_t i = 0; i < lhsSignature.size(); i++) {
+			if (*lhsSignature[i] != *rhsSignature[i]) {
 				return false;
 			}
-			for (size_t i = 0; i < lhsSignature.size(); i++) {
-				if (*lhsSignature[i] != *rhsSignature[i]) {
-					return false;
-				}
-			}
 		}
-		return true;
 	}
-	return false;
+	return true;
+}
+
+bool Type::operator==(const Type &other) const {
+	return baseMatches(other) &&           // base has to match
+	       isMutable == other.isMutable && // also constness as this is an
+	                                       // stricter comparison
+	       signatureEquals(
+	           other); // signature is a heavier comparison that goes last
 }
 
 std::optional<Type> Type::findScalarType(const std::string_view name) {
@@ -305,6 +307,17 @@ std::optional<Type> Type::getNumberLiteralType(const std::string_view lexeme) {
 	    minimalBits);
 
 	return findScalarType(typeLexeme);
+}
+
+bool Type::baseMatches(const Type &other) const {
+	return initialized == other.initialized &&             // has to be the same
+	       scalar == other.scalar &&                       // |
+	       platformDependent == other.platformDependent && // |
+	       name == other.name &&                           // |
+	       mangledName == other.mangledName && // TODO: remove mangled name
+	       calculatedSize == other.calculatedSize && // same size
+	       isPointer == other.isPointer &&           // |
+	       signedType == other.signedType;           // same signess
 }
 
 Type Type::defineScalarType(std::string name, size_t calculatedSize,

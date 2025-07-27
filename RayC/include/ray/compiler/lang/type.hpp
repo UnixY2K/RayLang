@@ -44,6 +44,9 @@ class Type {
 	bool isScalar() const { return scalar; }
 	bool isPlatformDependent() const { return platformDependent; }
 
+	bool coercercesInto(const Type& targetType) const;
+	bool signatureEquals(const Type& targetType) const;
+
 	bool operator==(const Type &other) const;
 
 	static std::optional<Type> findScalarType(const std::string_view name);
@@ -67,6 +70,8 @@ class Type {
 	getNumberLiteralType(const std::string_view lexeme);
 
   private:
+	bool baseMatches(const Type& other) const;
+
 	static Type defineScalarType(std::string name, size_t calculatedSize,
 	                             bool signedType);
 	static Type definePlatformDependentType(std::string name,
