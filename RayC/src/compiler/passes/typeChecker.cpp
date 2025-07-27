@@ -173,7 +173,7 @@ void TypeChecker::visitIfStatement(const ast::If &ifStmt) {
 		auto boolType = findScalarTypeInfo("bool");
 		// for now lets just stricly validate if is the same
 		// TODO: enable coercions
-		if (!(conditionType.value() == boolType.value())) {
+		if (!(conditionType->coercercesInto(boolType.value()))) {
 			messageBag.error(ifStmt.condition->getToken(), "TYPE-CHECKER",
 			                 "condition does not coerce into a bool type");
 		}
@@ -470,6 +470,9 @@ void TypeChecker::visitBinaryExpression(const ast::Binary &binaryExpr) {
 	case Token::TokenType::TOKEN_PIPE:
 	case Token::TokenType::TOKEN_CARET:
 	case Token::TokenType::TOKEN_LESS_LESS:
+		// currently assume the the type is the same as left expression type
+		typeStack.push_back(leftType.value());
+		break;
 	case Token::TokenType::TOKEN_GREAT_GREAT:
 	case Token::TokenType::TOKEN_EQUAL_EQUAL:
 	case Token::TokenType::TOKEN_BANG_EQUAL:
@@ -477,10 +480,7 @@ void TypeChecker::visitBinaryExpression(const ast::Binary &binaryExpr) {
 	case Token::TokenType::TOKEN_GREAT:
 	case Token::TokenType::TOKEN_LESS_EQUAL:
 	case Token::TokenType::TOKEN_GREAT_EQUAL:
-		// currently assume the the type is the same as left expression type
-		if (leftType.has_value()) {
-			typeStack.push_back(leftType.value());
-		}
+		typeStack.push_back(findScalarTypeInfo("bool").value());
 		break;
 	default:
 		messageBag.error(binaryExpr.op, "TYPE-CHECKER",
