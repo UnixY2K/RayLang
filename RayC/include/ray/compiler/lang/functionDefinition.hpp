@@ -50,23 +50,5 @@ struct FunctionDefinition {
 	std::reference_wrapper<const ast::Function> function;
 };
 
-class S1FunctionParameter {
-  public:
-	std::string name;
-	std::string type;
 
-	MSGPACK_DEFINE(name, type);
-};
-
-class S1FunctionDeclaration {
-
-  public:
-	std::string name;
-	std::string mangledName;
-	std::string returnType;
-
-	std::vector<S1FunctionParameter> parameters;
-
-	MSGPACK_DEFINE(name, mangledName, returnType, parameters);
-};
 } // namespace ray::compiler::lang

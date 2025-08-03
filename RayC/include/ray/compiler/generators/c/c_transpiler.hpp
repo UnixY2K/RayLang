@@ -20,7 +20,6 @@
 
 namespace ray::compiler::generator::c {
 
-using SymbolTable = std::vector<lang::Symbol>;
 
 class CTranspilerGenerator : public ast::StatementVisitor,
                              public ast::ExpressionVisitor {
@@ -33,8 +32,6 @@ class CTranspilerGenerator : public ast::StatementVisitor,
 	std::vector<std::string_view> namespaceStack;
 	std::vector<std::unique_ptr<directive::CompilerDirective>> directivesStack;
 	size_t top = 0;
-
-	SymbolTable symbolTable;
 
 	passes::mangling::NameMangler nameMangler;
 

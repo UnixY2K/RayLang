@@ -3,6 +3,7 @@
 #include <memory>
 #include <optional>
 
+#include <ray/compiler/S1/lang/S1SourceUnit.hpp>
 #include <ray/compiler/ast/expression.hpp>
 #include <ray/compiler/ast/statement.hpp>
 #include <ray/compiler/directives/compilerDirective.hpp>
@@ -23,7 +24,7 @@ class TypeChecker : public ast::StatementVisitor,
 	std::vector<std::unique_ptr<directive::CompilerDirective>> directivesStack;
 	size_t top = 0;
 
-	lang::S1SourceUnit s1SourceUnit;
+	S1::lang::S1SourceUnit s1SourceUnit;
 	std::vector<lang::Type> typeStack;
 
 	lang::SourceUnit currentSourceUnit;
@@ -31,7 +32,7 @@ class TypeChecker : public ast::StatementVisitor,
 	lang::ModuleStore &moduleStore;
 
   public:
-	TypeChecker(std::string filePath, lang::S1SourceUnit s1SourceUnit,
+	TypeChecker(std::string filePath, S1::lang::S1SourceUnit s1SourceUnit,
 	            lang::ModuleStore &moduleStore)
 	    : messageBag(filePath), s1SourceUnit(s1SourceUnit), typeStack(),
 	      currentSourceUnit(), currentScope(currentSourceUnit.scopes[0]),

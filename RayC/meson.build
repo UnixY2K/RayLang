@@ -12,10 +12,11 @@ rayc_srcs = [
 	'src/compiler/lexer/lexer_error.cpp',
 	'src/compiler/lexer/lexer.cpp',
 	'src/compiler/lexer/token.cpp',
+	'src/compiler/parser/parser.cpp',
 	'src/compiler/passes/symbol_mangler.cpp',
 	'src/compiler/passes/topLevelResolver.cpp',
 	'src/compiler/passes/typeChecker.cpp',
-	'src/compiler/parser/parser.cpp',
+	'src/compiler/S1/lang/S1SourceUnit.cpp',
 	'src/compiler/message_bag.cpp',
 	'src/source.cpp',
 ]

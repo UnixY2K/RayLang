@@ -1,6 +1,7 @@
 #pragma once
 #include <memory>
 
+#include <ray/compiler/S1/lang/S1SourceUnit.hpp>
 #include <ray/compiler/ast/expression.hpp>
 #include <ray/compiler/ast/statement.hpp>
 #include <ray/compiler/directives/compilerDirective.hpp>
@@ -19,15 +20,14 @@ class TopLevelResolver : public ast::StatementVisitor,
 
 	std::vector<std::unique_ptr<directive::CompilerDirective>> directivesStack;
 
-	
-	lang::S1SourceUnit currentS1SourceUnit;
+	S1::lang::S1SourceUnit currentS1SourceUnit;
 	size_t top = 0;
 
   public:
 	TopLevelResolver(std::string filePath) : messageBag(filePath) {}
 	void resolve(const std::vector<std::unique_ptr<ast::Statement>> &statement);
 
-	lang::S1SourceUnit getSourceUnit() const;
+	S1::lang::S1SourceUnit getSourceUnit() const;
 
 	bool hasFailed() const;
 	const std::vector<std::string> getErrors() const;

@@ -32,7 +32,6 @@ void CTranspilerGenerator::resolve(
     const std::vector<std::unique_ptr<ast::Statement>> &statement,
     const lang::SourceUnit &sourceUnit) {
 	output.clear();
-	symbolTable.clear();
 
 	output << "#include <ray/ray_definitions.h>\n";
 	output << "#ifdef __cplusplus\n";
@@ -650,26 +649,7 @@ CTranspilerGenerator::findCallableName(const ast::Call &callable,
                                        const std::string_view name) const {
 	// we should make a propper lookup and ranking
 	// but for now the first matching function will be used
-	for (const auto &symbol : symbolTable) {
-		if (symbol.name == name) {
-			switch (symbol.type) {
-			case lang::Symbol::SymbolType::Function: {
-				if (const auto *function = dynamic_cast<const ast::Function *>(
-				        symbol.object.value_or(nullptr))) {
-					if (function->params.size() == callable.arguments.size()) {
-						// here we should add to a list of candidate functions
-						// than later are checked for types
-						// but now we just return the mangled function name
-						return symbol.mangledName;
-					}
-				}
-				break;
-			}
-			default:
-				break;
-			}
-		}
-	}
+
 	return "";
 }
 std::string
@@ -677,27 +657,7 @@ CTranspilerGenerator::findStructName(const std::string_view name) const {
 	// we should make a propper lookup and ranking
 	// but for now we will match the first struct found with same name and
 	// namespace
-	for (const auto &symbol : symbolTable) {
-		if (symbol.name == name) {
-			switch (symbol.type) {
-			case lang::Symbol::SymbolType::Struct: {
-				if (const auto *currentStruct =
-				        dynamic_cast<const ast::Struct *>(
-				            symbol.object.value_or(nullptr))) {
-					if (currentStruct->name.lexeme == name) {
-						// here we should add to a list of candidate functions
-						// than later are checked for types
-						// but now we just return the mangled function name
-						return symbol.mangledName;
-					}
-				}
-				break;
-			}
-			default:
-				break;
-			}
-		}
-	}
+
 	return "";
 }
 

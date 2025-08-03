@@ -67,7 +67,8 @@ bool lang::Scope::defineFunction(FunctionDeclaration declaration) {
 	return true;
 }
 
-bool lang::Scope::defineLocalVariable(const std::string_view name, const lang::Type type) {
+bool lang::Scope::defineLocalVariable(const std::string_view name,
+                                      const lang::Type type) {
 	std::string key(name);
 	if (variables.contains(key)) {
 		return false;
@@ -86,32 +87,4 @@ SourceUnit::findStructType(const std::string &typeName) const {
 	return {};
 }
 
-void S1SourceUnit::clear() {
-	structDefinitions.clear();
-	structDeclarations.clear();
-
-	functionDeclarations.clear();
-
-	rootScope.clear();
-}
-
-std::string S1SourceUnit::exportSourceUnit() const {
-	std::stringstream result;
-	msgpack::pack(result, *this);
-
-	result.seekg(0);
-
-	return result.str();
-}
-
-S1SourceUnit S1SourceUnit::importSourceUnit(std::stringstream &stream) {
-	S1SourceUnit result;
-	std::string data = stream.str();
-
-	msgpack::object_handle oh = msgpack::unpack(data.data(), data.size());
-	msgpack::object obj = oh.get();
-
-	obj.convert(result);
-	return result;
-}
 } // namespace ray::compiler::lang

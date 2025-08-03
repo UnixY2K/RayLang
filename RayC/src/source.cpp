@@ -107,7 +107,7 @@ int main(int argc, char **argv) {
 			for (auto tableGenWarning : symbolTableGen.getWarnings()) {
 				std::cerr << tableGenWarning;
 			}
-			lang::S1SourceUnit s1SourceUnit = symbolTableGen.getSourceUnit();
+			S1::lang::S1SourceUnit s1SourceUnit = symbolTableGen.getSourceUnit();
 			// if we did not fail update the S1 file
 			outputS1File << s1SourceUnit.exportSourceUnit();
 
