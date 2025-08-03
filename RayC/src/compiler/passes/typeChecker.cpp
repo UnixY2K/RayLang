@@ -551,7 +551,7 @@ void TypeChecker::visitCallExpression(const ast::Call &callExpr) {
 				    std::format(
 				        "argument #'{}' does not matches the expected type {} vs {}",
 				        i, callerParamType.name, calleeParamType.name));
-				return;
+				continue;
 			}
 		}
 	}
