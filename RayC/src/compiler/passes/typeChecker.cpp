@@ -92,7 +92,11 @@ void TypeChecker::visitBlockStatement(const ast::Block &block) {
 	for (const auto &statement : block.statements) {
 		auto stmtTypes = resolveTypes(*statement);
 		types.reserve(types.size() + stmtTypes.size());
-		types.insert(types.end(), stmtTypes.begin(), stmtTypes.end());
+		for (const auto &type : stmtTypes) {
+			if (type != lang::Type::defineStmtType()) {
+				types.push_back(type);
+			}
+		}
 	}
 
 	typeStack.reserve(typeStack.size() + types.size());
@@ -446,10 +450,50 @@ void TypeChecker::visitIntrinsicExpression(const ast::Intrinsic &value) {
 	               std::format("visit method not implemented for {}",
 	                           value.variantName()));
 }
-void TypeChecker::visitAssignExpression(const ast::Assign &value) {
-	messageBag.bug(value.getToken(), "TYPE-CHECKER",
-	               std::format("visit method not implemented for {}",
-	                           value.variantName()));
+void TypeChecker::visitAssignExpression(const ast::Assign &assignExpr) {
+	auto leftType = resolveType(*assignExpr.lhs);
+	auto rightType = resolveType(*assignExpr.rhs);
+
+	if (!(leftType.has_value() && rightType.has_value())) {
+		if (!leftType.has_value()) {
+			messageBag.error(
+			    assignExpr.lhs->getToken(), "TYPE-CHECKER",
+			    std::format("left expression did not yield a value"));
+		}
+
+		if (!rightType.has_value()) {
+			messageBag.error(
+			    assignExpr.rhs->getToken(), "TYPE-CHECKER",
+			    std::format("right expression did not yield a value"));
+			return;
+		}
+		return;
+	}
+
+	auto op = assignExpr.assignmentOp;
+	// TODO: once we start supporting operator overload this should be done by
+	// lookup of the overloads and get the return type of it
+	switch (op.type) {
+
+	case Token::TokenType::TOKEN_EQUAL:
+	case Token::TokenType::TOKEN_PLUS_EQUAL:
+	case Token::TokenType::TOKEN_MINUS_EQUAL:
+	case Token::TokenType::TOKEN_STAR_EQUAL:
+	case Token::TokenType::TOKEN_SLASH_EQUAL:
+	case Token::TokenType::TOKEN_PERCENT_EQUAL:
+	case Token::TokenType::TOKEN_AMPERSAND_EQUAL:
+	case Token::TokenType::TOKEN_PIPE_EQUAL:
+	case Token::TokenType::TOKEN_CARET_EQUAL:
+	case Token::TokenType::TOKEN_LESS_LESS_EQUAL:
+	case Token::TokenType::TOKEN_GREAT_GREAT_EQUAL:
+		// for now just return the same type as lhs
+		typeStack.push_back(leftType.value());
+	default:
+		messageBag.error(
+		    op, "TYPE-CHECKER",
+		    std::format("'{}' is not a supported assignment operation",
+		                op.getLexeme()));
+	}
 }
 void TypeChecker::visitBinaryExpression(const ast::Binary &binaryExpr) {
 	auto leftType = resolveType(*binaryExpr.left);
