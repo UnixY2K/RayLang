@@ -29,14 +29,15 @@ class TypeChecker : public ast::StatementVisitor,
 
 	lang::SourceUnit currentSourceUnit;
 	std::reference_wrapper<lang::Scope> currentScope;
-	lang::ModuleStore &moduleStore;
+	// lang::ModuleStore &moduleStore;
 
   public:
 	TypeChecker(std::string filePath, S1::lang::S1SourceUnit s1SourceUnit,
 	            lang::ModuleStore &moduleStore)
 	    : messageBag(filePath), s1SourceUnit(s1SourceUnit), typeStack(),
-	      currentSourceUnit(), currentScope(currentSourceUnit.scopes[0]),
-	      moduleStore(moduleStore) {}
+	      currentSourceUnit(), currentScope(currentSourceUnit.rootScope)
+	//,moduleStore(moduleStore)
+	{}
 
 	void resolve(const std::vector<std::unique_ptr<ast::Statement>> &statement);
 

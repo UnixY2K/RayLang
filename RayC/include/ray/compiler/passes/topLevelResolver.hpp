@@ -21,7 +21,7 @@ class TopLevelResolver : public ast::StatementVisitor,
 	std::vector<std::unique_ptr<directive::CompilerDirective>> directivesStack;
 
 	S1::lang::S1SourceUnit currentS1SourceUnit;
-	std::reference_wrapper<S1::lang::S1ScopeTable> currentScope;
+	std::reference_wrapper<S1::lang::S1Scope> currentScope;
 	size_t top = 0;
 
   public:

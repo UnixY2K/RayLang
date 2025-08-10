@@ -1,7 +1,6 @@
+#include "ray/compiler/lang/symbol.hpp"
 #include <cstddef>
-#include <istream>
 #include <optional>
-#include <sstream>
 #include <vector>
 
 #include <msgpack.hpp>
@@ -15,14 +14,22 @@ namespace ray::compiler::lang {
 bool lang::Scope::defineStruct(Type type) {
 	// check if is a new struct
 	if (variables.contains(type.name)) {
-		const auto &varType = variables.at(type.name);
-		if (!varType.isScalar() && varType.calculatedSize > 0) {
+		const auto &symbol = variables.at(type.name);
+		if (!symbol.innerType.isScalar() &&
+		    symbol.innerType.calculatedSize > 0) {
 			// we cannot redefine a known non scalar type
 			return false;
 		}
 	}
 	// non found, redefine it
-	variables[type.name] = type;
+	Symbol structSymbol{
+	    .name = type.name,
+	    .mangledName = "",
+	    .innerType = type,
+	    .type = Symbol::SymbolType::Struct,
+	    .internal = false,
+	};
+	variables[type.name] = structSymbol;
 	return true;
 }
 
@@ -67,23 +74,20 @@ bool lang::Scope::defineFunction(FunctionDeclaration declaration) {
 	return true;
 }
 
-bool lang::Scope::defineLocalVariable(const std::string_view name,
-                                      const lang::Type type) {
-	std::string key(name);
-	if (variables.contains(key)) {
+bool lang::Scope::defineLocalVariable(const lang::Symbol symbol) {
+	if (variables.contains(symbol.name)) {
 		return false;
 	}
-	variables[key] = type;
+	variables[symbol.name] = symbol;
 	return true;
 }
 
 std::optional<lang::Type>
 SourceUnit::findStructType(const std::string &typeName) const {
-	for (const auto &scope : scopes) {
-		if (scope.variables.contains(typeName)) {
-			return scope.variables.at(typeName);
-		}
+	if (rootScope.variables.contains(typeName)) {
+		return rootScope.variables.at(typeName).innerType;
 	}
+
 	return {};
 }
 

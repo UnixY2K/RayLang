@@ -18,7 +18,6 @@ class Type {
 
   public:
 	std::string name;
-	std::string mangledName;
 	size_t calculatedSize = 0;
 	bool isMutable = false;
 	bool isPointer = false;
@@ -29,23 +28,23 @@ class Type {
 
 	Type() = default;
 	Type(bool initialized, bool scalar, bool platformDependent,
-	     std::string name, std::string mangledName, size_t calculatedSize,
-	     bool isMutable, bool isPointer, bool signedType, bool overloaded,
+	     std::string name, size_t calculatedSize, bool isMutable,
+	     bool isPointer, bool signedType, bool overloaded,
 	     std::optional<util::copy_ptr<Type>> subType,
 	     std::optional<std::vector<util::copy_ptr<Type>>> signature)
 	    : initialized{initialized}, scalar{scalar},
 	      platformDependent{platformDependent}, name{name},
-	      mangledName{mangledName}, calculatedSize{calculatedSize},
-	      isMutable{isMutable}, isPointer{isPointer}, signedType{signedType},
-	      overloaded{overloaded}, subtype{subType}, signature{signature} {};
+	      calculatedSize{calculatedSize}, isMutable{isMutable},
+	      isPointer{isPointer}, signedType{signedType}, overloaded{overloaded},
+	      subtype{subType}, signature{signature} {};
 
 	void initialize() { initialized = true; }
 	bool isInitialized() const { return initialized; }
 	bool isScalar() const { return scalar; }
 	bool isPlatformDependent() const { return platformDependent; }
 
-	bool coercercesInto(const Type& targetType) const;
-	bool signatureEquals(const Type& targetType) const;
+	bool coercercesInto(const Type &targetType) const;
+	bool signatureEquals(const Type &targetType) const;
 
 	bool operator==(const Type &other) const;
 
@@ -70,7 +69,7 @@ class Type {
 	getNumberLiteralType(const std::string_view lexeme);
 
   private:
-	bool baseMatches(const Type& other) const;
+	bool baseMatches(const Type &other) const;
 
 	static Type defineScalarType(std::string name, size_t calculatedSize,
 	                             bool signedType);

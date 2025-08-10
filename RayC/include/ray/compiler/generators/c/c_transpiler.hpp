@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstddef>
+#include <functional>
 #include <memory>
 #include <sstream>
 #include <string_view>
@@ -20,7 +21,6 @@
 
 namespace ray::compiler::generator::c {
 
-
 class CTranspilerGenerator : public ast::StatementVisitor,
                              public ast::ExpressionVisitor {
 	MessageBag messageBag;
@@ -35,11 +35,14 @@ class CTranspilerGenerator : public ast::StatementVisitor,
 
 	passes::mangling::NameMangler nameMangler;
 
-  public:
-	CTranspilerGenerator(std::string filePath) : messageBag(filePath) {}
+	std::reference_wrapper<const lang::SourceUnit> currentSourceUnit;
+	std::reference_wrapper<const lang::Scope> currentScope;
 
-	void resolve(const std::vector<std::unique_ptr<ast::Statement>> &statement,
-	             const lang::SourceUnit &sourceUnit);
+  public:
+	CTranspilerGenerator(std::string filePath,
+	                     const lang::SourceUnit &sourceUnit);
+
+	void resolve(const std::vector<std::unique_ptr<ast::Statement>> &statement);
 
 	bool hasFailed() const;
 	const std::vector<std::string> getErrors() const;

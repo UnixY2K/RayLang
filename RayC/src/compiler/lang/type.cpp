@@ -114,15 +114,15 @@ std::optional<Type> Type::findScalarType(const std::string_view name) {
 	    {
 	        "c_voidptr",
 	        Type{
-	            true,
-	            true,
+	            true, // initialized type
+	            true, // scalar
 	            true, // the size is determined by platform
 	            "c_voidptr",
-	            "c_voidptr",
-	            8, // estimated size for 64bits arch
-	            false,
+	            8,     // estimated size for 64bits arch
+	            true,  // non mutable by default, but requires to have a mutable
+	                   // alternative
 	            false, // set as false as cast is "unsafe"
-	            false,
+	            false, // non signed
 	            false, // non overloaded
 	            {},    // no subtype
 	            {},    // no signature
@@ -149,15 +149,14 @@ Type Type::defineStructType(std::string name, size_t aproximatedSize,
 	    // compile time
 	    platformDependent,
 	    name,
-	    name, //
 	    aproximatedSize,
-	    false,
-	    false,
-	    false,
-	    false,
-	    // we do not have subtypes for structs as we are not structs
-	    {}, //
-	    {}, //
+	    false, // non mutable
+	    false, // non pointer
+	    false, // non signed
+	    false, // cannot be overloaded
+	    {},    // no subtype
+	    {},    // no signature? depending on layout and underlying architecture
+	           // cannot be guaranteed
 	};
 }
 
@@ -168,10 +167,8 @@ Type Type::defineFunctionType(Type returnType,
 	    // a pointer is not a scalar as it is an address memory
 	    // that references an object
 	    false,
-	    // technically platform dependent on pointer definition
-	    true,
+	    true,   // technically platform dependent on pointer definition
 	    "//fn", // define the name as pointer
-	    "//fn", // TODO: make a symbol mangler separate to type info
 	    // we need to get this from the platform in the future
 	    // for now assuming 64bits/8bytes
 	    8,          // TODO: make this be obtained from platform configuration
@@ -195,7 +192,6 @@ Type Type::defineOverloadedFunctionType(Type returnType) {
 	    true,
 	    // define the name as pointer
 	    "//fn-overload",
-	    "//fn-overload", // TODO: make a symbol mangler
 	    // we need to get this from the platform in the future
 	    // for now assuming 64bits/8bytes
 	    8,          // TODO: make this be obtained from platform configuration
@@ -213,19 +209,18 @@ Type Type::defineStmtType() {
 	return Type{
 	    // an statement does not even return an initialized type
 	    false,
-	    true,
-	    false,
-	    // name cannot be mangled and referenced
-	    "%<stmt>%",
+	    false, // non scalar
+	    false, // imaginary/abstract type
+	    // name cannot be mangled nor referenced
 	    "%<stmt>%",
 	    // size is 0 so it cannot be passed
 	    0,
-	    false,
-	    false,
-	    false,
-	    false,
-	    {}, //
-	    {}, //
+	    false, // non mutable
+	    false, // non pointer
+	    false, // non signed
+	    false, // non overloaded
+	    {},    // no subtype data
+	    {},    // no signature data
 	};
 }
 
@@ -314,10 +309,9 @@ bool Type::baseMatches(const Type &other) const {
 	       scalar == other.scalar &&                       // |
 	       platformDependent == other.platformDependent && // |
 	       name == other.name &&                           // |
-	       mangledName == other.mangledName && // TODO: remove mangled name
-	       calculatedSize == other.calculatedSize && // same size
-	       isPointer == other.isPointer &&           // |
-	       signedType == other.signedType;           // same signess
+	       calculatedSize == other.calculatedSize &&       // same size
+	       isPointer == other.isPointer &&                 // |
+	       signedType == other.signedType;                 // same signess
 }
 
 Type Type::defineScalarType(std::string name, size_t calculatedSize,
@@ -327,7 +321,6 @@ Type Type::defineScalarType(std::string name, size_t calculatedSize,
 	    true,           // it is an scalar type
 	    false,          // is not platform dependent
 	    name,           // specified name
-	    name,           //	 scalar types do not have mangled type
 	    calculatedSize, // size is known even without platform information
 	    false,          // by default all scalar types are const
 	    false,          // is not a pointer type
@@ -340,14 +333,14 @@ Type Type::defineScalarType(std::string name, size_t calculatedSize,
 Type Type::definePlatformDependentType(std::string name, size_t aproximatedSize,
                                        bool signedType) {
 	return Type{
-	    true, // known initialized type
-	    true, // assume that is scalar
-	    true, //  platform dependent
-	    name,
-	    name, //
-	    aproximatedSize,
-	    false, // const unless told is not
-	    false, // non pointer
+	    true,            // known initialized type
+	    true,            // assume that is scalar
+	    true,            //  platform dependent
+	    name,            // name
+	    aproximatedSize, // TODO: make the aproximated size to be generated by
+	                     // platform information
+	    false,           // const unless told is not
+	    false,           // non pointer
 	    signedType,
 	    false, // non overloaded type
 	    {},    // no subtype

@@ -19,13 +19,13 @@ struct S1Symbol {
 	std::vector<std::string> signature;
 };
 
-struct S1ScopeTable;
+struct S1Scope;
 
-struct S1ScopeTable {
-	std::optional<S1ScopeTable *> parentScope;
+struct S1Scope {
+	std::optional<S1Scope *> parentScope;
 	std::string scopeName;
 	std::vector<lang::S1Symbol> symbols;
-	std::vector<util::copy_ptr<S1ScopeTable>> innerScopes;
+	std::vector<util::copy_ptr<S1Scope>> innerScopes;
 
 	void clear() {
 		symbols.clear();
@@ -83,7 +83,7 @@ class S1SourceUnit {
 
 	std::vector<S1FunctionDeclaration> functionDeclarations;
 
-	S1ScopeTable rootScope;
+	S1Scope rootScope;
 
 	void clear();
 

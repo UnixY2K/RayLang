@@ -1,3 +1,4 @@
+#include "ray/compiler/lang/symbol.hpp"
 #include <cstddef>
 #include <cstdio>
 #include <format>
@@ -157,8 +158,14 @@ void TypeChecker::visitFunctionStatement(const ast::Function &function) {
 			// add functions to the current scope and validate that each
 			for (const auto &param : declaration.signature.parameters) {
 				// TODO: variable definitions should be done at an earlier stage
-				currentScope.get().defineLocalVariable(param.name,
-				                                       param.parameterType);
+				lang::Symbol paramSymbol{
+				    .name = param.name,
+				    .mangledName = "",
+				    .innerType = param.parameterType,
+				    .type = lang::Symbol::SymbolType::Parameter,
+				    .internal = false,
+				};
+				currentScope.get().defineLocalVariable(paramSymbol);
 			}
 			const auto typeR = resolveType(function.body.value());
 			if (!typeR.has_value()) {
@@ -178,6 +185,11 @@ void TypeChecker::visitFunctionStatement(const ast::Function &function) {
 
 		auto functionType = lang::Type::defineFunctionType(
 		    declaration.signature.returnType, paramTypes);
+		if (!currentScope.get().defineFunction(declaration)) {
+			messageBag.error(function.getToken(), "TYPE-CHECKER",
+			                 std::format("could not declare function for '{}'",
+			                             declaration.name));
+		}
 		typeStack.push_back(functionType);
 	}
 }
@@ -230,18 +242,18 @@ void TypeChecker::visitJumpStatement(const ast::Jump &jumpStmt) {
 	typeStack.push_back(lang::Type::defineStmtType());
 }
 void TypeChecker::visitVarStatement(const ast::Var &variable) {
-	auto explicitType = lang::Type{};
+	auto variableType = lang::Type{};
 
 	if (variable.type.token.type != Token::TokenType::TOKEN_UNINITIALIZED) {
-		const auto &variableType = variable.type;
-		std::string_view typeName = variableType.name.lexeme;
-		auto foundType = resolveType(variableType);
+		const auto &explicitType = variable.type;
+		std::string_view typeName = explicitType.name.lexeme;
+		auto foundType = resolveType(explicitType);
 		if (!foundType.has_value()) {
 			messageBag.error(
 			    variable.type.getToken(), "TYPE-CHECKER",
 			    std::format("'{}' does not name an existing type", typeName));
 		} else {
-			explicitType = foundType.value();
+			variableType = foundType.value();
 		}
 	}
 
@@ -256,23 +268,29 @@ void TypeChecker::visitVarStatement(const ast::Var &variable) {
 			        initializer.getToken().getLexeme()));
 		} else {
 			const auto initializationType = initType.value();
-			if (!explicitType.isInitialized()) {
-				explicitType = initializationType;
-			} else if (explicitType != initializationType) {
+			if (!variableType.isInitialized()) {
+				variableType = initializationType;
+			} else if (variableType != initializationType) {
 				messageBag.error(
 				    variable.getToken(), "TYPE-CHECKER",
 				    std::format(
 				        "variable initialization type does not match with explicit type for '{}': '{}' vs '{}'",
-				        variable.getToken().getLexeme(), explicitType.name,
+				        variable.getToken().getLexeme(), variableType.name,
 				        initializationType.name));
 			}
 		}
 	}
 
-	if (explicitType.isInitialized()) {
-		currentScope.get().defineLocalVariable(variable.name.getLexeme(),
-		                                       explicitType);
-		typeStack.push_back(explicitType);
+	if (variableType.isInitialized()) {
+		lang::Symbol variableSymbol{
+		    .name = variable.name.lexeme,
+		    .mangledName = "",
+		    .innerType = variableType,
+		    .type = lang::Symbol::SymbolType::Parameter,
+		    .internal = false,
+		};
+		currentScope.get().defineLocalVariable(variableSymbol);
+		typeStack.push_back(variableType);
 		return;
 	}
 
@@ -415,7 +433,7 @@ void TypeChecker::visitVariableExpression(const ast::Variable &variableExpr) {
 
 	if (currentScope.get().variables.contains(variableExpr.name.lexeme)) {
 		auto type = currentScope.get().variables.at(variableExpr.name.lexeme);
-		typeStack.push_back(type);
+		typeStack.push_back(type.innerType);
 		return;
 	}
 
@@ -807,11 +825,6 @@ TypeChecker::resolveTypes(const ast::Statement &statement) {
 		typeStack.pop_back();
 		returnTypes.push_back(returnType);
 	}
-	if (returnTypes.size() < 1) {
-		messageBag.bug(statement.getToken(), "TYPE-CHECKER",
-		               std::format("'{}' did not yield any return type",
-		                           statement.variantName()));
-	}
 	return returnTypes;
 }
 std::vector<lang::Type>
@@ -855,9 +868,7 @@ lang::Type TypeChecker::makePointerType(const lang::Type &innerType) {
 	                  // technically platform dependent on pointer definition
 	                  true,
 	                  // define the name as pointer
-	                  std::format("pointer", innerType.name),
-	                  // for now lets just copy the type name
-	                  std::format("pointer", innerType.name),
+	                  "pointer",
 	                  // we need to get this from the platform in the future
 	                  // for now assuming 64bits/8bytes
 	                  8,

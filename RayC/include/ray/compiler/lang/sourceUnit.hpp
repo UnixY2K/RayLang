@@ -11,19 +11,25 @@
 #include <ray/compiler/lang/type.hpp>
 
 namespace ray::compiler::lang {
+
+class Scope;
+
 class Scope {
   public:
-	std::unordered_map<std::string, lang::Type> variables;
+	std::optional<Scope *> parentScope;
+	std::string scopeName;
+	std::vector<util::copy_ptr<Scope>> innerScopes;
+
+	std::unordered_map<std::string, lang::Symbol> variables;
 	std::unordered_map<std::string, std::vector<FunctionDeclaration>> functions;
 
 	bool defineStruct(Type type);
 	bool defineFunction(FunctionDeclaration declaration);
-	bool defineLocalVariable(const std::string_view name,
-	                         const lang::Type type);
+	bool defineLocalVariable(const lang::Symbol symbol);
 };
 class SourceUnit {
   public:
-	std::vector<Scope> scopes = {Scope{}};
+	Scope rootScope;
 	// all functions and structs have a declaration vector
 	// that comes from the previous top level resolver
 	std::vector<StructDeclaration> structDeclarations;

@@ -28,9 +28,13 @@ std::string CTranspilerGenerator::currentIdent() const {
 	return std::string(ident, '\t');
 }
 
+CTranspilerGenerator::CTranspilerGenerator(std::string filePath,
+                                           const lang::SourceUnit &sourceUnit)
+    : messageBag(filePath), currentSourceUnit(sourceUnit),
+      currentScope(sourceUnit.rootScope) {}
+
 void CTranspilerGenerator::resolve(
-    const std::vector<std::unique_ptr<ast::Statement>> &statement,
-    const lang::SourceUnit &sourceUnit) {
+    const std::vector<std::unique_ptr<ast::Statement>> &statement) {
 	output.clear();
 
 	output << "#include <ray/ray_definitions.h>\n";
@@ -41,12 +45,14 @@ void CTranspilerGenerator::resolve(
 	std::string currentModule;
 	// TODO: we currently iterate 2 times one for declaration
 	// while the other for definition
-	for (const auto &structDeclaration : sourceUnit.structDeclarations) {
+	for (const auto &structDeclaration :
+	     currentSourceUnit.get().structDeclarations) {
 		output << std::format("{}typedef struct {}", currentIdent(),
 		                      structDeclaration.mangledName);
 		output << std::format(" {};\n", structDeclaration.mangledName);
 	}
-	for (const auto &structDefinition : sourceUnit.structDefinitions) {
+	for (const auto &structDefinition :
+	     currentSourceUnit.get().structDefinitions) {
 		auto &structObj = structDefinition.structObj.get();
 		output << std::format("{}typedef struct {}", currentIdent(),
 		                      structDefinition.mangledName);
@@ -60,7 +66,7 @@ void CTranspilerGenerator::resolve(
 		output << std::format(" {};\n", structDefinition.mangledName);
 	}
 	for (const lang::FunctionDeclaration &functionDeclaration :
-	     sourceUnit.functionDeclarations) {
+	     currentSourceUnit.get().functionDeclarations) {
 		if (!functionDeclaration.publicVisibility) {
 			output << "RAYLANG_MACRO_LINK_LOCAL ";
 			output << "static ";
@@ -435,8 +441,10 @@ void CTranspilerGenerator::visitIntrinsicCallExpression(
 			auto param = value.arguments[0].get();
 			if (auto type = getTypeExpression(param)) {
 				if (type->isPlatformDependent()) {
-					output << std::format("((ssize)sizeof({}))",
-					                      type->mangledName);
+					// TODO: remove requirements for platform dependent sizeof
+					// and separate name mangling
+					// this code will not work properly without that fix
+					output << std::format("((ssize)sizeof({}))", type->name);
 				} else {
 					output << std::format("((ssize){})", type->calculatedSize);
 				}
@@ -584,7 +592,8 @@ void CTranspilerGenerator::visitArrayAccessExpression(
 	output << "]";
 }
 void CTranspilerGenerator::visitTypeExpression(const ast::Type &type) {
-	if (!type.isMutable && type.name.type != Token::TokenType::TOKEN_TYPE_UNIT &&
+	if (!type.isMutable &&
+	    type.name.type != Token::TokenType::TOKEN_TYPE_UNIT &&
 	    !type.isPointer) {
 		output << "const ";
 	}
@@ -636,28 +645,45 @@ void CTranspilerGenerator::visitType(const lang::Type &type) {
 		output << "void";
 		return;
 	}
+	if (!type.isMutable) {
+		output << "const ";
+	}
 	if (type.isPointer) {
 		visitType(*type.subtype.value());
 		output << "*";
 	} else {
-		output << type.mangledName;
+		// TODO: require a name mangled
+		output << type.name;
 	}
 }
 
 std::string
 CTranspilerGenerator::findCallableName(const ast::Call &callable,
                                        const std::string_view name) const {
-	// we should make a propper lookup and ranking
-	// but for now the first matching function will be used
-
+	// this should be done by the type checker
+	// but for now we do a dumb lookuo
+	std::string key(name);
+	if (currentSourceUnit.get().rootScope.functions.contains(key)) {
+		const auto &functions =
+		    currentSourceUnit.get().rootScope.functions.at(key);
+		for (const auto &function : functions) {
+			if (function.signature.parameters.size() ==
+			    callable.arguments.size()) {
+				return function.mangledName;
+			}
+		}
+	}
 	return "";
 }
 std::string
 CTranspilerGenerator::findStructName(const std::string_view name) const {
-	// we should make a propper lookup and ranking
-	// but for now we will match the first struct found with same name and
-	// namespace
-
+	// perform a dumb lookup until type checker returns more information
+	std::string key(name);
+	if (currentSourceUnit.get().rootScope.variables.contains(key)) {
+		const auto &symbol =
+		    currentSourceUnit.get().rootScope.variables.at(key);
+		return symbol.mangledName;
+	}
 	return "";
 }
 
