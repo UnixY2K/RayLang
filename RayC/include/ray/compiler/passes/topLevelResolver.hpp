@@ -21,11 +21,14 @@ class TopLevelResolver : public ast::StatementVisitor,
 	std::vector<std::unique_ptr<directive::CompilerDirective>> directivesStack;
 
 	S1::lang::S1SourceUnit currentS1SourceUnit;
+	std::reference_wrapper<S1::lang::S1ScopeTable> currentScope;
 	size_t top = 0;
 
   public:
-	TopLevelResolver(std::string filePath) : messageBag(filePath) {}
+	TopLevelResolver(std::string filePath);
 	void resolve(const std::vector<std::unique_ptr<ast::Statement>> &statement);
+	void resolve(const ast::Statement &statement);
+	void resolve(const ast::Expression &expression);
 
 	S1::lang::S1SourceUnit getSourceUnit() const;
 

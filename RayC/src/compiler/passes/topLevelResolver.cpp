@@ -15,11 +15,14 @@
 namespace ray::compiler::analyzer {
 using namespace terminal::literals;
 
+TopLevelResolver::TopLevelResolver(std::string filePath)
+    : messageBag(filePath), currentScope(currentS1SourceUnit.rootScope) {}
+
 void TopLevelResolver::resolve(
     const std::vector<std::unique_ptr<ast::Statement>> &statement) {
 	currentS1SourceUnit.clear();
 	for (const auto &stmt : statement) {
-		stmt->visit(*this);
+		resolve(*stmt);
 	}
 
 	if (!this->directivesStack.empty()) {
@@ -29,6 +32,13 @@ void TopLevelResolver::resolve(
 			                         directive->directiveName());
 		}
 	}
+}
+
+void TopLevelResolver::resolve(const ast::Statement &statement) {
+	statement.visit(*this);
+}
+void TopLevelResolver::resolve(const ast::Expression &expression) {
+	expression.visit(*this);
 }
 
 S1::lang::S1SourceUnit TopLevelResolver::getSourceUnit() const {
@@ -83,7 +93,7 @@ void TopLevelResolver::visitFunctionStatement(const ast::Function &function) {
 	for (const auto &param : function.params) {
 		signature.push_back(param.type.name.lexeme);
 	}
-	currentS1SourceUnit.rootScope.symbols.push_back(S1::lang::S1Symbol{
+	currentScope.get().symbols.push_back(S1::lang::S1Symbol{
 	    .type = S1::lang::S1Symbol::SymbolType::Function,
 	    .name = std::string(function.name.getLexeme()),
 	    .signature = signature,
@@ -95,7 +105,7 @@ void TopLevelResolver::visitFunctionStatement(const ast::Function &function) {
 	        .returnType = function.returnType.name.lexeme,
 	    });
 	if (function.body.has_value()) {
-		function.body->visit(*this);
+		resolve(function.body.value());
 	}
 }
 void TopLevelResolver::visitIfStatement(const ast::If &value) {
@@ -139,10 +149,11 @@ void TopLevelResolver::visitStructStatement(const ast::Struct &structObj) {
 	    passes::mangling::NameMangler().mangleStruct(currentModule, structObj,
 	                                                 linkageDirective);
 
-	currentS1SourceUnit.structDeclarations.push_back(S1::lang::S1StructDeclaration{
-	    .name = std::string(structObj.name.getLexeme()),
-	    .mangledName = mangledStructName,
-	});
+	currentS1SourceUnit.structDeclarations.push_back(
+	    S1::lang::S1StructDeclaration{
+	        .name = std::string(structObj.name.getLexeme()),
+	        .mangledName = mangledStructName,
+	    });
 	if (!structObj.declaration) {
 		std::vector<S1::lang::S1StructMember> members;
 		currentS1SourceUnit.structDefinitions.push_back(
