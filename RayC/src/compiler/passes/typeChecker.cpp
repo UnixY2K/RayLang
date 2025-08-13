@@ -286,7 +286,7 @@ void TypeChecker::visitVarStatement(const ast::Var &variable) {
 		    .internal = false,
 		};
 		currentScope.get().defineLocalVariable(variableSymbol);
-		typeStack.push_back(variableType);
+		// typeStack.push_back(variableType);
 		return;
 	}
 
@@ -759,10 +759,19 @@ void TypeChecker::visitTypeExpression(const ast::Type &typeExpr) {
 		}
 	}
 }
-void TypeChecker::visitCastExpression(const ast::Cast &value) {
-	messageBag.bug(value.getToken(), "TYPE-CHECKER",
-	               std::format("visit method not implemented for {}",
-	                           value.variantName()));
+void TypeChecker::visitCastExpression(const ast::Cast &castExpr) {
+	// TODO: remove cast expression and make it a compiler intrinsic for scalars
+	// additionally make the propper checks, for now we just blindly cast the
+	// expression
+	auto type = resolveType(castExpr.type);
+	if (!type.has_value()) {
+		messageBag.error(
+		    castExpr.getToken(), "TYPE-CHECKER",
+		    std::format("cast expression type '{}' did not yield a known type",
+		                castExpr.getToken().getLexeme()));
+		return;
+	}
+	typeStack.push_back(type.value());
 }
 void TypeChecker::visitParameterExpression(const ast::Parameter &parameter) {
 	const auto type = resolveType(parameter.type);
