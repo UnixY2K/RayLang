@@ -294,10 +294,25 @@ void TypeChecker::visitVarStatement(const ast::Var &variable) {
 	    variable.getToken(), "TYPE-CHECKER",
 	    "variable does not have a type assigned nor an valid initialization");
 }
-void TypeChecker::visitWhileStatement(const ast::While &value) {
-	messageBag.bug(value.getToken(), "TYPE-CHECKER",
-	               std::format("visit method not implemented for {}",
-	                           value.variantName()));
+void TypeChecker::visitWhileStatement(const ast::While &whileStmt) {
+	auto conditionType = resolveType(*whileStmt.condition);
+	if (!conditionType.has_value()) {
+		messageBag.error(whileStmt.condition->getToken(), "TYPE-CHECKER",
+		                 "non boolean condition");
+	} else {
+		auto boolType = findScalarTypeInfo("bool");
+		// for now lets just stricly validate if is the same
+		// TODO: enable coercions
+		if (!(conditionType->coercercesInto(boolType.value()))) {
+			messageBag.error(whileStmt.condition->getToken(), "TYPE-CHECKER",
+			                 "condition does not coerce into a bool type");
+		}
+	}
+
+	const auto type =
+	    resolveType(*whileStmt.body).value_or(lang::Type::defineStmtType());
+
+	typeStack.push_back(type);
 }
 void TypeChecker::visitStructStatement(const ast::Struct &structObj) {
 	std::string currentModule;
@@ -488,7 +503,6 @@ void TypeChecker::visitAssignExpression(const ast::Assign &assignExpr) {
 	// TODO: once we start supporting operator overload this should be done by
 	// lookup of the overloads and get the return type of it
 	switch (op.type) {
-
 	case Token::TokenType::TOKEN_EQUAL:
 	case Token::TokenType::TOKEN_PLUS_EQUAL:
 	case Token::TokenType::TOKEN_MINUS_EQUAL:
@@ -502,11 +516,13 @@ void TypeChecker::visitAssignExpression(const ast::Assign &assignExpr) {
 	case Token::TokenType::TOKEN_GREAT_GREAT_EQUAL:
 		// for now just return the same type as lhs
 		typeStack.push_back(leftType.value());
+		break;
 	default:
 		messageBag.error(
 		    op, "TYPE-CHECKER",
 		    std::format("'{}' is not a supported assignment operation",
 		                op.getLexeme()));
+		break;
 	}
 }
 void TypeChecker::visitBinaryExpression(const ast::Binary &binaryExpr) {
@@ -729,10 +745,26 @@ void TypeChecker::visitUnaryExpression(const ast::Unary &unaryExpr) {
 	}
 	typeStack.push_back(innerType.value());
 }
-void TypeChecker::visitArrayAccessExpression(const ast::ArrayAccess &value) {
-	messageBag.bug(value.getToken(), "TYPE-CHECKER",
-	               std::format("visit method not implemented for {}",
-	                           value.variantName()));
+void TypeChecker::visitArrayAccessExpression(
+    const ast::ArrayAccess &arrayExpr) {
+	const auto accessedTypeR = resolveType(*arrayExpr.array);
+	if (!accessedTypeR.has_value()) {
+		messageBag.error(arrayExpr.array->getToken(), "TYPE-CHECKER",
+		                 std::format("could not evaluate type for {}",
+		                             arrayExpr.array->getToken().getLexeme()));
+		return;
+	}
+	const auto accessedType = accessedTypeR.value();
+	// TODO: actually resolve with operator overload its return type
+	if (!accessedType.subtype.has_value()) {
+		messageBag.error(arrayExpr.array->getToken(), "TYPE-CHECKER",
+		                 std::format("could not evaluate sub type for {}",
+		                             arrayExpr.array->getToken().getLexeme()));
+		return;
+	}
+	const auto subType = accessedType.subtype.value();
+
+	typeStack.push_back(*subType);
 }
 void TypeChecker::visitTypeExpression(const ast::Type &typeExpr) {
 	if (typeExpr.isPointer) {
