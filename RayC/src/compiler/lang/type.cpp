@@ -112,25 +112,8 @@ std::optional<Type> Type::findScalarType(const std::string_view name) {
 	        definePlatformDependentType("c_size", 8, false),
 	    }, // c_size
 	    {
-	        "c_voidptr",
-	        Type{
-	            true, // initialized type
-	            true, // scalar
-	            true, // the size is determined by platform
-	            "c_voidptr",
-	            8,     // estimated size for 64bits arch
-	            true,  // non mutable by default, but requires to have a mutable
-	                   // alternative
-	            false, // set as false as cast is "unsafe"
-	            false, // non signed
-	            false, // non overloaded
-	            {},    // no subtype
-	            {},    // no signature
-	        },
-	    }, // c_voidptr
-	    {
-	        "()",
-	        defineScalarType("()", 0, false),
+	        "void",
+	        defineScalarType("void", 0, false),
 	    }, // unit type
 	};
 	std::string key{name};
@@ -223,6 +206,27 @@ Type Type::defineStmtType() {
 	    {},    // no signature data
 	};
 }
+
+Type Type::defineModuleType() {
+	return Type{
+	    // an statement does not even return an initialized type
+	    true,
+	    false, // non scalar
+	    false, // imaginary/abstract type
+	    // name cannot be mangled nor referenced
+	    "%<module>%",
+	    // size is 0 so it cannot be passed
+	    0,
+	    false, // non mutable
+	    false, // non pointer
+	    false, // non signed
+	    false, // non overloaded
+	    {},    // no subtype data
+	    {},    // no signature data
+	};
+}
+
+Type Type::getVoidType() { return findScalarType("void").value(); }
 
 std::optional<Type> Type::getNumberLiteralType(const std::string_view lexeme) {
 	// for now assume that is the largest type

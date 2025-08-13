@@ -98,7 +98,7 @@ Token::TokenType Token::fromString(std::string_view str) {
 	    {"as", Token::TokenType::TOKEN_AS},             // as
 	    {"import", Token::TokenType::TOKEN_IMPORT},     // import
 	    // Token Types
-	    {"()", Token::TokenType::TOKEN_TYPE_UNIT}, // ()
+	    {"void", Token::TokenType::TOKEN_TYPE_VOID}, // ()
 	};
 	std::string key{str};
 	return map.contains(key) ? map.at(key) : TokenType::TOKEN_ERROR;
@@ -251,7 +251,7 @@ std::string_view Token::toString(TokenType token) {
 	case TokenType::TOKEN_IMPORT:
 		return "TOKEN_IMPORT";
 	// token types
-	case TokenType::TOKEN_TYPE_UNIT:
+	case TokenType::TOKEN_TYPE_VOID:
 		return "TOKEN_TYPE_UNIT";
 	// other
 	case TokenType::TOKEN_ERROR:
@@ -408,8 +408,8 @@ std::string_view Token::glyph(TokenType token) {
 	case TokenType::TOKEN_IMPORT:
 		return "import";
 	// token types
-	case TokenType::TOKEN_TYPE_UNIT:
-		return "()";
+	case TokenType::TOKEN_TYPE_VOID:
+		return "void";
 	// other
 	case TokenType::TOKEN_ERROR:
 		return "<{TOKEN_ERROR}>";
@@ -421,8 +421,8 @@ std::string_view Token::glyph(TokenType token) {
 
 namespace types {
 Token makeUnitTypeToken(size_t line, size_t column) {
-	auto val = Token::fromString("()");
-	return Token{val, "()", line, column};
+	auto val = Token::fromString("void");
+	return Token{val, "void", line, column};
 }
 } // namespace types
 

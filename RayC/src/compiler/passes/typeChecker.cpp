@@ -167,19 +167,15 @@ void TypeChecker::visitFunctionStatement(const ast::Function &function) {
 				};
 				currentScope.get().defineLocalVariable(paramSymbol);
 			}
-			const auto typeR = resolveType(function.body.value());
-			if (!typeR.has_value()) {
-				messageBag.bug(function.body->getToken(), "TYPE-CHECKER",
-				               "inner body did not yield a return type");
-			} else {
-				const auto &type = typeR.value();
-				if (!type.coercercesInto(declaration.signature.returnType)) {
-					messageBag.error(
-					    function.body->getToken(), "TYPE-CHECKER",
-					    std::format(
-					        "inner body return type does not match with function return: '{}' vs '{}'",
-					        type.name, declaration.signature.returnType.name));
-				}
+			const auto type = resolveType(function.body.value())
+			                      .value_or(lang::Type::getVoidType());
+
+			if (!type.coercercesInto(declaration.signature.returnType)) {
+				messageBag.error(
+				    function.body->getToken(), "TYPE-CHECKER",
+				    std::format(
+				        "inner body return type does not match with function return: '{}' vs '{}'",
+				        type.name, declaration.signature.returnType.name));
 			}
 		}
 
@@ -655,10 +651,9 @@ void TypeChecker::visitIntrinsicCallExpression(
 			                             intrinsicCall.callee->name.lexeme,
 			                             intrinsicCall.arguments.size()));
 		} else {
-			messageBag.error(
-			    intrinsicCall.callee->name, "TYPE-CHECKER",
-			    std::format("'{}' is not implemented yet for type checker",
-			                intrinsicCall.callee->name.lexeme));
+			auto moduleType = lang::Type::defineModuleType();
+			// TODO: create a module provided to idenity known module data
+			typeStack.push_back(moduleType);
 		}
 
 		break;

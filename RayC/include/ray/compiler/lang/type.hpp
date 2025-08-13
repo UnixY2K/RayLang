@@ -63,6 +63,12 @@ class Type {
 	// used by statements in the type checker
 	static Type defineStmtType();
 
+	// defines an empty module type used by the type checker
+	static Type defineModuleType();
+
+	// a shorcut for defineScalarType("void")
+	static Type getVoidType();
+
 	// converts a number expression into the smallest number type
 	// available by the compiler
 	static std::optional<Type>

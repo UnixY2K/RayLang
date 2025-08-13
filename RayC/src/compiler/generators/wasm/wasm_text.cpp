@@ -61,7 +61,7 @@ void WASMTextGenerator::visitFunctionStatement(const ast::Function &function) {
 		output << std::format(" (param ${} {})", parameter.name.lexeme,
 		                      parameter.type.name.lexeme);
 	}
-	if (function.returnType.name.type != Token::TokenType::TOKEN_TYPE_UNIT) {
+	if (function.returnType.name.type != Token::TokenType::TOKEN_TYPE_VOID) {
 		output << std::format(" (result {})", function.returnType.name.lexeme);
 	}
 	output << "\n";
