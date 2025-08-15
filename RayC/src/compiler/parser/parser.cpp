@@ -53,25 +53,33 @@ std::optional<std::unique_ptr<ast::Statement>> Parser::CompilerDirective() {
 		consume(Token::TokenType::TOKEN_LEFT_PAREN,
 		        "expected '(' before compiler directive attributes");
 		ast::CompDirectiveAttr attributes;
-		do {
-			auto attributeToken = consume(Token::TokenType::TOKEN_IDENTIFIER,
-			                              "Expect attribute name.");
-			std::string attributeName = std::string(attributeToken.getLexeme());
-			if (attributes.contains(std::string(attributeToken.getLexeme()))) {
-				error(attributeToken,
-				      std::format(
-				          "'{}' is a duplicated compiler directive attribute",
-				          attributeToken.getLexeme()));
-			}
-			std::string attributeValue;
-			if (match({Token::TokenType::TOKEN_EQUAL})) {
-				auto valueToken = consume(Token::TokenType::TOKEN_STRING,
-				                          "expected string literal value for "
-				                          "compiler directive attribute");
-				attributeValue = valueToken.getLexeme();
-			}
-			attributes[attributeName] = attributeValue;
-		} while (match({Token::TokenType::TOKEN_COMMA}));
+		if (check(Token::TokenType::TOKEN_IDENTIFIER)) {
+			do {
+				auto attributeToken =
+				    consume(Token::TokenType::TOKEN_IDENTIFIER,
+				            "Expect attribute name.");
+				std::string attributeName =
+				    std::string(attributeToken.getLexeme());
+				if (attributes.contains(
+				        std::string(attributeToken.getLexeme()))) {
+					error(
+					    attributeToken,
+					    std::format(
+					        "'{}' is a duplicated compiler directive attribute",
+					        attributeToken.getLexeme()));
+				}
+				std::string attributeValue;
+				if (match({Token::TokenType::TOKEN_EQUAL})) {
+					auto valueToken =
+					    consume(Token::TokenType::TOKEN_STRING,
+					            "expected string literal value for "
+					            "compiler directive attribute");
+					attributeValue = valueToken.getLexeme();
+				}
+				attributes[attributeName] = attributeValue;
+			} while (match({Token::TokenType::TOKEN_COMMA}));
+		}
+
 		consume(Token::TokenType::TOKEN_RIGHT_PAREN,
 		        "expected ')' after compiler directive attributes");
 		auto end = consume(Token::TokenType::TOKEN_RIGHT_SQUARE_BRACE,
