@@ -45,6 +45,7 @@ class Type {
 
 	bool coercercesInto(const Type &targetType) const;
 	bool signatureEquals(const Type &targetType) const;
+	bool signatureMatches(const Type &targetType) const;
 
 	bool operator==(const Type &other) const;
 

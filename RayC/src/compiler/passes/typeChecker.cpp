@@ -266,7 +266,7 @@ void TypeChecker::visitVarStatement(const ast::Var &variable) {
 			const auto initializationType = initType.value();
 			if (!variableType.isInitialized()) {
 				variableType = initializationType;
-			} else if (variableType != initializationType) {
+			} else if (!initializationType.coercercesInto(variableType)) {
 				messageBag.error(
 				    variable.getToken(), "TYPE-CHECKER",
 				    std::format(
@@ -619,7 +619,7 @@ void TypeChecker::visitCallExpression(const ast::Call &callExpr) {
 			}
 			const auto &callerParamType = callerParamTypeResult.value();
 
-			if (callerParamType != callerParamType) {
+			if (!callerParamType.coercercesInto(calleeParamType)) {
 				messageBag.error(
 				    callerParamExpr.getToken(), "TYPE-CHECKER",
 				    std::format(
@@ -698,10 +698,9 @@ void TypeChecker::visitLiteralExpression(const ast::Literal &literalExpr) {
 	switch (literalExpr.kind.type) {
 
 	case Token::TokenType::TOKEN_STRING: {
-		messageBag.bug(
-		    literalExpr.getToken(), "TYPE-CHECKER",
-		    std::format("string literal expression not supported yet",
-		                literalExpr.getToken().getLexeme()));
+		const auto baseType = lang::Type::findScalarType("u8").value();
+		const auto arrayType = makePointerType(baseType);
+		typeStack.push_back(arrayType);
 		break;
 	}
 	case Token::TokenType::TOKEN_NUMBER: {
@@ -918,12 +917,12 @@ lang::Type TypeChecker::makePointerType(const lang::Type &innerType) {
 	                  // technically platform dependent on pointer definition
 	                  true,
 	                  // define the name as pointer
-	                  "pointer",
+	                  "%<pointer>%",
 	                  // we need to get this from the platform in the future
 	                  // for now assuming 64bits/8bytes
 	                  8,
 	                  // if the pointer type is const or not is decided later
-	                  false,
+	                  true,
 	                  // we are a pointer type
 	                  true,        // pointer
 	                  false,       // non signed
