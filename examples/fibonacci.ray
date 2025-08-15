@@ -7,13 +7,13 @@ fn print(buffer: [u8;]){
 	fwrite(buffer as mut c_voidptr, @sizeOf(c_char), strlen(buffer as c_char*), get_stdout());
 }
 
-fn s32toString(num: s32) -> mut [u8;]{
-	let floorResult: f64 = floor(log10(num));
-	let size: mut usize = floorResult + 1;
-	let n: mut s32 = num as mut s32;
-	let array: mut [mut u8;] = malloc(size + 1) as [mut u8;];
-	let i: mut usize = (size - 1);
-	array[size] = '\0' as u8;
+fn s32toString(num: s32) -> [mut u8;]{
+	let floorResult: usize = floor(log10(num));
+	let mut size: usize = floorResult + 1;
+	let mut n: s32 = num;
+	let array: [mut u8;] = malloc(size + 1) as [mut u8;];
+	let mut i: usize = (size - 1);
+	array[size] = '\0';
 	while n != 0 {
 		array[i--] = (n % 10) + '0';
 		n /= 10;
@@ -33,16 +33,16 @@ fn fib(n: s32) -> s32{
 #[Linkage(mangling="c", resolution="external")]
 pub fn main(argc: s32, argv: c_char**) -> mut s32 {
 	if(argc != 2){
-		print("usage: " as [u8;]);
+		print("usage: ");
 		print(argv[0] as [u8;]);
-		print(" number\n" as [u8;]);
+		print(" number\n");
 		return -1;
 	}
 	let result: s32 = fib(atoi(argv[1]));
 	let resultStr = s32toString((result));
-	print(resultStr as [u8;]);
+	print(resultStr);
 	free(resultStr as [mut u8;]);
-	print("\n" as [u8;]);
+	print("\n");
 	return 0;
 }
 
