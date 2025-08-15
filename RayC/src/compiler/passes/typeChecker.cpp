@@ -716,6 +716,20 @@ void TypeChecker::visitLiteralExpression(const ast::Literal &literalExpr) {
 		typeStack.push_back(type.value());
 		break;
 	}
+	case Token::TokenType::TOKEN_CHAR: {
+		// any char token is a u8 character, not a unicode encode character
+		// so only ASCII characters allowed
+		const std::string_view character = literalExpr.value;
+		if (character.size() > 1) {
+			messageBag.error(
+			    literalExpr.getToken(), "TYPE-CHECKER",
+			    std::format("'{}' is not a valid char literal type",
+			                literalExpr.getToken().getLexeme()));
+			break;
+		}
+		typeStack.push_back(lang::Type::findScalarType("u8").value());
+		break;
+	}
 	default:
 		messageBag.error(literalExpr.getToken(), "TYPE-CHECKER",
 		                 std::format("'{}' is not a valid literal type",
