@@ -4,7 +4,7 @@ let cstdlib = @import("cstd:std.ray");
 let cstring = @import("cstd:string.ray");
 
 fn print(buffer: [u8;]){
-	cstdio.fwrite(buffer as mut c_voidptr, @sizeOf(c_char), strlen(buffer as c_char*), cstdio.get_stdout());
+	cstdio.fwrite(buffer as mut c_voidptr, @sizeOf(c_char), cstring.strlen(buffer as c_char*), cstdio.get_stdout());
 }
 
 fn s32toString(num: s32) -> [mut u8;]{
