@@ -57,7 +57,6 @@ bool Options::validate() const {
 Options::TargetEnum Options::targetFromString(std::string_view str) {
 	static std::unordered_map<std::string, Options::TargetEnum> map{
 	    {"none", Options::TargetEnum::NONE},
-	    {"wasm_text", Options::TargetEnum::WASM_TEXT},
 	    {"c_source", Options::TargetEnum::C_SOURCE}};
 	std::string key{str};
 	std::transform(key.begin(), key.end(), key.begin(),

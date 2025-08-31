@@ -84,8 +84,6 @@ struct Token {
 		TOKEN_STRUCT,    // struct
 		TOKEN_AS,        // as, ex: 2 as isize
 		TOKEN_IMPORT,    // import ex: import "hello.ray"
-		// token types
-		TOKEN_TYPE_VOID, // unit aka '()'
 		// other
 		TOKEN_ERROR, // when a token failed to parse
 		TOKEN_EOF    // EOF

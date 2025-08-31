@@ -4,4 +4,4 @@ struct FILE;
 #[Linkage(mangling = "c", resolution="external", name="ray_libc_stdio_get_stdout")]
 pub fn get_stdout() -> mut FILE*;
 #[Linkage(mangling="c", resolution="external")]
-pub fn fwrite(buffer: c_voidptr, size: mut c_size, count: mut c_size, stream: mut FILE*) -> mut c_size;
+pub fn fwrite(buffer: void*, size: mut c_size, count: mut c_size, stream: mut FILE*) -> mut c_size;

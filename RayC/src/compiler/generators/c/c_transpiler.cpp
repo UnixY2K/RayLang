@@ -592,12 +592,10 @@ void CTranspilerGenerator::visitArrayAccessExpression(
 	output << "]";
 }
 void CTranspilerGenerator::visitTypeExpression(const ast::Type &type) {
-	if (!type.isMutable &&
-	    type.name.type != Token::TokenType::TOKEN_TYPE_VOID &&
-	    !type.isPointer) {
+	if (!type.isMutable && type.name.lexeme == "void" && !type.isPointer) {
 		output << "const ";
 	}
-	if (type.name.type == Token::TokenType::TOKEN_TYPE_VOID) {
+	if (type.name.lexeme == "void") {
 		output << "void ";
 	} else if (type.name.lexeme.starts_with("[")) {
 		if (type.subtype.has_value() && type.subtype.value()) {

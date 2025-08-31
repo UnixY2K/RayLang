@@ -15,7 +15,6 @@
 #include <ray/compiler/passes/typeChecker.hpp>
 
 #include <ray/compiler/generators/c/c_transpiler.hpp>
-#include <ray/compiler/generators/wasm/wasm_text.hpp>
 
 #include <ray/compiler/lang/moduleStore.hpp>
 #include <ray/compiler/lang/sourceUnit.hpp>
@@ -129,18 +128,6 @@ int main(int argc, char **argv) {
 			}
 
 			switch (opts.target) {
-			case cli::Options::TargetEnum::WASM_TEXT: {
-				handled = true;
-				generator::wasm::WASMTextGenerator wasmTextGen;
-
-				wasmTextGen.resolve(statements);
-				if (wasmTextGen.hasFailed()) {
-					std::cerr << std::format("{}: {}\n", "Error"_red,
-					                         "WASMTextGenerator failed");
-					return 1;
-				}
-				output = wasmTextGen.getOutput();
-			}
 			case cli::Options::TargetEnum::C_SOURCE: {
 				handled = true;
 				generator::c::CTranspilerGenerator CTranspilerGen(
