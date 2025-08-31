@@ -1,3 +1,4 @@
 */
 !.gitignore
 !*.dep
+.wraplock
