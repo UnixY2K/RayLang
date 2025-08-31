@@ -16,7 +16,7 @@ namespace ray::compiler::analyzer {
 using namespace terminal::literals;
 
 TopLevelResolver::TopLevelResolver(std::string filePath)
-    : messageBag(filePath), currentScope(currentS1SourceUnit.rootScope) {}
+    : messageBag("TL-Resolver",filePath), currentScope(currentS1SourceUnit.rootScope) {}
 
 void TopLevelResolver::resolve(
     const std::vector<std::unique_ptr<ast::Statement>> &statement) {
@@ -60,13 +60,13 @@ void TopLevelResolver::visitBlockStatement(const ast::Block &value) {
 }
 void TopLevelResolver::visitTerminalExprStatement(
     const ast::TerminalExpr &value) {
-	messageBag.error(value.getToken(), "BUG",
-	                 "visitTerminalExprStatement not implemented");
+	messageBag.bug(value.getToken(),
+	               "visitTerminalExprStatement not implemented");
 }
 void TopLevelResolver::visitExpressionStmtStatement(
     const ast::ExpressionStmt &value) {
-	messageBag.error(value.getToken(), "BUG",
-	                 "visitExpressionStmtStatement not implemented");
+	messageBag.bug(value.getToken(),
+	               "visitExpressionStmtStatement not implemented");
 }
 void TopLevelResolver::visitFunctionStatement(const ast::Function &function) {
 	std::string currentModule;
@@ -109,12 +109,10 @@ void TopLevelResolver::visitFunctionStatement(const ast::Function &function) {
 	}
 }
 void TopLevelResolver::visitIfStatement(const ast::If &value) {
-	messageBag.error(value.getToken(), "BUG",
-	                 "visitIfStatement not implemented");
+	messageBag.bug(value.getToken(), "visitIfStatement not implemented");
 }
 void TopLevelResolver::visitJumpStatement(const ast::Jump &value) {
-	messageBag.error(value.getToken(), "BUG",
-	                 "visitJumpStatement not implemented");
+	messageBag.bug(value.getToken(), "visitJumpStatement not implemented");
 }
 void TopLevelResolver::visitVarStatement(const ast::Var &value) {
 	// if we find a top level var statement check it as it might contain an
@@ -124,8 +122,7 @@ void TopLevelResolver::visitVarStatement(const ast::Var &value) {
 	}
 }
 void TopLevelResolver::visitWhileStatement(const ast::While &value) {
-	messageBag.error(value.getToken(), "BUG",
-	                 "visitWhileStatement not implemented");
+	messageBag.bug(value.getToken(), "visitWhileStatement not implemented");
 }
 void TopLevelResolver::visitStructStatement(const ast::Struct &structObj) {
 	std::string currentModule;
@@ -192,46 +189,43 @@ void TopLevelResolver::visitCompDirectiveStatement(
 				    std::make_unique<directive::LinkageDirective>(directive));
 				compDirective.child->visit(*this);
 				if (directivesStack.size() != startDirectives) {
-					messageBag.error(
-					    childValue->getToken(), "BUG",
+					messageBag.bug(
+					    childValue->getToken(),
 					    std::format("{}: unprocessed compiler directives.",
 					                "BUG"_red));
 				}
 				top = originalTop;
 			} else {
 				messageBag.error(
-				    childValue->getToken(), "RESOLVER",
+				    childValue->getToken(),
 				    std::format(
 				        "{} child expression must be a function or a struct.",
 				        directive.directiveName()));
 			}
 		} else {
-			messageBag.error(compDirective.name, "RESOLVER",
+			messageBag.error(compDirective.name,
 			                 std::format("{} must have a child expression.",
 			                             directive.directiveName()));
 		}
 	} else {
 		messageBag.error(
-		    compDirective.name, "RESOLVER",
+		    compDirective.name,
 		    std::format("Unknown compiler directive '{}'.", directiveName));
 	}
 }
 // Expression
 void TopLevelResolver::visitVariableExpression(const ast::Variable &value) {
-	messageBag.error(value.getToken(), "BUG",
-	                 "visitVariableExpression not implemented");
+	messageBag.bug(value.getToken(), "visitVariableExpression not implemented");
 }
 void TopLevelResolver::visitIntrinsicExpression(const ast::Intrinsic &value) {
-	messageBag.error(value.getToken(), "BUG",
-	                 "visitIntrinsicExpression not implemented");
+	messageBag.bug(value.getToken(),
+	               "visitIntrinsicExpression not implemented");
 }
 void TopLevelResolver::visitAssignExpression(const ast::Assign &value) {
-	messageBag.error(value.getToken(), "BUG",
-	                 "visitAssignExpression not implemented");
+	messageBag.bug(value.getToken(), "visitAssignExpression not implemented");
 }
 void TopLevelResolver::visitBinaryExpression(const ast::Binary &value) {
-	messageBag.error(value.getToken(), "BUG",
-	                 "visitBinaryExpression not implemented");
+	messageBag.bug(value.getToken(), "visitBinaryExpression not implemented");
 }
 void TopLevelResolver::visitCallExpression(const ast::Call &call) {
 	// early top level scan does not require to evaluate call expressions
@@ -247,7 +241,7 @@ void TopLevelResolver::visitIntrinsicCallExpression(
 	case ast::IntrinsicType::INTR_IMPORT:
 		break;
 	case ast::IntrinsicType::INTR_UNKNOWN: {
-		messageBag.error(value.callee->name, "RESOLVER",
+		messageBag.error(value.callee->name,
 		                 std::format("unknown intrinsic type for '{}'",
 		                             value.callee->name.getLexeme()));
 		break;
@@ -255,42 +249,35 @@ void TopLevelResolver::visitIntrinsicCallExpression(
 	}
 }
 void TopLevelResolver::visitGetExpression(const ast::Get &value) {
-	messageBag.error(value.getToken(), "BUG",
-	                 "visitGetExpression not implemented");
+	messageBag.bug(value.getToken(), "visitGetExpression not implemented");
 }
 void TopLevelResolver::visitGroupingExpression(const ast::Grouping &value) {
-	messageBag.error(value.getToken(), "BUG",
-	                 "visitGroupingExpression not implemented");
+	messageBag.bug(value.getToken(), "visitGroupingExpression not implemented");
 }
 void TopLevelResolver::visitLiteralExpression(const ast::Literal &literal) {}
 void TopLevelResolver::visitLogicalExpression(const ast::Logical &value) {
-	messageBag.error(value.getToken(), "BUG",
-	                 "visitLogicalExpression not implemented");
+	messageBag.bug(value.getToken(), "visitLogicalExpression not implemented");
 }
 void TopLevelResolver::visitSetExpression(const ast::Set &value) {
-	messageBag.error(value.getToken(), "BUG",
-	                 "visitSetExpression not implemented");
+	messageBag.bug(value.getToken(), "visitSetExpression not implemented");
 }
 void TopLevelResolver::visitUnaryExpression(const ast::Unary &value) {
-	messageBag.error(value.getToken(), "BUG",
-	                 "visitUnaryExpression not implemented");
+	messageBag.bug(value.getToken(), "visitUnaryExpression not implemented");
 }
 void TopLevelResolver::visitArrayAccessExpression(
     const ast::ArrayAccess &value) {
-	messageBag.error(value.getToken(), "BUG",
-	                 "visitArrayAccessExpression not implemented");
+	messageBag.bug(value.getToken(),
+	               "visitArrayAccessExpression not implemented");
 }
 void TopLevelResolver::visitTypeExpression(const ast::Type &value) {
-	messageBag.error(value.getToken(), "BUG",
-	                 "visitTypeExpression not implemented");
+	messageBag.bug(value.getToken(), "visitTypeExpression not implemented");
 }
 void TopLevelResolver::visitCastExpression(const ast::Cast &value) {
-	messageBag.error(value.getToken(), "BUG",
-	                 "visitCastExpression not implemented");
+	messageBag.bug(value.getToken(), "visitCastExpression not implemented");
 }
 void TopLevelResolver::visitParameterExpression(const ast::Parameter &value) {
-	messageBag.error(value.getToken(), "BUG",
-	                 "visitParameterExpression not implemented");
+	messageBag.bug(value.getToken(),
+	               "visitParameterExpression not implemented");
 }
 
 } // namespace ray::compiler::analyzer

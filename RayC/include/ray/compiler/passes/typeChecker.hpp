@@ -34,8 +34,9 @@ class TypeChecker : public ast::StatementVisitor,
   public:
 	TypeChecker(std::string filePath, S1::lang::S1SourceUnit s1SourceUnit,
 	            lang::ModuleStore &moduleStore)
-	    : messageBag(filePath), s1SourceUnit(s1SourceUnit), typeStack(),
-	      currentSourceUnit(), currentScope(currentSourceUnit.rootScope)
+	    : messageBag("TYPE-CHECKER", filePath), s1SourceUnit(s1SourceUnit),
+	      typeStack(), currentSourceUnit(),
+	      currentScope(currentSourceUnit.rootScope)
 	//,moduleStore(moduleStore)
 	{}
 

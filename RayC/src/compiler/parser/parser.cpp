@@ -21,7 +21,7 @@ namespace ray::compiler {
 using namespace terminal::literals;
 
 Parser::Parser(std::string filepath, std::vector<Token> tokens)
-    : errorBag(filepath), tokens(tokens) {}
+    : messageBag("parser", filepath), tokens(tokens) {}
 
 std::vector<std::unique_ptr<ast::Statement>> Parser::parse() {
 	current = 0;
@@ -39,9 +39,9 @@ std::vector<std::unique_ptr<ast::Statement>> Parser::parse() {
 	}
 }
 
-bool Parser::failed() const { return errorBag.failed(); }
+bool Parser::failed() const { return messageBag.failed(); }
 const std::vector<std::string> Parser::getErrors() const {
-	return errorBag.getErrors();
+	return messageBag.getErrors();
 }
 
 std::optional<std::unique_ptr<ast::Statement>> Parser::CompilerDirective() {
@@ -824,7 +824,7 @@ Token Parser::consume(Token::TokenType type, std::string message) {
 }
 
 ParseException Parser::error(Token token, std::string message) {
-	errorBag.error(token, "PARSE", message);
+	messageBag.error(token, message);
 	return ParseException();
 }
 

@@ -50,7 +50,7 @@ void TypeChecker::resolve(
 					if (structDeclaration.name == type.name) {
 						if (!currentScope.get().defineStruct(type)) {
 							messageBag.error(
-							    stmt->getToken(), "TYPE-CHECKER",
+							    stmt->getToken(),
 							    std::format("cannot redefine type '{}'",
 							                type.name));
 						}
@@ -58,7 +58,7 @@ void TypeChecker::resolve(
 				}
 			} else {
 				messageBag.bug(
-				    stmt->getToken(), "TYPE-CHECKER",
+				    stmt->getToken(),
 				    std::format("unevaluated type value in stack for '{}'",
 				                stmt->variantName()));
 			}
@@ -66,7 +66,7 @@ void TypeChecker::resolve(
 	}
 
 	for (auto &directive : directivesStack) {
-		messageBag.warning(directive->getToken(), "TypeChecker",
+		messageBag.warning(directive->getToken(),
 		                   std::format("unused compiler directive {}",
 		                               directive->directiveName()));
 	}
@@ -75,8 +75,7 @@ void TypeChecker::resolve(
 		Token errorToken{Token::TokenType::TOKEN_EOF,
 		                 std::string(Token::glyph(Token::TokenType::TOKEN_EOF)),
 		                 0, 0};
-		messageBag.bug(errorToken, "TYPE-CHECKER",
-		               std::format("type stack evaluation error"));
+		messageBag.bug(errorToken, std::format("type stack evaluation error"));
 	}
 }
 
@@ -112,7 +111,7 @@ void TypeChecker::visitTerminalExprStatement(
 			typeStack.push_back(returnType.value());
 		} else {
 			messageBag.error(
-			    returnExpr.getToken(), "TYPE-CHECKER",
+			    returnExpr.getToken(),
 			    std::format("{} child expression did not yield a value '{}'",
 			                terminalExpr.variantName(),
 			                returnExpr.variantName()));
@@ -135,7 +134,7 @@ void TypeChecker::visitFunctionStatement(const ast::Function &function) {
 	auto declarationResult = resolveFunctionDeclaration(function);
 	if (!declarationResult.has_value()) {
 		messageBag.error(
-		    function.getToken(), "TYPE-CHECKER",
+		    function.getToken(),
 		    std::format("could not resolve function declaration for '{}'",
 		                function.name.getLexeme()));
 	} else {
@@ -172,7 +171,7 @@ void TypeChecker::visitFunctionStatement(const ast::Function &function) {
 
 			if (!type.coercercesInto(declaration.signature.returnType)) {
 				messageBag.error(
-				    function.body->getToken(), "TYPE-CHECKER",
+				    function.body->getToken(),
 				    std::format(
 				        "inner body return type does not match with function return: '{}' vs '{}'",
 				        type.name, declaration.signature.returnType.name));
@@ -182,7 +181,7 @@ void TypeChecker::visitFunctionStatement(const ast::Function &function) {
 		auto functionType = lang::Type::defineFunctionType(
 		    declaration.signature.returnType, paramTypes);
 		if (!currentScope.get().defineFunction(declaration)) {
-			messageBag.error(function.getToken(), "TYPE-CHECKER",
+			messageBag.error(function.getToken(),
 			                 std::format("could not declare function for '{}'",
 			                             declaration.name));
 		}
@@ -192,14 +191,13 @@ void TypeChecker::visitFunctionStatement(const ast::Function &function) {
 void TypeChecker::visitIfStatement(const ast::If &ifStmt) {
 	auto conditionType = resolveType(*ifStmt.condition);
 	if (!conditionType.has_value()) {
-		messageBag.error(ifStmt.condition->getToken(), "TYPE-CHECKER",
-		                 "non boolean condition");
+		messageBag.error(ifStmt.condition->getToken(), "non boolean condition");
 	} else {
 		auto boolType = findScalarTypeInfo("bool");
 		// for now lets just stricly validate if is the same
 		// TODO: enable coercions
 		if (!(conditionType->coercercesInto(boolType.value()))) {
-			messageBag.error(ifStmt.condition->getToken(), "TYPE-CHECKER",
+			messageBag.error(ifStmt.condition->getToken(),
 			                 "condition does not coerce into a bool type");
 		}
 	}
@@ -213,7 +211,7 @@ void TypeChecker::visitIfStatement(const ast::If &ifStmt) {
 		// the types should match
 		if (!(thenType == elseType)) {
 			messageBag.error(
-			    ifStmt.getToken(), "TYPE-CHECKER",
+			    ifStmt.getToken(),
 			    std::format("code branches have different types ({}|{})",
 			                thenType.name, elseType.name));
 		}
@@ -246,7 +244,7 @@ void TypeChecker::visitVarStatement(const ast::Var &variable) {
 		auto foundType = resolveType(explicitType);
 		if (!foundType.has_value()) {
 			messageBag.error(
-			    variable.type.getToken(), "TYPE-CHECKER",
+			    variable.type.getToken(),
 			    std::format("'{}' does not name an existing type", typeName));
 		} else {
 			variableType = foundType.value();
@@ -258,7 +256,7 @@ void TypeChecker::visitVarStatement(const ast::Var &variable) {
 		auto initType = resolveType(initializer);
 		if (!initType.has_value()) {
 			messageBag.error(
-			    initializer.getToken(), "TYPE-CHECKER",
+			    initializer.getToken(),
 			    std::format(
 			        "inialization expression did not yield a type for '{}'",
 			        initializer.getToken().getLexeme()));
@@ -268,7 +266,7 @@ void TypeChecker::visitVarStatement(const ast::Var &variable) {
 				variableType = initializationType;
 			} else if (!initializationType.coercercesInto(variableType)) {
 				messageBag.error(
-				    variable.getToken(), "TYPE-CHECKER",
+				    variable.getToken(),
 				    std::format(
 				        "variable initialization type does not match with explicit type for '{}': '{}' vs '{}'",
 				        variable.getToken().getLexeme(), variableType.name,
@@ -291,20 +289,20 @@ void TypeChecker::visitVarStatement(const ast::Var &variable) {
 	}
 
 	messageBag.error(
-	    variable.getToken(), "TYPE-CHECKER",
+	    variable.getToken(),
 	    "variable does not have a type assigned nor an valid initialization");
 }
 void TypeChecker::visitWhileStatement(const ast::While &whileStmt) {
 	auto conditionType = resolveType(*whileStmt.condition);
 	if (!conditionType.has_value()) {
-		messageBag.error(whileStmt.condition->getToken(), "TYPE-CHECKER",
+		messageBag.error(whileStmt.condition->getToken(),
 		                 "non boolean condition");
 	} else {
 		auto boolType = findScalarTypeInfo("bool");
 		// for now lets just stricly validate if is the same
 		// TODO: enable coercions
 		if (!(conditionType->coercercesInto(boolType.value()))) {
-			messageBag.error(whileStmt.condition->getToken(), "TYPE-CHECKER",
+			messageBag.error(whileStmt.condition->getToken(),
 			                 "condition does not coerce into a bool type");
 		}
 	}
@@ -326,7 +324,7 @@ void TypeChecker::visitStructStatement(const ast::Struct &structObj) {
 			linkageDirective = *foundLinkDirective;
 		} else {
 			messageBag.warning(
-			    directive->getToken(), "TYPE-CHECKER",
+			    directive->getToken(),
 			    std::format("unmatched compiler directive '{}' for function.\n",
 			                directive->directiveName()));
 		}
@@ -347,7 +345,7 @@ void TypeChecker::visitStructStatement(const ast::Struct &structObj) {
 			auto memberType = resolveType(member);
 			if (!memberType.has_value()) {
 				messageBag.error(
-				    member.getToken(), "TYPE-CHECKER",
+				    member.getToken(),
 				    std::format("could not get type information for '{}'",
 				                member.name.lexeme));
 				return;
@@ -416,26 +414,26 @@ void TypeChecker::visitCompDirectiveStatement(
 					typeStack.push_back(directiveType.value());
 				}
 				if (directivesStack.size() != startDirectives) {
-					messageBag.bug(childValue->getToken(), "TYPE-CHECKER",
+					messageBag.bug(childValue->getToken(),
 					               "unprocessed compiler directives");
 				}
 
 				top = originalTop;
 			} else {
 				messageBag.error(
-				    childValue->getToken(), "TYPE-CHECKER",
+				    childValue->getToken(),
 				    std::format(
 				        "{} child expression must be a function or a struct.",
 				        directive.directiveName()));
 			}
 		} else {
-			messageBag.error(compDirective.getToken(), "TYPE-CHECKER",
+			messageBag.error(compDirective.getToken(),
 			                 std::format("{} must have a child expression.",
 			                             directive.directiveName()));
 		}
 	} else {
 		messageBag.error(
-		    compDirective.getToken(), "TYPE-CHECKER",
+		    compDirective.getToken(),
 		    std::format("Unknown compiler directive '{}'.", directiveName));
 	}
 }
@@ -467,7 +465,7 @@ void TypeChecker::visitVariableExpression(const ast::Variable &variableExpr) {
 	if (functionType.isInitialized()) {
 		typeStack.push_back(functionType);
 	} else {
-		messageBag.error(variableExpr.getToken(), "TYPE-CHECKER",
+		messageBag.error(variableExpr.getToken(),
 		                 std::format("unknown symbol '{}'",
 		                             variableExpr.getToken().getLexeme()));
 	}
@@ -475,7 +473,7 @@ void TypeChecker::visitVariableExpression(const ast::Variable &variableExpr) {
 	return;
 }
 void TypeChecker::visitIntrinsicExpression(const ast::Intrinsic &value) {
-	messageBag.bug(value.getToken(), "TYPE-CHECKER",
+	messageBag.bug(value.getToken(),
 	               std::format("visit method not implemented for {}",
 	                           value.variantName()));
 }
@@ -486,13 +484,13 @@ void TypeChecker::visitAssignExpression(const ast::Assign &assignExpr) {
 	if (!(leftType.has_value() && rightType.has_value())) {
 		if (!leftType.has_value()) {
 			messageBag.error(
-			    assignExpr.lhs->getToken(), "TYPE-CHECKER",
+			    assignExpr.lhs->getToken(),
 			    std::format("left expression did not yield a value"));
 		}
 
 		if (!rightType.has_value()) {
 			messageBag.error(
-			    assignExpr.rhs->getToken(), "TYPE-CHECKER",
+			    assignExpr.rhs->getToken(),
 			    std::format("right expression did not yield a value"));
 			return;
 		}
@@ -519,9 +517,8 @@ void TypeChecker::visitAssignExpression(const ast::Assign &assignExpr) {
 		break;
 	default:
 		messageBag.error(
-		    op, "TYPE-CHECKER",
-		    std::format("'{}' is not a supported assignment operation",
-		                op.getLexeme()));
+		    op, std::format("'{}' is not a supported assignment operation",
+		                    op.getLexeme()));
 		break;
 	}
 }
@@ -532,13 +529,13 @@ void TypeChecker::visitBinaryExpression(const ast::Binary &binaryExpr) {
 	if (!(leftType.has_value() && rightType.has_value())) {
 		if (!leftType.has_value()) {
 			messageBag.error(
-			    binaryExpr.left->getToken(), "TYPE-CHECKER",
+			    binaryExpr.left->getToken(),
 			    std::format("left expression did not yield a value"));
 		}
 
 		if (!rightType.has_value()) {
 			messageBag.error(
-			    binaryExpr.right->getToken(), "TYPE-CHECKER",
+			    binaryExpr.right->getToken(),
 			    std::format("right expression did not yield a value"));
 		}
 		return;
@@ -570,7 +567,7 @@ void TypeChecker::visitBinaryExpression(const ast::Binary &binaryExpr) {
 		typeStack.push_back(findScalarTypeInfo("bool").value());
 		break;
 	default:
-		messageBag.error(binaryExpr.op, "TYPE-CHECKER",
+		messageBag.error(binaryExpr.op,
 		                 std::format("'{}' is not a supported binary operation",
 		                             op.getLexeme()));
 	}
@@ -578,20 +575,20 @@ void TypeChecker::visitBinaryExpression(const ast::Binary &binaryExpr) {
 void TypeChecker::visitCallExpression(const ast::Call &callExpr) {
 	auto calleeTypeResult = resolveType(*callExpr.callee);
 	if (!calleeTypeResult.has_value()) {
-		messageBag.error(callExpr.getToken(), "TYPE-CHECKER",
+		messageBag.error(callExpr.getToken(),
 		                 std::format("unknown callee type for {}",
 		                             callExpr.callee->getToken().getLexeme()));
 		return;
 	}
 	auto calleeType = calleeTypeResult.value();
 	if (calleeType.overloaded) {
-		messageBag.bug(callExpr.getToken(), "TYPE-CHECKER",
+		messageBag.bug(callExpr.getToken(),
 		               std::format("overloaded functions not supported yet"));
 		return;
 	}
 	if (!calleeType.signature.has_value()) {
 		messageBag.error(
-		    callExpr.getToken(), "TYPE-CHECKER",
+		    callExpr.getToken(),
 		    std::format("expression does not have a valid signature for '{}'",
 		                callExpr.getToken().getLexeme()));
 		return;
@@ -599,7 +596,7 @@ void TypeChecker::visitCallExpression(const ast::Call &callExpr) {
 		// non overloaded, so we need to validate the parameters
 		if (callExpr.arguments.size() != calleeType.signature->size()) {
 			messageBag.error(
-			    callExpr.getToken(), "TYPE-CHECKER",
+			    callExpr.getToken(),
 			    std::format(
 			        "parameter number mismatch for '{}', provided {}, but {} were required",
 			        callExpr.getToken().getLexeme(), callExpr.arguments.size(),
@@ -612,7 +609,7 @@ void TypeChecker::visitCallExpression(const ast::Call &callExpr) {
 
 			if (!callerParamTypeResult.has_value()) {
 				messageBag.error(
-				    callerParamExpr.getToken(), "TYPE-CHECKER",
+				    callerParamExpr.getToken(),
 				    std::format("argument does not yield a valid type for '{}'",
 				                callerParamExpr.getToken().getLexeme()));
 				return;
@@ -621,7 +618,7 @@ void TypeChecker::visitCallExpression(const ast::Call &callExpr) {
 
 			if (!callerParamType.coercercesInto(calleeParamType)) {
 				messageBag.error(
-				    callerParamExpr.getToken(), "TYPE-CHECKER",
+				    callerParamExpr.getToken(),
 				    std::format(
 				        "argument #'{}' does not matches the expected type {} vs {}",
 				        i, callerParamType.name, calleeParamType.name));
@@ -632,7 +629,7 @@ void TypeChecker::visitCallExpression(const ast::Call &callExpr) {
 
 	if (!calleeType.subtype.has_value()) {
 		messageBag.bug(
-		    callExpr.getToken(), "TYPE-CHECKER",
+		    callExpr.getToken(),
 		    std::format("expression does not have a return type for '{}'",
 		                callExpr.getToken().getLexeme()));
 	}
@@ -645,7 +642,7 @@ void TypeChecker::visitIntrinsicCallExpression(
 	case ray::compiler::ast::IntrinsicType::INTR_SIZEOF: {
 		if (intrinsicCall.arguments.size() != 1) {
 			messageBag.error(
-			    intrinsicCall.callee->name, "TYPE-CHECKER",
+			    intrinsicCall.callee->name,
 			    std::format(
 			        "{} intrinsic expects 1 argument but {} got provided",
 			        intrinsicCall.callee->name.lexeme,
@@ -661,7 +658,7 @@ void TypeChecker::visitIntrinsicCallExpression(
 	}
 	case ray::compiler::ast::IntrinsicType::INTR_IMPORT: {
 		if (intrinsicCall.arguments.size() != 1) {
-			messageBag.error(intrinsicCall.callee->name, "TYPE-CHECKER",
+			messageBag.error(intrinsicCall.callee->name,
 			                 std::format("{} intrinsic expects 1 "
 			                             "argument but {} got provided",
 			                             intrinsicCall.callee->name.lexeme,
@@ -675,17 +672,13 @@ void TypeChecker::visitIntrinsicCallExpression(
 		break;
 	}
 	case ray::compiler::ast::IntrinsicType::INTR_UNKNOWN:
-		messageBag.error(intrinsicCall.callee->name, "TYPE-CHECKER",
+		messageBag.error(intrinsicCall.callee->name,
 		                 std::format("'{}' is not a valid intrinsic",
 		                             intrinsicCall.callee->name.lexeme));
 		break;
 	}
 }
-void TypeChecker::visitGetExpression(const ast::Get &value) {
-	messageBag.bug(value.getToken(), "TYPE-CHECKER",
-	               std::format("visit method not implemented for {}",
-	                           value.variantName()));
-}
+void TypeChecker::visitGetExpression(const ast::Get &getExpression) {}
 void TypeChecker::visitGroupingExpression(const ast::Grouping &groupingExpr) {
 	// the type of the grouping is just the child of the inner expression
 	auto innerType = resolveType(*groupingExpr.expression);
@@ -707,7 +700,7 @@ void TypeChecker::visitLiteralExpression(const ast::Literal &literalExpr) {
 		auto type = lang::Type::getNumberLiteralType(literalExpr.token.lexeme);
 		if (!type.has_value()) {
 			messageBag.error(
-			    literalExpr.getToken(), "TYPE-CHECKER",
+			    literalExpr.getToken(),
 			    std::format("'{}' cannot be hold in any scalar number type",
 			                literalExpr.getToken().getLexeme()));
 			return;
@@ -721,7 +714,7 @@ void TypeChecker::visitLiteralExpression(const ast::Literal &literalExpr) {
 		const std::string_view character = literalExpr.value;
 		if (character.size() > 1) {
 			messageBag.error(
-			    literalExpr.getToken(), "TYPE-CHECKER",
+			    literalExpr.getToken(),
 			    std::format("'{}' is not a valid char literal type",
 			                literalExpr.getToken().getLexeme()));
 			break;
@@ -730,7 +723,7 @@ void TypeChecker::visitLiteralExpression(const ast::Literal &literalExpr) {
 		break;
 	}
 	default:
-		messageBag.error(literalExpr.getToken(), "TYPE-CHECKER",
+		messageBag.error(literalExpr.getToken(),
 		                 std::format("'{}' is not a valid literal type",
 		                             literalExpr.getToken().getLexeme()));
 		break;
@@ -743,13 +736,13 @@ void TypeChecker::visitLogicalExpression(const ast::Logical &logicalExpr) {
 	if (!(leftType.has_value() && rightType.has_value())) {
 		if (!leftType.has_value()) {
 			messageBag.error(
-			    logicalExpr.left->getToken(), "TYPE-CHECKER",
+			    logicalExpr.left->getToken(),
 			    std::format("left expression did not yield a value"));
 		}
 
 		if (!rightType.has_value()) {
 			messageBag.error(
-			    logicalExpr.right->getToken(), "TYPE-CHECKER",
+			    logicalExpr.right->getToken(),
 			    std::format("right expression did not yield a value"));
 		}
 		return;
@@ -766,13 +759,13 @@ void TypeChecker::visitLogicalExpression(const ast::Logical &logicalExpr) {
 		break;
 	default:
 		messageBag.error(
-		    logicalExpr.op, "TYPE-CHECKER",
+		    logicalExpr.op,
 		    std::format("'{}' is not a supported logical operation",
 		                op.getLexeme()));
 	}
 }
 void TypeChecker::visitSetExpression(const ast::Set &value) {
-	messageBag.bug(value.getToken(), "TYPE-CHECKER",
+	messageBag.bug(value.getToken(),
 	               std::format("visit method not implemented for {}",
 	                           value.variantName()));
 }
@@ -782,7 +775,7 @@ void TypeChecker::visitUnaryExpression(const ast::Unary &unaryExpr) {
 
 	auto innerType = resolveType(*unaryExpr.expr);
 	if (!innerType.has_value()) {
-		messageBag.error(unaryExpr.getToken(), "TYPE-CHECKER",
+		messageBag.error(unaryExpr.getToken(),
 		                 "inner expression did not yield a type");
 		return;
 	}
@@ -792,7 +785,7 @@ void TypeChecker::visitArrayAccessExpression(
     const ast::ArrayAccess &arrayExpr) {
 	const auto accessedTypeR = resolveType(*arrayExpr.array);
 	if (!accessedTypeR.has_value()) {
-		messageBag.error(arrayExpr.array->getToken(), "TYPE-CHECKER",
+		messageBag.error(arrayExpr.array->getToken(),
 		                 std::format("could not evaluate type for {}",
 		                             arrayExpr.array->getToken().getLexeme()));
 		return;
@@ -800,7 +793,7 @@ void TypeChecker::visitArrayAccessExpression(
 	const auto accessedType = accessedTypeR.value();
 	// TODO: actually resolve with operator overload its return type
 	if (!accessedType.subtype.has_value()) {
-		messageBag.error(arrayExpr.array->getToken(), "TYPE-CHECKER",
+		messageBag.error(arrayExpr.array->getToken(),
 		                 std::format("could not evaluate sub type for {}",
 		                             arrayExpr.array->getToken().getLexeme()));
 		return;
@@ -813,7 +806,7 @@ void TypeChecker::visitTypeExpression(const ast::Type &typeExpr) {
 	if (typeExpr.isPointer) {
 		auto innerType = resolveType(*typeExpr.subtype.value());
 		if (!innerType.has_value()) {
-			messageBag.error(typeExpr.getToken(), "TYPE-CHECKER",
+			messageBag.error(typeExpr.getToken(),
 			                 std::format("could not evaluate type for {}",
 			                             typeExpr.getToken().getLexeme()));
 			return;
@@ -829,7 +822,7 @@ void TypeChecker::visitTypeExpression(const ast::Type &typeExpr) {
 			typeStack.push_back(obtainedType);
 		} else {
 			messageBag.error(
-			    typeExpr.getToken(), "TYPE-CHECKER",
+			    typeExpr.getToken(),
 			    std::format("type not found for {}", typeExpr.name.lexeme));
 		}
 	}
@@ -841,7 +834,7 @@ void TypeChecker::visitCastExpression(const ast::Cast &castExpr) {
 	auto type = resolveType(castExpr.type);
 	if (!type.has_value()) {
 		messageBag.error(
-		    castExpr.getToken(), "TYPE-CHECKER",
+		    castExpr.getToken(),
 		    std::format("cast expression type '{}' did not yield a known type",
 		                castExpr.getToken().getLexeme()));
 		return;
@@ -852,7 +845,7 @@ void TypeChecker::visitParameterExpression(const ast::Parameter &parameter) {
 	const auto type = resolveType(parameter.type);
 	if (!type.has_value()) {
 		messageBag.error(
-		    parameter.getToken(), "TYPE-CHECKER",
+		    parameter.getToken(),
 		    std::format("parameter '{}' does not have a known type",
 		                parameter.name.getLexeme()));
 		return;
@@ -870,7 +863,7 @@ TypeChecker::resolveType(const ast::Statement &statement) {
 		for (size_t i = 1; i < types.size(); i++) {
 			if (!types[0].coercercesInto(types[i])) {
 				messageBag.bug(
-				    statement.getToken(), "TYPE-CHECKER",
+				    statement.getToken(),
 				    std::format(
 				        "'{}' return types does not match for '{}' vs '{}'",
 				        statement.variantName(), types[0].name, types[i].name));
@@ -886,7 +879,7 @@ TypeChecker::resolveType(const ast::Expression &expression) {
 	auto types = resolveTypes(expression);
 
 	if (types.size() > 1) {
-		messageBag.bug(expression.getToken(), "TYPE-CHECKER",
+		messageBag.bug(expression.getToken(),
 		               std::format("'{}' yield multiple values",
 		                           expression.variantName()));
 	}
@@ -917,7 +910,7 @@ TypeChecker::resolveTypes(const ast::Expression &expression) {
 		returnTypes.push_back(returnType);
 	}
 	if (returnTypes.size() < 1) {
-		messageBag.bug(expression.getToken(), "TYPE-CHECKER",
+		messageBag.bug(expression.getToken(),
 		               std::format("'{}' did not yield any return type",
 		                           expression.variantName()));
 	}
@@ -975,7 +968,7 @@ TypeChecker::resolveFunctionDeclaration(const ast::Function &function) {
 			linkageDirective = *foundLinkDirective;
 		} else {
 			messageBag.warning(
-			    directive->getToken(), "TYPE-CHECKER",
+			    directive->getToken(),
 			    std::format(
 			        "unmatched compiler directive '{}' for function '{}'",
 			        directive->directiveName(), function.name.getLexeme()));
@@ -991,7 +984,7 @@ TypeChecker::resolveFunctionDeclaration(const ast::Function &function) {
 	for (const auto &parameter : function.params) {
 		auto paramType = resolveType(parameter);
 		if (!paramType.has_value()) {
-			messageBag.bug(parameter.getToken(), "TYPE-CHECKER",
+			messageBag.bug(parameter.getToken(),
 			               std::format("could not inspect type for {}",
 			                           parameter.type.name.lexeme));
 			failed = true;
@@ -1000,7 +993,7 @@ TypeChecker::resolveFunctionDeclaration(const ast::Function &function) {
 		auto parameterType = paramType.value();
 		if (parameterType.calculatedSize == 0) {
 			messageBag.error(
-			    parameter.type.getToken(), "TYPE-CHECKER",
+			    parameter.type.getToken(),
 			    std::format(
 			        "cannot pass parameter type with unknown size for '{}'",
 			        parameterType.name));
@@ -1021,7 +1014,7 @@ TypeChecker::resolveFunctionDeclaration(const ast::Function &function) {
 	auto returnType = functionReturnType.value();
 	if (!returnType.isScalar() && returnType.calculatedSize == 0) {
 		messageBag.error(
-		    function.returnType.getToken(), "TYPE-CHECKER",
+		    function.returnType.getToken(),
 		    std::format("cannot return a type with unknown size for '{}'",
 		                returnType.name));
 		failed = true;

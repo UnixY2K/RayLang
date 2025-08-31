@@ -16,31 +16,27 @@ class RuntimeError : public std::runtime_error {
 };
 
 class MessageBag {
+	std::string category;
 	std::string filepath;
 
 	std::vector<std::string> errors;
 	std::vector<std::string> warnings;
 
   public:
-	MessageBag(std::string filepath) : filepath(filepath) {};
+	MessageBag(std::string category, std::string filepath)
+	    : category(category), filepath(filepath) {};
 
-	void error(size_t line, size_t column, std::string_view category,
-	           std::string_view message);
+	void error(size_t line, size_t column, std::string_view message);
 
-	void error(const Token token, std::string_view category,
-	           std::string_view message);
+	void error(const Token token, std::string_view message);
 
-	void warning(size_t line, size_t column, std::string_view category,
-	             std::string_view message);
+	void warning(size_t line, size_t column, std::string_view message);
 
-	void warning(const Token token, std::string_view category,
-	             std::string_view message);
+	void warning(const Token token, std::string_view message);
 
-	void bug(size_t line, size_t column, std::string_view category,
-	         std::string_view message);
+	void bug(size_t line, size_t column, std::string_view message);
 
-	void bug(const Token token, std::string_view category,
-	         std::string_view message);
+	void bug(const Token token, std::string_view message);
 
 	bool failed() const;
 	const std::vector<std::string> getErrors() const;
@@ -49,11 +45,11 @@ class MessageBag {
 
   private:
 	void reportError(size_t line, size_t column, std::string_view where,
-	                 std::string_view category, std::string_view message);
+	                 std::string_view message);
 	void reportWarning(size_t line, size_t column, std::string_view where,
-	                   std::string_view category, std::string_view message);
+	                   std::string_view message);
 	void reportBug(size_t line, size_t column, std::string_view where,
-	                   std::string_view category, std::string_view message);
+	               std::string_view message);
 
 	std::string escapeString(const std::string_view string);
 };

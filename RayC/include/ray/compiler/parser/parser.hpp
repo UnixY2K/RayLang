@@ -16,7 +16,7 @@ namespace ray::compiler {
 class ParseException : public std::exception {};
 
 class Parser {
-	MessageBag errorBag;
+	MessageBag messageBag;
 	std::vector<Token> tokens;
 	size_t current = 0;
 

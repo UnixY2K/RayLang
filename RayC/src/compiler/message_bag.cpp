@@ -10,51 +10,45 @@
 namespace ray::compiler {
 using namespace ray::compiler::terminal::literals;
 
-void MessageBag::error(size_t line, size_t column, std::string_view category,
-                       std::string_view message) {
-	reportError(line, column, "", category, message);
+void MessageBag::error(size_t line, size_t column, std::string_view message) {
+	reportError(line, column, "", message);
 }
 
-void MessageBag::error(const Token token, std::string_view category,
-                       std::string_view message) {
+void MessageBag::error(const Token token, std::string_view message) {
 	if (token.type == Token::TokenType::TOKEN_EOF) {
-		reportError(token.line, token.column, " at end", category, message);
+		reportError(token.line, token.column, " at end", message);
 	} else {
 		reportError(token.line, token.column,
 		            std::format("at '{}'", escapeString(token.getLexeme())),
-		            category, escapeString(message));
+		            escapeString(message));
 	}
 }
 
-void MessageBag::warning(size_t line, size_t column, std::string_view category,
-                         std::string_view message) {
-	reportError(line, column, "", category, escapeString(message));
+void MessageBag::warning(size_t line, size_t column, std::string_view message) {
+	reportError(line, column, "", escapeString(message));
 }
 
-void MessageBag::warning(const Token token, std::string_view category,
-                         std::string_view message) {
+void MessageBag::warning(const Token token, std::string_view message) {
 	if (token.type == Token::TokenType::TOKEN_EOF) {
-		reportWarning(token.line, token.column, " at end", category, message);
+		reportWarning(token.line, token.column, " at end", message);
 	} else {
 		reportWarning(token.line, token.column,
 		              std::format("at '{}'", escapeString(token.getLexeme())),
-		              category, escapeString(message));
+		              escapeString(message));
 	}
 }
 
-void MessageBag::bug(size_t line, size_t column, std::string_view category,
-                     std::string_view message) {
-	reportBug(line, column, "", category, message);
+void MessageBag::bug(size_t line, size_t column, std::string_view message) {
+	reportBug(line, column, "", message);
 }
 
-void MessageBag::bug(const Token token, std::string_view category,
-                     std::string_view message) {
+void MessageBag::bug(const Token token, std::string_view message) {
 	if (token.type == Token::TokenType::TOKEN_EOF) {
-		reportBug(token.line, token.column, " at end", category, message);
+		reportBug(token.line, token.column, " at end", message);
 	} else {
 		reportBug(token.line, token.column,
 		          std::format("at '{}'", escapeString(token.getLexeme())),
-		          category, message);
+		          message);
 	}
 }
 
@@ -65,7 +59,7 @@ const std::vector<std::string> MessageBag::getWarnings() const {
 }
 
 void MessageBag::reportError(size_t line, size_t column, std::string_view where,
-                             std::string_view category,
+
                              std::string_view message) {
 	errors.push_back(std::format("{}|{} [{}:{}:{}] {}: {}\n", "Error"_red,
 	                             terminal::red(category), filepath, line,
@@ -73,14 +67,14 @@ void MessageBag::reportError(size_t line, size_t column, std::string_view where,
 }
 void MessageBag::reportWarning(size_t line, size_t column,
                                std::string_view where,
-                               std::string_view category,
+
                                std::string_view message) {
 	errors.push_back(std::format("{}|{} [{}:{}:{}] {}: {}\n", "Warning"_yellow,
 	                             terminal::red(category), filepath, line,
 	                             column, where, message));
 }
 void MessageBag::reportBug(size_t line, size_t column, std::string_view where,
-                           std::string_view category,
+
                            std::string_view message) {
 	errors.push_back(std::format("{}|{} [{}:{}:{}] {}: {}\n", "Bug"_red,
 	                             terminal::red(category), filepath, line,
