@@ -1,2 +1,5 @@
 # ignore generated C files
 *.c
+
+# ignore stage 1 files
+*.s1
