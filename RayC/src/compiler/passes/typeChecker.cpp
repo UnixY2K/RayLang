@@ -736,10 +736,40 @@ void TypeChecker::visitLiteralExpression(const ast::Literal &literalExpr) {
 		break;
 	}
 }
-void TypeChecker::visitLogicalExpression(const ast::Logical &value) {
-	messageBag.bug(value.getToken(), "TYPE-CHECKER",
-	               std::format("visit method not implemented for {}",
-	                           value.variantName()));
+void TypeChecker::visitLogicalExpression(const ast::Logical &logicalExpr) {
+	auto leftType = resolveType(*logicalExpr.left);
+	auto rightType = resolveType(*logicalExpr.right);
+
+	if (!(leftType.has_value() && rightType.has_value())) {
+		if (!leftType.has_value()) {
+			messageBag.error(
+			    logicalExpr.left->getToken(), "TYPE-CHECKER",
+			    std::format("left expression did not yield a value"));
+		}
+
+		if (!rightType.has_value()) {
+			messageBag.error(
+			    logicalExpr.right->getToken(), "TYPE-CHECKER",
+			    std::format("right expression did not yield a value"));
+		}
+		return;
+	}
+
+	auto op = logicalExpr.op;
+	// TODO: once we start supporting operator overload this should be done by
+	// lookup of the overloads and get the return type of it
+	switch (op.type) {
+
+	case Token::TokenType::TOKEN_AMPERSAND_AMPERSAND:
+	case Token::TokenType::TOKEN_PIPE_PIPE:
+		typeStack.push_back(findScalarTypeInfo("bool").value());
+		break;
+	default:
+		messageBag.error(
+		    logicalExpr.op, "TYPE-CHECKER",
+		    std::format("'{}' is not a supported logical operation",
+		                op.getLexeme()));
+	}
 }
 void TypeChecker::visitSetExpression(const ast::Set &value) {
 	messageBag.bug(value.getToken(), "TYPE-CHECKER",
