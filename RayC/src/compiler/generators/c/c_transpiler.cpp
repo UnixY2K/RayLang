@@ -591,7 +591,7 @@ void CTranspilerGenerator::visitArrayAccessExpression(
 	output << "]";
 }
 void CTranspilerGenerator::visitTypeExpression(const ast::Type &type) {
-	if (!type.isMutable && type.name.lexeme == "void" && !type.isPointer) {
+	if (!type.isMutable && type.name.lexeme != "void" && !type.isPointer) {
 		output << "const ";
 	}
 	if (type.name.lexeme == "void") {
