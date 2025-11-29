@@ -11,7 +11,6 @@
 #include <ray/compiler/lexer/lexer.hpp>
 #include <ray/compiler/parser/parser.hpp>
 
-#include <ray/compiler/passes/topLevelResolver.hpp>
 #include <ray/compiler/passes/typeChecker.hpp>
 
 #include <ray/compiler/generators/c/c_transpiler.hpp>
@@ -88,31 +87,8 @@ int main(int argc, char **argv) {
 			bool handled = false;
 
 			lang::ModuleStore moduleStore;
-			analyzer::TopLevelResolver symbolTableGen(sourceFile);
-			symbolTableGen.resolve(statements);
 
-			// stage 1 definition file is updated after the top level has
-			// finished if it failed just truncate the file
-			std::ofstream outputS1File(
-			    std::format("{}.s1", opts.output.string()), std::ios::trunc);
-			if (symbolTableGen.hasFailed()) {
-				std::cerr << std::format("{}: {}\n", "Error"_red,
-				                         "symbolTableGen failed");
-				for (auto tableGenError : symbolTableGen.getErrors()) {
-					std::cerr << tableGenError;
-				}
-				return 1;
-			}
-			for (auto tableGenWarning : symbolTableGen.getWarnings()) {
-				std::cerr << tableGenWarning;
-			}
-			S1::lang::S1SourceUnit s1SourceUnit =
-			    symbolTableGen.getSourceUnit();
-			// if we did not fail update the S1 file
-			outputS1File << s1SourceUnit.exportSourceUnit();
-
-			analyzer::TypeChecker typeChecker(sourceFile, s1SourceUnit,
-			                                  moduleStore);
+			analyzer::TypeChecker typeChecker(sourceFile, moduleStore);
 
 			typeChecker.resolve(statements);
 			if (typeChecker.hasFailed()) {

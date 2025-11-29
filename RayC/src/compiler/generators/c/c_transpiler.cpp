@@ -18,7 +18,6 @@
 #include <ray/compiler/lexer/token.hpp>
 #include <ray/compiler/message_bag.hpp>
 #include <ray/compiler/passes/symbol_mangler.hpp>
-#include <ray/compiler/passes/topLevelResolver.hpp>
 
 namespace ray::compiler::generator::c {
 

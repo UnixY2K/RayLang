@@ -5,6 +5,7 @@ rayc_srcs = [
 	'src/cli/options.cpp',
 	'src/cli/terminal.cpp',
 	'src/compiler/ast/intrinsic.cpp',
+	# generators/targets outputs
 	'src/compiler/generators/c/c_transpiler.cpp',
 	'src/compiler/lang/sourceUnit.cpp',
 	'src/compiler/lang/type.cpp',
@@ -14,9 +15,8 @@ rayc_srcs = [
 	'src/compiler/parser/parser.cpp',
 	'src/compiler/passes/symbol_mangler.cpp',
 	'src/compiler/passes/symbolResolver.cpp',
-	'src/compiler/passes/topLevelResolver.cpp',
 	'src/compiler/passes/typeChecker.cpp',
-	'src/compiler/S1/lang/S1SourceUnit.cpp',
+	'src/compiler/passes/typeScanner.cpp',
 	'src/compiler/message_bag.cpp',
 	'src/source.cpp',
 ]
