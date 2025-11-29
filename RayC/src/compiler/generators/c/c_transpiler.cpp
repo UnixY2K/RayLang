@@ -158,15 +158,11 @@ void CTranspilerGenerator::visitFunctionStatement(
 	if (function.body.has_value()) {
 
 		output << identTabs;
-		if (!function.publicVisibility) {
+		if (function.publicVisibility) {
+			output << "RAYLANG_MACRO_LINK_EXPORT ";
+		} else {
 			output << "RAYLANG_MACRO_LINK_LOCAL ";
 			output << "static ";
-		} else if (function.body.has_value()) {
-			if (function.body.has_value()) {
-				output << "RAYLANG_MACRO_LINK_EXPORT ";
-			} else {
-				output << "RAYLANG_MACRO_LINK_IMPORT ";
-			}
 		}
 		function.returnType.visit(*this);
 
