@@ -235,7 +235,7 @@ void TypeChecker::visitJumpStatement(const ast::Jump &jumpStmt) {
 	}
 	typeStack.push_back(lang::Type::defineStmtType());
 }
-void TypeChecker::visitVarStatement(const ast::Var &variable) {
+void TypeChecker::visitVarDeclStatement(const ast::VarDecl &variable) {
 	auto variableType = lang::Type{};
 
 	if (variable.type.token.type != Token::TokenType::TOKEN_UNINITIALIZED) {
@@ -285,6 +285,62 @@ void TypeChecker::visitVarStatement(const ast::Var &variable) {
 		};
 		currentScope.get().defineLocalVariable(variableSymbol);
 		// typeStack.push_back(variableType);
+		return;
+	}
+
+	messageBag.error(
+	    variable.getToken(),
+	    "variable does not have a type assigned nor an valid initialization");
+}
+void TypeChecker::visitMemberStatement(const ast::Member &variable) {
+	auto variableType = lang::Type{};
+
+	if (variable.type.token.type != Token::TokenType::TOKEN_UNINITIALIZED) {
+		const auto &explicitType = variable.type;
+		std::string_view typeName = explicitType.name.lexeme;
+		auto foundType = resolveType(explicitType);
+		if (!foundType.has_value()) {
+			messageBag.error(
+			    variable.type.getToken(),
+			    std::format("'{}' does not name an existing type", typeName));
+		} else {
+			variableType = foundType.value();
+		}
+	}
+
+	if (variable.initializer.has_value()) {
+		auto &initializer = *variable.initializer.value().get();
+		auto initType = resolveType(initializer);
+		if (!initType.has_value()) {
+			messageBag.error(
+			    initializer.getToken(),
+			    std::format(
+			        "inialization expression did not yield a type for '{}'",
+			        initializer.getToken().getLexeme()));
+		} else {
+			const auto initializationType = initType.value();
+			if (!variableType.isInitialized()) {
+				variableType = initializationType;
+			} else if (!initializationType.coercercesInto(variableType)) {
+				messageBag.error(
+				    variable.getToken(),
+				    std::format(
+				        "member initialization type does not match with explicit type for '{}': '{}' vs '{}'",
+				        variable.getToken().getLexeme(), variableType.name,
+				        initializationType.name));
+			}
+		}
+	}
+
+	if (variableType.isInitialized()) {
+		lang::Symbol variableSymbol{
+		    .name = variable.name.lexeme,
+		    .mangledName = "",
+		    .innerType = variableType,
+		    .type = lang::Symbol::SymbolType::Parameter,
+		    .internal = false,
+		};
+		typeStack.push_back(variableType);
 		return;
 	}
 

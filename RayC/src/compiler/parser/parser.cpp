@@ -111,7 +111,7 @@ std::optional<std::unique_ptr<ast::Statement>> Parser::declaration() {
 				error(pubToken,
 				      "pub token cannot be in a variable declaration");
 			}
-			return std::make_unique<ast::Var>(varDeclaration("variable"));
+			return std::make_unique<ast::VarDecl>(varDeclaration());
 		}
 		return statement();
 	} catch (ParseException &e) {
@@ -123,7 +123,7 @@ std::unique_ptr<ast::Statement>
 Parser::structDeclaration(bool publicVisibility) {
 	Token name =
 	    consume(Token::TokenType::TOKEN_IDENTIFIER, "Expect struct name.");
-	std::vector<ast::Var> members;
+	std::vector<ast::Member> members;
 	std::vector<bool> memberVisibility;
 	bool structDeclaration = match({Token::TokenType::TOKEN_SEMICOLON});
 
@@ -135,7 +135,7 @@ Parser::structDeclaration(bool publicVisibility) {
 			if (match({Token::TokenType::TOKEN_PUB})) {
 				pubToken = previous();
 			}
-			members.push_back(varDeclaration("member"));
+			members.push_back(memberDeclaration());
 		}
 		consume(Token::TokenType::TOKEN_RIGHT_BRACE,
 		        "Expect '}' after struct body.");
@@ -186,7 +186,7 @@ std::unique_ptr<ast::Statement> Parser::forStatement() {
 	if (!match({Token::TokenType::TOKEN_SEMICOLON})) {
 		if (match({Token::TokenType::TOKEN_LET})) {
 			initializer =
-			    std::make_unique<ast::Var>(varDeclaration("variable"));
+			    std::make_unique<ast::VarDecl>(varDeclaration());
 		} else {
 			initializer = expressionStatement();
 		}
@@ -311,10 +311,10 @@ std::unique_ptr<ast::Statement> Parser::whileStatement() {
 	    token,
 	});
 }
-ast::Var Parser::varDeclaration(std::string kind) {
+ast::VarDecl Parser::varDeclaration() {
 	bool is_mutable = match({Token::TokenType::TOKEN_MUT});
-	Token name = consume(Token::TokenType::TOKEN_IDENTIFIER,
-	                     std::format("Expect {} name.", kind));
+	Token name =
+	    consume(Token::TokenType::TOKEN_IDENTIFIER, "Expect variable name.");
 	auto typeToken = Token{
 	    Token::TokenType::TOKEN_UNINITIALIZED,
 	    std::string(Token::glyph(Token::TokenType::TOKEN_UNINITIALIZED)),
@@ -335,7 +335,37 @@ ast::Var Parser::varDeclaration(std::string kind) {
 	}
 
 	consume(Token::TokenType::TOKEN_SEMICOLON,
-	        std::format("Expect ';' after {} declaration.", kind));
+	        "Expect ';' after variable declaration.");
+	return {
+	    name, std::move(type), is_mutable, std::move(initializer), name,
+	};
+}
+
+ast::Member Parser::memberDeclaration() {
+	bool is_mutable = match({Token::TokenType::TOKEN_MUT});
+	Token name =
+	    consume(Token::TokenType::TOKEN_IDENTIFIER, "Expect member name.");
+	auto typeToken = Token{
+	    Token::TokenType::TOKEN_UNINITIALIZED,
+	    std::string(Token::glyph(Token::TokenType::TOKEN_UNINITIALIZED)),
+	    name.line,
+	    name.column,
+	};
+	ast::Type type = ast::Type{
+	    typeToken, false, false, {}, typeToken,
+	};
+	if (match({Token::TokenType::TOKEN_COLON})) {
+		// array type
+		type = typeExpression();
+	}
+
+	std::optional<std::unique_ptr<ast::Expression>> initializer = std::nullopt;
+	if (match({Token::TokenType::TOKEN_EQUAL})) {
+		initializer = expression();
+	}
+
+	consume(Token::TokenType::TOKEN_SEMICOLON,
+	        "Expect ';' after member declaration.");
 	return {
 	    name, std::move(type), is_mutable, std::move(initializer), name,
 	};

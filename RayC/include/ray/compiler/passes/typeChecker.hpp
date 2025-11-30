@@ -52,7 +52,8 @@ class TypeChecker : public ast::StatementVisitor,
 	void visitFunctionStatement(const ast::Function &value) override;
 	void visitIfStatement(const ast::If &value) override;
 	void visitJumpStatement(const ast::Jump &value) override;
-	void visitVarStatement(const ast::Var &value) override;
+	void visitVarDeclStatement(const ast::VarDecl &value) override;
+	void visitMemberStatement(const ast::Member &value) override;
 	void visitWhileStatement(const ast::While &value) override;
 	void visitStructStatement(const ast::Struct &value) override;
 	void visitCompDirectiveStatement(const ast::CompDirective &value) override;

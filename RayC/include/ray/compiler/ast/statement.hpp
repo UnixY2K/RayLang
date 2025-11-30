@@ -16,7 +16,8 @@ class ExpressionStmt;
 class Function;
 class If;
 class Jump;
-class Var;
+class VarDecl;
+class Member;
 class While;
 class Struct;
 class CompDirective;
@@ -29,7 +30,8 @@ class StatementVisitor {
 	virtual void visitFunctionStatement(const Function& value) = 0;
 	virtual void visitIfStatement(const If& value) = 0;
 	virtual void visitJumpStatement(const Jump& value) = 0;
-	virtual void visitVarStatement(const Var& value) = 0;
+	virtual void visitVarDeclStatement(const VarDecl& value) = 0;
+	virtual void visitMemberStatement(const Member& value) = 0;
 	virtual void visitWhileStatement(const While& value) = 0;
 	virtual void visitStructStatement(const Struct& value) = 0;
 	virtual void visitCompDirectiveStatement(const CompDirective& value) = 0;
@@ -173,7 +175,7 @@ class Jump : public Statement {
 
 	const Token& getToken() const override { return token; };
 };
-class Var : public Statement {
+class VarDecl : public Statement {
   public:
 	Token name;
 	Type type;
@@ -181,7 +183,7 @@ class Var : public Statement {
 	std::optional<std::unique_ptr<Expression>> initializer;
 	Token token;
 
-	Var(Token name,
+	VarDecl(Token name,
 	        Type type,
 	        bool is_mutable,
 	        std::optional<std::unique_ptr<Expression>> initializer,
@@ -193,10 +195,37 @@ class Var : public Statement {
 		token(std::move(token)) {}
 
 	void visit(StatementVisitor& visitor) const override {
-		visitor.visitVarStatement(*this);
+		visitor.visitVarDeclStatement(*this);
 	}
 
-	const std::string_view variantName() const override { return "Var"; }
+	const std::string_view variantName() const override { return "VarDecl"; }
+
+	const Token& getToken() const override { return token; };
+};
+class Member : public Statement {
+  public:
+	Token name;
+	Type type;
+	bool is_mutable;
+	std::optional<std::unique_ptr<Expression>> initializer;
+	Token token;
+
+	Member(Token name,
+	        Type type,
+	        bool is_mutable,
+	        std::optional<std::unique_ptr<Expression>> initializer,
+	        Token token):
+		name(std::move(name)),
+		type(std::move(type)),
+		is_mutable(std::move(is_mutable)),
+		initializer(std::move(initializer)),
+		token(std::move(token)) {}
+
+	void visit(StatementVisitor& visitor) const override {
+		visitor.visitMemberStatement(*this);
+	}
+
+	const std::string_view variantName() const override { return "Member"; }
 
 	const Token& getToken() const override { return token; };
 };
@@ -226,14 +255,14 @@ class Struct : public Statement {
 	Token name;
 	bool publicVisibility;
 	bool declaration;
-	std::vector<Var> members;
+	std::vector<Member> members;
 	std::vector<bool> memberVisibility;
 	Token token;
 
 	Struct(Token name,
 	        bool publicVisibility,
 	        bool declaration,
-	        std::vector<Var> members,
+	        std::vector<Member> members,
 	        std::vector<bool> memberVisibility,
 	        Token token):
 		name(std::move(name)),

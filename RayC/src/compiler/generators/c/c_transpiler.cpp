@@ -231,7 +231,23 @@ void CTranspilerGenerator::visitJumpStatement(const ast::Jump &jump) {
 		break;
 	}
 }
-void CTranspilerGenerator::visitVarStatement(const ast::Var &var) {
+void CTranspilerGenerator::visitVarDeclStatement(const ast::VarDecl &var) {
+	output << currentIdent();
+
+	var.type.visit(*this);
+	output << std::format("{}", var.name.lexeme);
+
+	if (var.initializer.has_value()) {
+		output << " = ";
+		auto initializer = var.initializer->get();
+		auto currentIdent = ident;
+		ident = 0;
+		initializer->visit(*this);
+		ident = currentIdent;
+	}
+	output << ";\n";
+}
+void CTranspilerGenerator::visitMemberStatement(const ast::Member &var) {
 	output << currentIdent();
 
 	var.type.visit(*this);
