@@ -27,10 +27,11 @@ std::string CTranspilerGenerator::currentIdent() const {
 	return std::string(ident, '\t');
 }
 
-CTranspilerGenerator::CTranspilerGenerator(std::string filePath,
-                                           const lang::SourceUnit &sourceUnit)
+CTranspilerGenerator::CTranspilerGenerator(
+    std::string filePath, const lang::SourceUnit &sourceUnit,
+    const environment::DataModel &dataModel)
     : messageBag("C-BACKEND", filePath), currentSourceUnit(sourceUnit),
-      currentScope(sourceUnit.rootScope) {}
+      currentScope(sourceUnit.rootScope), dataModel(dataModel) {}
 
 void CTranspilerGenerator::resolve(
     const std::vector<std::unique_ptr<ast::Statement>> &statement) {
@@ -450,14 +451,7 @@ void CTranspilerGenerator::visitIntrinsicCallExpression(
 		} else {
 			auto param = value.arguments[0].get();
 			if (auto type = getTypeExpression(param)) {
-				if (type->isPlatformDependent()) {
-					// TODO: remove requirements for platform dependent sizeof
-					// and separate name mangling
-					// this code will not work properly without that fix
-					output << std::format("((ssize)sizeof({}))", type->name);
-				} else {
-					output << std::format("((ssize){})", type->calculatedSize);
-				}
+				output << std::format("((ssize){})", type->calculatedSize);
 			} else {
 				messageBag.error(value.callee->name,
 				                 std::format("'{}' is not a Type expression",
@@ -649,7 +643,7 @@ void CTranspilerGenerator::visitParameterExpression(
 
 void CTranspilerGenerator::visitType(const lang::Type &type) {
 	// for unit type we just use void
-	if (type == lang::Type::getVoidType()) {
+	if (type == dataModel.get().getVoidType()) {
 		output << "void";
 		return;
 	}
@@ -697,7 +691,7 @@ CTranspilerGenerator::findStructName(const std::string_view name) const {
 
 std::optional<lang::Type>
 CTranspilerGenerator::findScalarTypeInfo(const std::string_view lexeme) {
-	return lang::Type::findScalarType(lexeme);
+	return dataModel.get().findScalarType(lexeme);
 }
 std::optional<lang::Type>
 CTranspilerGenerator::findTypeInfo(const std::string_view lexeme) {

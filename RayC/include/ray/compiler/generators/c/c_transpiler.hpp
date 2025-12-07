@@ -10,6 +10,7 @@
 #include <ray/compiler/ast/expression.hpp>
 #include <ray/compiler/ast/statement.hpp>
 #include <ray/compiler/directives/compilerDirective.hpp>
+#include <ray/compiler/environment/dataModel/dataModel.hpp>
 #include <ray/compiler/lang/functionDefinition.hpp>
 #include <ray/compiler/lang/sourceUnit.hpp>
 #include <ray/compiler/lang/structDefinition.hpp>
@@ -36,10 +37,12 @@ class CTranspilerGenerator : public ast::StatementVisitor,
 
 	std::reference_wrapper<const lang::SourceUnit> currentSourceUnit;
 	std::reference_wrapper<const lang::Scope> currentScope;
+	std::reference_wrapper<const environment::DataModel> dataModel;
 
   public:
 	CTranspilerGenerator(std::string filePath,
-	                     const lang::SourceUnit &sourceUnit);
+	                     const lang::SourceUnit &sourceUnit,
+	                     const environment::DataModel &dataModel);
 
 	void resolve(const std::vector<std::unique_ptr<ast::Statement>> &statement);
 

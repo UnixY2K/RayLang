@@ -166,8 +166,9 @@ void TypeChecker::visitFunctionStatement(const ast::Function &function) {
 				};
 				currentScope.get().defineLocalVariable(paramSymbol);
 			}
-			const auto type = resolveType(function.body.value())
-			                      .value_or(lang::Type::getVoidType());
+			const auto type =
+			    resolveType(function.body.value())
+			        .value_or(currentDataModel.get().getVoidType());
 
 			if (!type.coercercesInto(declaration.signature.returnType)) {
 				messageBag.error(
@@ -178,7 +179,7 @@ void TypeChecker::visitFunctionStatement(const ast::Function &function) {
 			}
 		}
 
-		auto functionType = lang::Type::defineFunctionType(
+		auto functionType = currentDataModel.get().defineFunctionType(
 		    declaration.signature.returnType, paramTypes);
 		if (!currentScope.get().defineFunction(declaration)) {
 			messageBag.error(function.getToken(),
@@ -393,7 +394,6 @@ void TypeChecker::visitStructStatement(const ast::Struct &structObj) {
 	                                                 linkageDirective);
 
 	size_t structSize = 0;
-	bool platformDependent = false;
 
 	if (!structObj.declaration) {
 		std::vector<lang::StructMember> members;
@@ -431,7 +431,7 @@ void TypeChecker::visitStructStatement(const ast::Struct &structObj) {
 	}
 
 	auto structType =
-	    lang::Type::defineStructType(structName, structSize, platformDependent);
+	    currentDataModel.get().defineStructType(structName, structSize);
 	currentSourceUnit.structDeclarations.push_back(lang::StructDeclaration{
 	    .name = structName,
 	    .mangledName = mangledStructName,
@@ -509,10 +509,12 @@ void TypeChecker::visitVariableExpression(const ast::Variable &variableExpr) {
 	     currentSourceUnit.functionDeclarations) {
 		if (functionDeclaration.name == variableExpr.name.lexeme) {
 			if (!functionType.isInitialized()) {
-				functionType = functionDeclaration.signature.getFunctionType();
+				functionType = functionDeclaration.signature.getFunctionType(
+				    currentDataModel);
 			} else {
 				functionType =
-				    functionDeclaration.signature.getOverloadedFunctionType();
+				    functionDeclaration.signature.getOverloadedFunctionType(
+				        currentDataModel);
 				break;
 			}
 		}
@@ -747,13 +749,15 @@ void TypeChecker::visitLiteralExpression(const ast::Literal &literalExpr) {
 	switch (literalExpr.kind.type) {
 
 	case Token::TokenType::TOKEN_STRING: {
-		const auto baseType = lang::Type::findScalarType("u8").value();
+		const auto baseType =
+		    currentDataModel.get().findScalarType("u8").value();
 		const auto arrayType = makePointerType(baseType);
 		typeStack.push_back(arrayType);
 		break;
 	}
 	case Token::TokenType::TOKEN_NUMBER: {
-		auto type = lang::Type::getNumberLiteralType(literalExpr.token.lexeme);
+		auto type = currentDataModel.get().getNumberLiteralType(
+		    literalExpr.token.lexeme);
 		if (!type.has_value()) {
 			messageBag.error(
 			    literalExpr.getToken(),
@@ -775,7 +779,8 @@ void TypeChecker::visitLiteralExpression(const ast::Literal &literalExpr) {
 			                literalExpr.getToken().getLexeme()));
 			break;
 		}
-		typeStack.push_back(lang::Type::findScalarType("u8").value());
+		typeStack.push_back(
+		    currentDataModel.get().findScalarType("u8").value());
 		break;
 	}
 	default:
@@ -975,7 +980,7 @@ TypeChecker::resolveTypes(const ast::Expression &expression) {
 
 std::optional<lang::Type>
 TypeChecker::findScalarTypeInfo(const std::string_view lexeme) {
-	return lang::Type::findScalarType(lexeme);
+	return currentDataModel.get().findScalarType(lexeme);
 }
 std::optional<lang::Type>
 TypeChecker::findTypeInfo(const std::string_view typeName) {
@@ -993,8 +998,6 @@ lang::Type TypeChecker::makePointerType(const lang::Type &innerType) {
 	                  // a pointer is not a scalar as it is an address memory
 	                  // that references an object
 	                  false,
-	                  // technically platform dependent on pointer definition
-	                  true,
 	                  // define the name as pointer
 	                  "%<pointer>%",
 	                  // we need to get this from the platform in the future

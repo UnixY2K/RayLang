@@ -7,6 +7,7 @@
 #include <ray/compiler/ast/statement.hpp>
 #include <ray/compiler/directives/compilerDirective.hpp>
 #include <ray/compiler/directives/linkageDirective.hpp>
+#include <ray/compiler/environment/dataModel/dataModel.hpp>
 #include <ray/compiler/lang/functionDefinition.hpp>
 #include <ray/compiler/lang/moduleStore.hpp>
 #include <ray/compiler/lang/sourceUnit.hpp>
@@ -27,12 +28,15 @@ class TypeChecker : public ast::StatementVisitor,
 
 	lang::SourceUnit currentSourceUnit;
 	std::reference_wrapper<lang::Scope> currentScope;
+	std::reference_wrapper<const environment::DataModel> currentDataModel;
 	// lang::ModuleStore &moduleStore;
 
   public:
-	TypeChecker(std::string filePath, lang::ModuleStore &moduleStore)
+	TypeChecker(std::string filePath, lang::ModuleStore &moduleStore,
+	            const environment::DataModel &dataModel)
 	    : messageBag("TYPE-CHECKER", filePath), typeStack(),
-	      currentSourceUnit(), currentScope(currentSourceUnit.rootScope)
+	      currentSourceUnit(), currentScope(currentSourceUnit.rootScope),
+	      currentDataModel(dataModel)
 	//,moduleStore(moduleStore)
 	{}
 

@@ -8,6 +8,9 @@
 #include <ray/cli/options.hpp>
 #include <ray/cli/terminal.hpp>
 
+#include <ray/compiler/environment/dataModel/dataModel.hpp>
+#include <ray/compiler/environment/dataModel/platforms/LP64.hpp>
+
 #include <ray/compiler/lexer/lexer.hpp>
 #include <ray/compiler/parser/parser.hpp>
 
@@ -74,6 +77,7 @@ int main(int argc, char **argv) {
 			    opts.input.make_preferred().relative_path().string();
 			auto parser = Parser(sourceFile, tokens);
 			auto statements = parser.parse();
+			const environment::DataModel *dataModel;
 			if (parser.failed()) {
 				for (auto parseError : parser.getErrors()) {
 					std::cerr << parseError;
@@ -83,12 +87,31 @@ int main(int argc, char **argv) {
 			if (opts.target == ray::compiler::cli::Options::TargetEnum::NONE) {
 				opts.target = opts.defaultTarget;
 			}
+			switch (opts.dataModel) {
+			case ray::compiler::cli::Options::TargetDataModel::NONE: {
+				std::cerr << std::format("{}: unrecognized data model\n",
+				                         "Error"_red);
+				return 1;
+			}
+			case ray::compiler::cli::Options::TargetDataModel::LP64: {
+				dataModel =
+				    &environment::dataModel::platforms::LP64::getInstance();
+				break;
+			}
+			default: {
+				std::cerr << std::format(
+				    "{}: the selected data model is not supported\n",
+				    "Error"_red);
+				return 1;
+			}
+			}
 			std::string output;
 			bool handled = false;
 
 			lang::ModuleStore moduleStore;
 
-			analyzer::TypeChecker typeChecker(sourceFile, moduleStore);
+			analyzer::TypeChecker typeChecker(sourceFile, moduleStore,
+			                                  *dataModel);
 
 			typeChecker.resolve(statements);
 			if (typeChecker.hasFailed()) {
@@ -107,7 +130,7 @@ int main(int argc, char **argv) {
 			case cli::Options::TargetEnum::C_SOURCE: {
 				handled = true;
 				generator::c::CTranspilerGenerator CTranspilerGen(
-				    sourceFile, typeChecker.getCurrentSourceUnit());
+				    sourceFile, typeChecker.getCurrentSourceUnit(), *dataModel);
 
 				CTranspilerGen.resolve(statements);
 				if (CTranspilerGen.hasFailed()) {

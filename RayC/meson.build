@@ -5,6 +5,8 @@ rayc_srcs = [
 	'src/cli/options.cpp',
 	'src/cli/terminal.cpp',
 	'src/compiler/ast/intrinsic.cpp',
+	# environment
+	'src/compiler/environment/dataModel/platforms/LP64.cpp',
 	# generators/targets outputs
 	'src/compiler/generators/c/c_transpiler.cpp',
 	'src/compiler/lang/sourceUnit.cpp',
