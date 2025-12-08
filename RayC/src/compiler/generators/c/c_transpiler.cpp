@@ -294,12 +294,15 @@ void CTranspilerGenerator::visitStructStatement(const ast::Struct &value) {
 		}
 		directivesStack.pop_back();
 	}
+	const std::string mangledStructName =
+	    nameMangler.mangleStruct(currentModule, value, linkageDirective);
 
 	// we just ignore any struct declaration
 	// as they were declared before
 	if (!value.declaration) {
+
 		output << std::format("{}typedef struct {}", currentIdent(),
-		                      value.name.lexeme);
+		                      mangledStructName);
 		output << " {\n";
 		ident++;
 		for (auto &member : value.members) {
@@ -309,11 +312,14 @@ void CTranspilerGenerator::visitStructStatement(const ast::Struct &value) {
 			// make a char field so on both C and C++ holds 1 byte
 			// still this field should never be used
 			// and its fields should not be accesible
-			output << std::format("{}char _RREmptyStruct__;\n", currentIdent());
+			// TODO: make a method in the mangler to create reserved
+			// variable/member names
+			output << std::format("{}char _RayREmptyStruct__;\n",
+			                      currentIdent());
 		}
 		ident--;
 		output << std::format("{}}}", currentIdent());
-		output << std::format(" {};\n", value.name.lexeme);
+		output << std::format(" {};\n", mangledStructName);
 	}
 }
 void CTranspilerGenerator::visitCompDirectiveStatement(
