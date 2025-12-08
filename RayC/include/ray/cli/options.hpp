@@ -49,6 +49,12 @@ class Options {
 		return TargetDataModel::LP64;
 #else // assume 32 bits
 #endif
+#elif _WIN32
+#ifdef _WIN64
+		return TargetDataModel::LLP64;
+#else
+		return TargetTargetDataModel::ILP32;
+#endif
 #else
 #warning "non supported host arch"
 		return TargetDataModel::NONE;

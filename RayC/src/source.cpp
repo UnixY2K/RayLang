@@ -9,6 +9,7 @@
 #include <ray/cli/terminal.hpp>
 
 #include <ray/compiler/environment/dataModel/dataModel.hpp>
+#include <ray/compiler/environment/dataModel/platforms/LLP64.hpp>
 #include <ray/compiler/environment/dataModel/platforms/LP64.hpp>
 
 #include <ray/compiler/lexer/lexer.hpp>
@@ -56,6 +57,11 @@ int main(int argc, char **argv) {
 				std::cerr << std::format("{}: no data model available\n",
 				                         "Error"_red);
 				return 1;
+			}
+			case ray::compiler::cli::Options::TargetDataModel::LLP64: {
+				dataModel =
+				    &environment::dataModel::platforms::LLP64::getInstance();
+				break;
 			}
 			case ray::compiler::cli::Options::TargetDataModel::LP64: {
 				dataModel =
