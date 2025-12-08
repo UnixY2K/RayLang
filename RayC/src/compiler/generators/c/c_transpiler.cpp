@@ -305,6 +305,12 @@ void CTranspilerGenerator::visitStructStatement(const ast::Struct &value) {
 		for (auto &member : value.members) {
 			member.visit(*this);
 		}
+		if (value.members.empty()) {
+			// make a char field so on both C and C++ holds 1 byte
+			// still this field should never be used
+			// and its fields should not be accesible
+			output << std::format("{}char _RREmptyStruct__;\n", currentIdent());
+		}
 		ident--;
 		output << std::format("{}}}", currentIdent());
 		output << std::format(" {};\n", value.name.lexeme);
