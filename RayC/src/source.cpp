@@ -50,6 +50,26 @@ int main(int argc, char **argv) {
 				return 1;
 			}
 
+			const environment::DataModel *dataModel;
+			switch (opts.dataModel) {
+			case ray::compiler::cli::Options::TargetDataModel::NONE: {
+				std::cerr << std::format("{}: no data model available\n",
+				                         "Error"_red);
+				return 1;
+			}
+			case ray::compiler::cli::Options::TargetDataModel::LP64: {
+				dataModel =
+				    &environment::dataModel::platforms::LP64::getInstance();
+				break;
+			}
+			default: {
+				std::cerr << std::format(
+				    "{}: the selected data model is not supported\n",
+				    "Error"_red);
+				return 1;
+			}
+			}
+
 			// read the contents of the file
 			std::ifstream input(opts.input);
 			if (!input) {
@@ -77,7 +97,7 @@ int main(int argc, char **argv) {
 			    opts.input.make_preferred().relative_path().string();
 			auto parser = Parser(sourceFile, tokens);
 			auto statements = parser.parse();
-			const environment::DataModel *dataModel;
+
 			if (parser.failed()) {
 				for (auto parseError : parser.getErrors()) {
 					std::cerr << parseError;
@@ -87,24 +107,7 @@ int main(int argc, char **argv) {
 			if (opts.target == ray::compiler::cli::Options::TargetEnum::NONE) {
 				opts.target = opts.defaultTarget;
 			}
-			switch (opts.dataModel) {
-			case ray::compiler::cli::Options::TargetDataModel::NONE: {
-				std::cerr << std::format("{}: unrecognized data model\n",
-				                         "Error"_red);
-				return 1;
-			}
-			case ray::compiler::cli::Options::TargetDataModel::LP64: {
-				dataModel =
-				    &environment::dataModel::platforms::LP64::getInstance();
-				break;
-			}
-			default: {
-				std::cerr << std::format(
-				    "{}: the selected data model is not supported\n",
-				    "Error"_red);
-				return 1;
-			}
-			}
+
 			std::string output;
 			bool handled = false;
 

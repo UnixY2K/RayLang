@@ -50,7 +50,7 @@ class Options {
 #else // assume 32 bits
 #endif
 #else
-#error "non supported arch"
+#warning "non supported host arch"
 		return TargetDataModel::NONE;
 #endif
 	}
