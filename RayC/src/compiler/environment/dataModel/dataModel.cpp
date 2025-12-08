@@ -3,12 +3,12 @@
 #include <optional>
 #include <unordered_map>
 
-#include <ray/compiler/environment/dataModel/platforms/LLP64.hpp>
+#include <ray/compiler/environment/dataModel/dataModel.hpp>
 
-namespace ray::compiler::environment::dataModel::platforms {
+namespace ray::compiler::environment {
 
-lang::Type LLP64::defineStructType(std::string name,
-                                   size_t aproximatedSize) const {
+lang::Type DataModel::defineStructType(std::string name,
+                                       size_t aproximatedSize) const {
 	return lang::Type{
 	    // initialized
 	    true,
@@ -26,7 +26,7 @@ lang::Type LLP64::defineStructType(std::string name,
 	};
 }
 
-lang::Type LLP64::defineFunctionType(
+lang::Type DataModel::defineFunctionType(
     lang::Type returnType,
     std::vector<util::copy_ptr<lang::Type>> signature) const {
 	return definePointerType(lang::Type(
@@ -46,7 +46,8 @@ lang::Type LLP64::defineFunctionType(
 	    ));
 }
 
-lang::Type LLP64::defineOverloadedFunctionType(lang::Type returnType) const {
+lang::Type
+DataModel::defineOverloadedFunctionType(lang::Type returnType) const {
 	return lang::Type(
 	    true,
 	    // a pointer is not a scalar as it is an address memory
@@ -65,12 +66,12 @@ lang::Type LLP64::defineOverloadedFunctionType(lang::Type returnType) const {
 	);
 }
 
-lang::Type LLP64::getVoidType() const {
+lang::Type DataModel::getVoidType() const {
 	return defineScalarType("void", 0, false);
 }
 
 std::optional<lang::Type>
-LLP64::findScalarType(const std::string_view name) const {
+DataModel::findScalarType(const std::string_view name) const {
 	static std::unordered_map<std::string, lang::Type> map = {
 	    {
 	        "bool",
@@ -118,23 +119,23 @@ LLP64::findScalarType(const std::string_view name) const {
 	    }, // f64
 	    {
 	        "usize",
-	        defineScalarType("usize", POINTER_SIZE, false),
+	        defineScalarType("usize", pointerSize, false),
 	    }, // usize
 	    {
 	        "ssize",
-	        defineScalarType("ssize", POINTER_SIZE, true),
+	        defineScalarType("ssize", pointerSize, true),
 	    }, // ssize
 	    {
 	        "c_char",
-	        defineScalarType("c_char", CHAR_SIZE, true),
+	        defineScalarType("c_char", charSize, true),
 	    }, // c_char
 	    {
 	        "c_int",
-	        defineScalarType("c_int", INT_SIZE, true),
+	        defineScalarType("c_int", intSize, true),
 	    }, // c_int
 	    {
 	        "c_size",
-	        defineScalarType("c_size", POINTER_SIZE, false),
+	        defineScalarType("c_size", pointerSize, false),
 	    }, // c_size
 	    {
 	        "void",
@@ -146,8 +147,8 @@ LLP64::findScalarType(const std::string_view name) const {
 	                         : std::nullopt;
 }
 
-lang::Type LLP64::defineScalarType(std::string name, size_t calculatedSize,
-                                   bool signedType) {
+lang::Type DataModel::defineScalarType(std::string name, size_t calculatedSize,
+                                       bool signedType) const {
 	return lang::Type{
 	    true,           // initialized type
 	    true,           // it is an scalar type
@@ -162,12 +163,12 @@ lang::Type LLP64::defineScalarType(std::string name, size_t calculatedSize,
 	};
 }
 
-lang::Type LLP64::definePointerType(lang::Type returnType) const {
+lang::Type DataModel::definePointerType(lang::Type returnType) const {
 	return lang::Type{
 	    true,         // initialized type
 	    true,         // it is an scalar type
 	    "//ptr",      // specified name
-	    POINTER_SIZE, // 64bit/8 bytes in LLP64
+	    pointerSize,  // 64bit/8 bytes in DataModel
 	    false,        // by default all scalar types are const
 	    true,         // is not a pointer type
 	    false,        // a pointer is not signed
@@ -180,7 +181,7 @@ lang::Type LLP64::definePointerType(lang::Type returnType) const {
 // converts a number expression into the smallest number type
 // available by the compiler
 std::optional<lang::Type>
-LLP64::getNumberLiteralType(const std::string_view lexeme) const {
+DataModel::getNumberLiteralType(const std::string_view lexeme) const {
 	// for now assume that is the largest type
 	// at a later step we will worry about smaller types like f32 or the integer
 	// sides
@@ -259,5 +260,4 @@ LLP64::getNumberLiteralType(const std::string_view lexeme) const {
 
 	return findScalarType(typeLexeme);
 }
-
-} // namespace ray::compiler::environment::dataModel::platforms
+} // namespace ray::compiler::environment

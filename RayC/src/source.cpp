@@ -9,8 +9,6 @@
 #include <ray/cli/terminal.hpp>
 
 #include <ray/compiler/environment/dataModel/dataModel.hpp>
-#include <ray/compiler/environment/dataModel/platforms/LLP64.hpp>
-#include <ray/compiler/environment/dataModel/platforms/LP64.hpp>
 
 #include <ray/compiler/lexer/lexer.hpp>
 #include <ray/compiler/parser/parser.hpp>
@@ -59,13 +57,12 @@ int main(int argc, char **argv) {
 				return 1;
 			}
 			case ray::compiler::cli::Options::TargetDataModel::LLP64: {
-				dataModel =
-				    &environment::dataModel::platforms::LLP64::getInstance();
+				dataModel = &environment::DataModel::LLP64DataModel();
 				break;
 			}
 			case ray::compiler::cli::Options::TargetDataModel::LP64: {
 				dataModel =
-				    &environment::dataModel::platforms::LP64::getInstance();
+				    &environment::DataModel::LP64DataModel();
 				break;
 			}
 			default: {
