@@ -43,12 +43,8 @@ class Options {
 	static TargetEnum targetFromString(std::string_view str);
 	static constexpr TargetEnum defaultTarget = TargetEnum::C_SOURCE;
 	static constexpr TargetDataModel getHostDataModel() {
-// TODO: add propper setup for Windows, MacOS and Linux
-#ifdef __linux__
 #ifdef __LP64__
 		return TargetDataModel::LP64;
-#else // assume 32 bits
-#endif
 #elif _WIN32
 #ifdef _WIN64
 		return TargetDataModel::LLP64;
