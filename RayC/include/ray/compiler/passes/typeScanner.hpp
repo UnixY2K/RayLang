@@ -4,7 +4,7 @@
 #include <ray/compiler/ast/statement.hpp>
 #include <ray/compiler/message_bag.hpp>
 
-namespace ray::compiler::analyzer {
+namespace ray::compiler::passes {
 class TypeScanner : public ast::StatementVisitor,
                     public ast::ExpressionVisitor {
 	MessageBag messageBag;
@@ -18,4 +18,4 @@ class TypeScanner : public ast::StatementVisitor,
 	const std::vector<std::string> getErrors() const;
 	const std::vector<std::string> getWarnings() const;
 };
-} // namespace ray::compiler::analyzer
+} // namespace ray::compiler::passes

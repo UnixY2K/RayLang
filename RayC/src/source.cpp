@@ -116,7 +116,7 @@ int main(int argc, char **argv) {
 
 			lang::ModuleStore moduleStore;
 
-			analyzer::TypeChecker typeChecker(sourceFile, moduleStore,
+			passes::TypeChecker typeChecker(sourceFile, moduleStore,
 			                                  *dataModel);
 
 			typeChecker.resolve(statements);

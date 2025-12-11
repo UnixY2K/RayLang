@@ -15,7 +15,7 @@
 #include <ray/compiler/lang/type.hpp>
 #include <ray/compiler/message_bag.hpp>
 
-namespace ray::compiler::analyzer {
+namespace ray::compiler::passes {
 
 class TypeChecker : public ast::StatementVisitor,
                     public ast::ExpressionVisitor {
@@ -92,4 +92,4 @@ class TypeChecker : public ast::StatementVisitor,
 	std::optional<lang::FunctionDeclaration>
 	resolveFunctionDeclaration(const ast::Function &functionExpr);
 };
-} // namespace ray::compiler::analyzer
+} // namespace ray::compiler::passes

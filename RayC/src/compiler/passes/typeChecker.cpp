@@ -1,4 +1,3 @@
-#include "ray/compiler/lang/symbol.hpp"
 #include <cstddef>
 #include <cstdio>
 #include <format>
@@ -11,13 +10,14 @@
 #include <ray/compiler/lang/functionDefinition.hpp>
 #include <ray/compiler/lang/sourceUnit.hpp>
 #include <ray/compiler/lang/structDefinition.hpp>
+#include <ray/compiler/lang/symbol.hpp>
 #include <ray/compiler/lang/type.hpp>
 #include <ray/compiler/lexer/token.hpp>
 #include <ray/compiler/passes/symbol_mangler.hpp>
 #include <ray/compiler/passes/typeChecker.hpp>
 #include <ray/util/copy_ptr.hpp>
 
-namespace ray::compiler::analyzer {
+namespace ray::compiler::passes {
 
 void TypeChecker::resolve(
     const std::vector<std::unique_ptr<ast::Statement>> &statements) {
@@ -1096,4 +1096,4 @@ TypeChecker::resolveFunctionDeclaration(const ast::Function &function) {
 	return declaration;
 }
 
-} // namespace ray::compiler::analyzer
+} // namespace ray::compiler::passes

@@ -1,6 +1,6 @@
 #include <ray/compiler/passes/typeScanner.hpp>
 
-namespace ray::compiler::analyzer {
+namespace ray::compiler::passes {
 
 void TypeScanner::resolve(
     const std::vector<std::unique_ptr<ast::Statement>> &statements) {}
