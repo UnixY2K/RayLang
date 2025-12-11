@@ -550,7 +550,27 @@ void CTranspilerGenerator::visitLiteralExpression(const ast::Literal &literal) {
 		break;
 	}
 	case Token::TokenType::TOKEN_NUMBER: {
-		std::string value = literal.value;
+		std::string_view value = literal.value;
+		bool commaFound = false;
+		size_t end_pos = 0;
+		for (; end_pos < value.size(); end_pos++) {
+			const char digit = value[end_pos];
+			int number = digit - '0';
+			if (number >= 0 && number <= 9) {
+				continue;
+			}
+			if (digit == '.') {
+				if (commaFound) {
+					break;
+				}
+				commaFound = true;
+				continue;
+			}
+			break;
+		}
+
+		// read until no more digits found
+		value = value.substr(0, end_pos);
 		output << std::format("{}", value);
 		break;
 	}

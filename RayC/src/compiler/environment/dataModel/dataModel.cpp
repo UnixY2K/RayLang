@@ -1,6 +1,8 @@
 #include <charconv>
+#include <cstddef>
 #include <format>
 #include <optional>
+#include <string_view>
 #include <unordered_map>
 
 #include <ray/compiler/environment/dataModel/dataModel.hpp>
@@ -199,21 +201,32 @@ DataModel::getNumberLiteralType(const std::string_view lexeme) const {
 		pos++;
 	}
 
+	size_t numEnd = 0;
 	for (; pos < lexeme.size(); pos++) {
 		const char digit = lexeme[pos];
+		const int dVal = digit - '0';
+		if (dVal >= 0 && dVal <= 9) {
+			continue;
+		}
 		if (digit == '.') {
 			floatingPoint = true;
 			break;
 		}
+		// break anyways and set this as postfix
+		numEnd = pos;
+		break;
 	}
 
-	const char *parse_start_ptr = lexeme.data();
-	const char *parse_end_ptr = lexeme.data() + lexeme.size();
+	if (numEnd + 1 < lexeme.size()) {
+		return findScalarType(std::string_view(lexeme).substr(numEnd));
+	}
 
 	if (floatingPoint) {
-		// TODO
+		// TODO: add floating point parse code
 		minimalBits = 64;
 	} else {
+		const char *parse_start_ptr = lexeme.data();
+		const char *parse_end_ptr = lexeme.data() + numEnd + 1;
 		if (signedNumber) {
 			int64_t sParsedVal;
 			auto [ptr, ec] =
@@ -249,7 +262,6 @@ DataModel::getNumberLiteralType(const std::string_view lexeme) const {
 			}
 		}
 	}
-
 	std::string typeLexeme = std::format(
 	    "{}{}",
 	    floatingPoint ? "f"
