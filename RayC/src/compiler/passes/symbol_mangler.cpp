@@ -32,7 +32,7 @@ std::string NameMangler::mangleFunction(
 		}
 		}
 	}
-	return std::format("_RayMv{}_T{}_M{}_{}_N{}_{}", manglerVersion, "F",
+	return std::format("_rayMv{}_T{}_M{}_{}_N{}_{}", manglerVersion, "F",
 	                   module.size(), module, function.name.lexeme.size(),
 	                   function.name.lexeme);
 }
@@ -60,7 +60,7 @@ std::string NameMangler::mangleStruct(
 		}
 		}
 	}
-	return std::format("_RayMv{}_T{}_M{}_{}_N{}_{}", manglerVersion, "S",
+	return std::format("_rayMv{}_T{}_M{}_{}_N{}_{}", manglerVersion, "S",
 	                   module.size(), module,
 	                   structDefinition.name.lexeme.size(),
 	                   structDefinition.name.lexeme);
