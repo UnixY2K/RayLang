@@ -634,12 +634,18 @@ void CTranspilerGenerator::visitTypeExpression(const ast::Type &type) {
 			}
 			output << "*";
 		} else {
+			// TODO: replace this to a typeID System
 			std::string typeName = findStructName(type.name.lexeme);
 			if (typeName.empty()) {
-				messageBag.warning(
-				    type.getToken(),
-				    std::format("could not find mangled name for '{}'",
-				                type.name.lexeme));
+				auto typeInfo = findTypeInfo(type.name.lexeme);
+				if (typeInfo.has_value()) {
+					typeName = typeInfo->name;
+				} else {
+					messageBag.warning(
+					    type.getToken(),
+					    std::format("could not find mangled name for '{}'",
+					                type.name.lexeme));
+				}
 			}
 			typeName = typeName.empty() ? type.name.lexeme : typeName;
 			output << std::format("{} ", typeName);
