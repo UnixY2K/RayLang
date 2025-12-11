@@ -15,6 +15,9 @@ class Type {
 	bool scalar = false;
 
   public:
+	// an internal id used to track additional type information
+	// such as struct or function data
+	size_t id;
 	std::string name;
 	size_t calculatedSize = 0;
 	bool isMutable = false;
