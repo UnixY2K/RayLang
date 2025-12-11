@@ -314,7 +314,7 @@ void CTranspilerGenerator::visitStructStatement(const ast::Struct &value) {
 			// and its fields should not be accesible
 			// TODO: make a method in the mangler to create reserved
 			// variable/member names
-			output << std::format("{}char _rayREmptyStruct__;\n",
+			output << std::format("{}const u8 _rayREmptyStruct__;\n",
 			                      currentIdent());
 		}
 		ident--;
