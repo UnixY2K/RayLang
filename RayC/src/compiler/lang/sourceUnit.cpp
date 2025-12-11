@@ -1,17 +1,17 @@
-#include "ray/compiler/lang/symbol.hpp"
 #include <cstddef>
 #include <optional>
+#include <string_view>
 #include <vector>
-
-#include <msgpack.hpp>
 
 #include <ray/compiler/lang/sourceUnit.hpp>
 #include <ray/compiler/lang/structDefinition.hpp>
+#include <ray/compiler/lang/symbol.hpp>
 #include <ray/compiler/lang/type.hpp>
+
 
 namespace ray::compiler::lang {
 
-bool lang::Scope::defineStruct(Type type) {
+bool lang::Scope::defineStruct(Type type, const std::string_view mangledName) {
 	// check if is a new struct
 	if (variables.contains(type.name)) {
 		const auto &symbol = variables.at(type.name);
@@ -24,7 +24,7 @@ bool lang::Scope::defineStruct(Type type) {
 	// non found, redefine it
 	Symbol structSymbol{
 	    .name = type.name,
-	    .mangledName = "",
+	    .mangledName = std::string(mangledName),
 	    .innerType = type,
 	    .type = Symbol::SymbolType::Struct,
 	    .internal = false,

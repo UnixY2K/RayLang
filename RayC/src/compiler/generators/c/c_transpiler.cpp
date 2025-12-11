@@ -635,6 +635,12 @@ void CTranspilerGenerator::visitTypeExpression(const ast::Type &type) {
 			output << "*";
 		} else {
 			std::string typeName = findStructName(type.name.lexeme);
+			if (typeName.empty()) {
+				messageBag.warning(
+				    type.getToken(),
+				    std::format("could not find mangled name for '{}'",
+				                type.name.lexeme));
+			}
 			typeName = typeName.empty() ? type.name.lexeme : typeName;
 			output << std::format("{} ", typeName);
 		}

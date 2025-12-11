@@ -1,6 +1,7 @@
 #pragma once
 #include <optional>
 #include <string>
+#include <string_view>
 #include <unordered_map>
 
 #include <ray/util/copy_ptr.hpp>
@@ -23,7 +24,7 @@ class Scope {
 	std::unordered_map<std::string, lang::Symbol> variables;
 	std::unordered_map<std::string, std::vector<FunctionDeclaration>> functions;
 
-	bool defineStruct(Type type);
+	bool defineStruct(Type type, const std::string_view mangledName);
 	bool defineFunction(FunctionDeclaration declaration);
 	bool defineLocalVariable(const lang::Symbol symbol);
 };
