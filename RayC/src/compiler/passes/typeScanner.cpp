@@ -22,140 +22,140 @@ const std::vector<std::string> TypeScanner::getWarnings() const {
 void TypeScanner::visitBlockStatement(const ast::Block &value) {
 	messageBag.error(
 	    value.getToken(),
-	    std::format("{} not implemented in TypeScanner", __PRETTY_FUNCTION__));
+	    std::format("{} not implemented", __PRETTY_FUNCTION__));
 }
 void TypeScanner::visitTerminalExprStatement(const ast::TerminalExpr &value) {
 	messageBag.error(
 	    value.getToken(),
-	    std::format("{} not implemented in TypeScanner", __PRETTY_FUNCTION__));
+	    std::format("{} not implemented", __PRETTY_FUNCTION__));
 }
 void TypeScanner::visitExpressionStmtStatement(
     const ast::ExpressionStmt &value) {
 	messageBag.error(
 	    value.getToken(),
-	    std::format("{} not implemented in TypeScanner", __PRETTY_FUNCTION__));
+	    std::format("{} not implemented", __PRETTY_FUNCTION__));
 }
 void TypeScanner::visitFunctionStatement(const ast::Function &value) {
 	messageBag.error(
 	    value.getToken(),
-	    std::format("{} not implemented in TypeScanner", __PRETTY_FUNCTION__));
+	    std::format("{} not implemented", __PRETTY_FUNCTION__));
 }
 void TypeScanner::visitIfStatement(const ast::If &value) {
 	messageBag.error(
 	    value.getToken(),
-	    std::format("{} not implemented in TypeScanner", __PRETTY_FUNCTION__));
+	    std::format("{} not implemented", __PRETTY_FUNCTION__));
 }
 void TypeScanner::visitJumpStatement(const ast::Jump &value) {
 	messageBag.error(
 	    value.getToken(),
-	    std::format("{} not implemented in TypeScanner", __PRETTY_FUNCTION__));
+	    std::format("{} not implemented", __PRETTY_FUNCTION__));
 }
 void TypeScanner::visitVarDeclStatement(const ast::VarDecl &value) {
 	messageBag.error(
 	    value.getToken(),
-	    std::format("{} not implemented in TypeScanner", __PRETTY_FUNCTION__));
+	    std::format("{} not implemented", __PRETTY_FUNCTION__));
 }
 void TypeScanner::visitMemberStatement(const ast::Member &value) {
 	messageBag.error(
 	    value.getToken(),
-	    std::format("{} not implemented in TypeScanner", __PRETTY_FUNCTION__));
+	    std::format("{} not implemented", __PRETTY_FUNCTION__));
 }
 void TypeScanner::visitWhileStatement(const ast::While &value) {
 	messageBag.error(
 	    value.getToken(),
-	    std::format("{} not implemented in TypeScanner", __PRETTY_FUNCTION__));
+	    std::format("{} not implemented", __PRETTY_FUNCTION__));
 }
 void TypeScanner::visitStructStatement(const ast::Struct &value) {
 	messageBag.error(
 	    value.getToken(),
-	    std::format("{} not implemented in TypeScanner", __PRETTY_FUNCTION__));
+	    std::format("{} not implemented", __PRETTY_FUNCTION__));
 }
 void TypeScanner::visitCompDirectiveStatement(const ast::CompDirective &value) {
 	messageBag.error(
 	    value.getToken(),
-	    std::format("{} not implemented in TypeScanner", __PRETTY_FUNCTION__));
+	    std::format("{} not implemented", __PRETTY_FUNCTION__));
 }
 // Expression
 void TypeScanner::visitVariableExpression(const ast::Variable &value) {
 	messageBag.error(
 	    value.getToken(),
-	    std::format("{} not implemented in TypeScanner", __PRETTY_FUNCTION__));
+	    std::format("{} not implemented", __PRETTY_FUNCTION__));
 }
 void TypeScanner::visitIntrinsicExpression(const ast::Intrinsic &value) {
 	messageBag.error(
 	    value.getToken(),
-	    std::format("{} not implemented in TypeScanner", __PRETTY_FUNCTION__));
+	    std::format("{} not implemented", __PRETTY_FUNCTION__));
 }
 void TypeScanner::visitAssignExpression(const ast::Assign &value) {
 	messageBag.error(
 	    value.getToken(),
-	    std::format("{} not implemented in TypeScanner", __PRETTY_FUNCTION__));
+	    std::format("{} not implemented", __PRETTY_FUNCTION__));
 }
 void TypeScanner::visitBinaryExpression(const ast::Binary &value) {
 	messageBag.error(
 	    value.getToken(),
-	    std::format("{} not implemented in TypeScanner", __PRETTY_FUNCTION__));
+	    std::format("{} not implemented", __PRETTY_FUNCTION__));
 }
 void TypeScanner::visitCallExpression(const ast::Call &value) {
 	messageBag.error(
 	    value.getToken(),
-	    std::format("{} not implemented in TypeScanner", __PRETTY_FUNCTION__));
+	    std::format("{} not implemented", __PRETTY_FUNCTION__));
 }
 void TypeScanner::visitIntrinsicCallExpression(
     const ast::IntrinsicCall &value) {
 	messageBag.error(
 	    value.getToken(),
-	    std::format("{} not implemented in TypeScanner", __PRETTY_FUNCTION__));
+	    std::format("{} not implemented", __PRETTY_FUNCTION__));
 }
 void TypeScanner::visitGetExpression(const ast::Get &value) {
 	messageBag.error(
 	    value.getToken(),
-	    std::format("{} not implemented in TypeScanner", __PRETTY_FUNCTION__));
+	    std::format("{} not implemented", __PRETTY_FUNCTION__));
 }
 void TypeScanner::visitGroupingExpression(const ast::Grouping &value) {
 	messageBag.error(
 	    value.getToken(),
-	    std::format("{} not implemented in TypeScanner", __PRETTY_FUNCTION__));
+	    std::format("{} not implemented", __PRETTY_FUNCTION__));
 }
 void TypeScanner::visitLiteralExpression(const ast::Literal &value) {
 	messageBag.error(
 	    value.getToken(),
-	    std::format("{} not implemented in TypeScanner", __PRETTY_FUNCTION__));
+	    std::format("{} not implemented", __PRETTY_FUNCTION__));
 }
 void TypeScanner::visitLogicalExpression(const ast::Logical &value) {
 	messageBag.error(
 	    value.getToken(),
-	    std::format("{} not implemented in TypeScanner", __PRETTY_FUNCTION__));
+	    std::format("{} not implemented", __PRETTY_FUNCTION__));
 }
 void TypeScanner::visitSetExpression(const ast::Set &value) {
 	messageBag.error(
 	    value.getToken(),
-	    std::format("{} not implemented in TypeScanner", __PRETTY_FUNCTION__));
+	    std::format("{} not implemented", __PRETTY_FUNCTION__));
 }
 void TypeScanner::visitUnaryExpression(const ast::Unary &value) {
 	messageBag.error(
 	    value.getToken(),
-	    std::format("{} not implemented in TypeScanner", __PRETTY_FUNCTION__));
+	    std::format("{} not implemented", __PRETTY_FUNCTION__));
 }
 void TypeScanner::visitArrayAccessExpression(const ast::ArrayAccess &value) {
 	messageBag.error(
 	    value.getToken(),
-	    std::format("{} not implemented in TypeScanner", __PRETTY_FUNCTION__));
+	    std::format("{} not implemented", __PRETTY_FUNCTION__));
 }
 void TypeScanner::visitTypeExpression(const ast::Type &value) {
 	messageBag.error(
 	    value.getToken(),
-	    std::format("{} not implemented in TypeScanner", __PRETTY_FUNCTION__));
+	    std::format("{} not implemented", __PRETTY_FUNCTION__));
 }
 void TypeScanner::visitCastExpression(const ast::Cast &value) {
 	messageBag.error(
 	    value.getToken(),
-	    std::format("{} not implemented in TypeScanner", __PRETTY_FUNCTION__));
+	    std::format("{} not implemented", __PRETTY_FUNCTION__));
 }
 void TypeScanner::visitParameterExpression(const ast::Parameter &value) {
 	messageBag.error(
 	    value.getToken(),
-	    std::format("{} not implemented in TypeScanner", __PRETTY_FUNCTION__));
+	    std::format("{} not implemented", __PRETTY_FUNCTION__));
 }
 
 } // namespace ray::compiler::passes

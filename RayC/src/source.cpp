@@ -1,3 +1,4 @@
+#include "ray/compiler/passes/typeScanner.hpp"
 #include <exception>
 #include <format>
 #include <fstream>
@@ -14,6 +15,7 @@
 #include <ray/compiler/parser/parser.hpp>
 
 #include <ray/compiler/passes/typeChecker.hpp>
+#include <ray/compiler/passes/typeScanner.hpp>
 
 #include <ray/compiler/generators/c/c_transpiler.hpp>
 
@@ -61,8 +63,7 @@ int main(int argc, char **argv) {
 				break;
 			}
 			case ray::compiler::cli::Options::TargetDataModel::LP64: {
-				dataModel =
-				    &environment::DataModel::LP64DataModel();
+				dataModel = &environment::DataModel::LP64DataModel();
 				break;
 			}
 			default: {
@@ -116,8 +117,23 @@ int main(int argc, char **argv) {
 
 			lang::ModuleStore moduleStore;
 
+			passes::TypeScanner typeScanner(sourceFile);
+
+			typeScanner.resolve(statements);
+			// TODO: once a propper typeScanner is set in place replace this so
+			// type checker errors can be reported along with the previous
+			// errors
+			if (typeScanner.hasFailed()) {
+				std::cerr << std::format("{}: {}\n", "Error"_red,
+				                         "typeChecker failed");
+				for (auto typeScannerError : typeScanner.getErrors()) {
+					std::cerr << typeScannerError;
+				}
+				return 1;
+			}
+
 			passes::TypeChecker typeChecker(sourceFile, moduleStore,
-			                                  *dataModel);
+			                                *dataModel);
 
 			typeChecker.resolve(statements);
 			if (typeChecker.hasFailed()) {
