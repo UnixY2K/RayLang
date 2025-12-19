@@ -4,10 +4,9 @@
 #include <vector>
 
 #include <ray/compiler/lang/sourceUnit.hpp>
-#include <ray/compiler/lang/structDefinition.hpp>
+#include <ray/compiler/lang/struct.hpp>
 #include <ray/compiler/lang/symbol.hpp>
 #include <ray/compiler/lang/type.hpp>
-
 
 namespace ray::compiler::lang {
 

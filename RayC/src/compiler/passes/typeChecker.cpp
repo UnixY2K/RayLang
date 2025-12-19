@@ -9,7 +9,7 @@
 #include <ray/compiler/ast/statement.hpp>
 #include <ray/compiler/lang/functionDefinition.hpp>
 #include <ray/compiler/lang/sourceUnit.hpp>
-#include <ray/compiler/lang/structDefinition.hpp>
+#include <ray/compiler/lang/struct.hpp>
 #include <ray/compiler/lang/symbol.hpp>
 #include <ray/compiler/lang/type.hpp>
 #include <ray/compiler/lexer/token.hpp>
@@ -410,7 +410,7 @@ void TypeChecker::visitStructStatement(const ast::Struct &structObj) {
 
 			auto newMember = lang::StructMember{
 			    // for now set it as false, we will take care of it later
-			    .publicAccess = false,
+			    .publicVisibility = false,
 			    .name = member.name.lexeme,
 			    .type = memberType.value(),
 			};

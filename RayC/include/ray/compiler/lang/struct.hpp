@@ -14,17 +14,21 @@ class StructDeclaration {
 };
 class StructMember {
   public:
-	bool publicAccess;
+	bool publicVisibility = false;
+	bool isMutable = false;
 	std::string name;
+	size_t typeId;
 	Type type;
 
 	size_t calculateSize() const { return type.calculatedSize; }
 };
 class Struct {
   public:
+	size_t structID;
 	std::string name;
 	std::string mangledName;
 	std::vector<StructMember> members;
+	// TODO: decouple AST from type data
 	std::reference_wrapper<const ast::Struct> structObj;
 };
 

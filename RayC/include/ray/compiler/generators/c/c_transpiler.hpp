@@ -13,7 +13,7 @@
 #include <ray/compiler/environment/dataModel/dataModel.hpp>
 #include <ray/compiler/lang/functionDefinition.hpp>
 #include <ray/compiler/lang/sourceUnit.hpp>
-#include <ray/compiler/lang/structDefinition.hpp>
+#include <ray/compiler/lang/struct.hpp>
 #include <ray/compiler/lang/symbol.hpp>
 #include <ray/compiler/lang/type.hpp>
 #include <ray/compiler/message_bag.hpp>

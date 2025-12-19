@@ -17,7 +17,7 @@ class Type {
   public:
 	// an internal id used to track additional type information
 	// such as struct or function data
-	size_t id;
+	size_t typeId;
 	std::string name;
 	size_t calculatedSize = 0;
 	bool isMutable = false;

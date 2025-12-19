@@ -7,7 +7,7 @@
 #include <ray/util/copy_ptr.hpp>
 
 #include <ray/compiler/lang/functionDefinition.hpp>
-#include <ray/compiler/lang/structDefinition.hpp>
+#include <ray/compiler/lang/struct.hpp>
 #include <ray/compiler/lang/symbol.hpp>
 #include <ray/compiler/lang/type.hpp>
 
