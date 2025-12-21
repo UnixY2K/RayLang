@@ -1,4 +1,3 @@
-#include "ray/compiler/passes/typeScanner.hpp"
 #include <exception>
 #include <format>
 #include <fstream>
