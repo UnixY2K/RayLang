@@ -48,7 +48,7 @@ void TypeChecker::resolve(
 				for (const auto &structDeclaration :
 				     currentSourceUnit.structDeclarations) {
 					if (structDeclaration.name == type.name) {
-						if (!currentScope.get().defineStruct(
+						if (!currentScope.get().declareStruct(
 						        type, structDeclaration.mangledName)) {
 							messageBag.error(
 							    stmt->getToken(),

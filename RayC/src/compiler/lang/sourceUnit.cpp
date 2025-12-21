@@ -10,7 +10,7 @@
 
 namespace ray::compiler::lang {
 
-bool lang::Scope::defineStruct(Type type, const std::string_view mangledName) {
+bool lang::Scope::declareStruct(Type type, const std::string_view mangledName) {
 	// check if is a new struct
 	if (variables.contains(type.name)) {
 		const auto &symbol = variables.at(type.name);
