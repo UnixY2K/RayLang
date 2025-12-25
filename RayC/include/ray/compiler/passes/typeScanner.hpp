@@ -1,4 +1,5 @@
 #pragma once
+#include "ray/compiler/lang/sourceUnit.hpp"
 #include <cstddef>
 #include <unordered_map>
 
@@ -15,10 +16,19 @@ class TypeScanner : public ast::StatementVisitor,
 	std::unordered_map<size_t, lang::Type> typeData;
 	std::unordered_map<size_t, ast::Struct> structData;
 
+	lang::SourceUnit currentSourceUnit;
+	std::reference_wrapper<lang::Scope> currentScope;
+
   public:
-	TypeScanner(std::string filePath) : messageBag("TYPE-SCANNER", filePath) {}
+	TypeScanner(std::string filePath)
+	    : messageBag("TYPE-SCANNER", filePath), currentSourceUnit(),
+	      currentScope(currentSourceUnit.rootScope) {}
 
 	void resolve(const std::vector<std::unique_ptr<ast::Statement>> &statement);
+
+	const lang::SourceUnit &getCurrentSourceUnit() const {
+		return currentSourceUnit;
+	}
 
 	bool hasFailed() const;
 	const std::vector<std::string> getErrors() const;
@@ -54,5 +64,14 @@ class TypeScanner : public ast::StatementVisitor,
 	void visitTypeExpression(const ast::Type &value) override;
 	void visitCastExpression(const ast::Cast &value) override;
 	void visitParameterExpression(const ast::Parameter &value) override;
+
+
+
+	// gets the current scope
+	lang::Scope &getCurrentScope();
+	// makes a new child scope and sets it as the root scope
+	lang::Scope &makeChildScope();
+	// pops until found the passed scope, if not found makes an error
+	bool popScope(lang::Scope& scope);
 };
 } // namespace ray::compiler::passes

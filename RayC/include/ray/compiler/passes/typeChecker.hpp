@@ -42,7 +42,9 @@ class TypeChecker : public ast::StatementVisitor,
 
 	void resolve(const std::vector<std::unique_ptr<ast::Statement>> &statement);
 
-	const lang::SourceUnit &getCurrentSourceUnit() { return currentSourceUnit; }
+	const lang::SourceUnit &getCurrentSourceUnit() const {
+		return currentSourceUnit;
+	}
 
 	bool hasFailed() const;
 	const std::vector<std::string> getErrors() const;
@@ -91,5 +93,12 @@ class TypeChecker : public ast::StatementVisitor,
 
 	std::optional<lang::FunctionDeclaration>
 	resolveFunctionDeclaration(const ast::Function &functionExpr);
+
+	// gets the current scope
+	lang::Scope &getCurrentScope();
+	// makes a new child scope and sets it as the root scope
+	lang::Scope &makeChildScope();
+	// pops until found the passed scope, if not found makes an error
+	bool popScope(lang::Scope &scope);
 };
 } // namespace ray::compiler::passes

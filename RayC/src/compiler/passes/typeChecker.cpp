@@ -48,7 +48,7 @@ void TypeChecker::resolve(
 				for (const auto &structDeclaration :
 				     currentSourceUnit.structDeclarations) {
 					if (structDeclaration.name == type.name) {
-						if (!currentScope.get().declareStruct(
+						if (!getCurrentScope().declareStruct(
 						        type, structDeclaration.mangledName)) {
 							messageBag.error(
 							    stmt->getToken(),
@@ -165,7 +165,7 @@ void TypeChecker::visitFunctionStatement(const ast::Function &function) {
 				    .type = lang::Symbol::SymbolType::Parameter,
 				    .internal = false,
 				};
-				currentScope.get().defineLocalVariable(paramSymbol);
+				getCurrentScope().defineLocalVariable(paramSymbol);
 			}
 			const auto type =
 			    resolveType(function.body.value())
@@ -182,7 +182,7 @@ void TypeChecker::visitFunctionStatement(const ast::Function &function) {
 
 		auto functionType = currentDataModel.get().defineFunctionType(
 		    declaration.signature.returnType, paramTypes);
-		if (!currentScope.get().defineFunction(declaration)) {
+		if (!getCurrentScope().defineFunction(declaration)) {
 			messageBag.error(function.getToken(),
 			                 std::format("could not declare function for '{}'",
 			                             declaration.name));
@@ -285,7 +285,7 @@ void TypeChecker::visitVarDeclStatement(const ast::VarDecl &variable) {
 		    .type = lang::Symbol::SymbolType::Parameter,
 		    .internal = false,
 		};
-		currentScope.get().defineLocalVariable(variableSymbol);
+		getCurrentScope().defineLocalVariable(variableSymbol);
 		// typeStack.push_back(variableType);
 		return;
 	}
@@ -496,8 +496,8 @@ void TypeChecker::visitCompDirectiveStatement(
 // Expression
 void TypeChecker::visitVariableExpression(const ast::Variable &variableExpr) {
 
-	if (currentScope.get().variables.contains(variableExpr.name.lexeme)) {
-		auto type = currentScope.get().variables.at(variableExpr.name.lexeme);
+	if (getCurrentScope().variables.contains(variableExpr.name.lexeme)) {
+		auto type = getCurrentScope().variables.at(variableExpr.name.lexeme);
 		typeStack.push_back(type.innerType);
 		return;
 	}
@@ -1094,6 +1094,41 @@ TypeChecker::resolveFunctionDeclaration(const ast::Function &function) {
 	        },
 	};
 	return declaration;
+}
+
+lang::Scope &TypeChecker::getCurrentScope() { return currentScope.get(); }
+lang::Scope &TypeChecker::makeChildScope() {
+	currentScope.get().innerScopes.push_back({});
+	currentScope = *currentScope.get().innerScopes.back().get();
+	return currentScope;
+}
+bool TypeChecker::popScope(lang::Scope &targetScope) {
+	lang::Scope *scope = &getCurrentScope();
+	while (scope != nullptr) {
+		if (scope == &targetScope) {
+			if (scope->parentScope.has_value()) {
+				currentScope = *scope->parentScope.value();
+			} else {
+				currentScope = *scope;
+				messageBag.bug(
+				    {},
+				    "found scope to pop but no parent scope, setting current scope to found scope");
+			}
+			return true;
+		}
+		scope = scope->parentScope.value_or(nullptr);
+	}
+
+	messageBag.bug({},
+	               "could not pop current scope, pop to first parent scope");
+	if (currentScope.get().parentScope.has_value()) {
+		currentScope = *currentScope.get().parentScope.value();
+	} else {
+		messageBag.bug({},
+		               "parent scope not found, setting scope to root scope");
+		currentScope = currentSourceUnit.rootScope;
+	}
+	return false;
 }
 
 } // namespace ray::compiler::passes
