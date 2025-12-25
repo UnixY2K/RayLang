@@ -9,7 +9,7 @@ template <typename T> class copy_ptr {
 	copy_ptr() = default;
 
 	copy_ptr(const T &value) : ptr(std::make_unique<T>(value)) {}
-	copy_ptr(T &&value) noexcept : ptr(value) {}
+	copy_ptr(T &&value) noexcept : ptr(std::make_unique<T>(value)) {}
 
 	copy_ptr(const copy_ptr<T> &other)
 	    : ptr{other.ptr ? std::make_unique<T>(*other.ptr) : nullptr} {}

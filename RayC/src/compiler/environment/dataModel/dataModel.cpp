@@ -11,13 +11,32 @@ namespace ray::compiler::environment {
 
 lang::Type DataModel::defineStructType(std::string name,
                                        size_t aproximatedSize) const {
-	return lang::Type{
+	return {
 	    // initialized
 	    true,
 	    // non-scalar
 	    false,
 	    name,
 	    aproximatedSize,
+	    false, // non mutable
+	    false, // non pointer
+	    false, // non signed
+	    false, // cannot be overloaded
+	    {},    // no subtype
+	    {},    // no signature? depending on layout and underlying architecture
+	           // cannot be guaranteed
+	};
+}
+
+lang::Type DataModel::declareStructType(std::string name) const {
+	return {
+	    // initialized
+	    true,
+	    // non-scalar
+	    false,
+	    name,
+	    // unknown size
+	    0,
 	    false, // non mutable
 	    false, // non pointer
 	    false, // non signed

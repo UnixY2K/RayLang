@@ -1,10 +1,11 @@
 #pragma once
-#include "ray/compiler/lang/sourceUnit.hpp"
 #include <cstddef>
-#include <unordered_map>
 
 #include <ray/compiler/ast/expression.hpp>
 #include <ray/compiler/ast/statement.hpp>
+#include <ray/compiler/directives/compilerDirective.hpp>
+#include <ray/compiler/environment/dataModel/dataModel.hpp>
+#include <ray/compiler/lang/sourceUnit.hpp>
 #include <ray/compiler/lang/type.hpp>
 #include <ray/compiler/message_bag.hpp>
 
@@ -13,15 +14,18 @@ class TypeScanner : public ast::StatementVisitor,
                     public ast::ExpressionVisitor {
 	MessageBag messageBag;
 
-	std::unordered_map<size_t, lang::Type> typeData;
-	std::unordered_map<size_t, ast::Struct> structData;
+	std::vector<std::unique_ptr<directive::CompilerDirective>> directivesStack;
+	size_t topDirectivesStack = 0;
+
+	std::reference_wrapper<const environment::DataModel> currentDataModel;
 
 	lang::SourceUnit currentSourceUnit;
 	std::reference_wrapper<lang::Scope> currentScope;
 
   public:
-	TypeScanner(std::string filePath)
-	    : messageBag("TYPE-SCANNER", filePath), currentSourceUnit(),
+	TypeScanner(std::string filePath, const environment::DataModel &dataModel)
+	    : messageBag("TYPE-SCANNER", filePath), directivesStack(),
+	      currentDataModel(dataModel), currentSourceUnit(),
 	      currentScope(currentSourceUnit.rootScope) {}
 
 	void resolve(const std::vector<std::unique_ptr<ast::Statement>> &statement);
@@ -65,13 +69,11 @@ class TypeScanner : public ast::StatementVisitor,
 	void visitCastExpression(const ast::Cast &value) override;
 	void visitParameterExpression(const ast::Parameter &value) override;
 
-
-
 	// gets the current scope
 	lang::Scope &getCurrentScope();
 	// makes a new child scope and sets it as the root scope
 	lang::Scope &makeChildScope();
-	// pops until found the passed scope, if not found makes an error
-	bool popScope(lang::Scope& scope);
+	// pops until located at the requested scope, if not found makes an error
+	bool returnScope(lang::Scope &scope);
 };
 } // namespace ray::compiler::passes

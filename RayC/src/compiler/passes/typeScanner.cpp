@@ -1,6 +1,9 @@
+#include "ray/compiler/passes/symbol_mangler.hpp"
+#include "ray/util/copy_ptr.hpp"
 #include <format>
 
 #include <ray/compiler/lang/sourceUnit.hpp>
+#include <ray/compiler/lang/type.hpp>
 #include <ray/compiler/passes/typeScanner.hpp>
 
 namespace ray::compiler::passes {
@@ -58,13 +61,41 @@ void TypeScanner::visitWhileStatement(const ast::While &value) {
 	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
 }
 void TypeScanner::visitStructStatement(const ast::Struct &structObj) {
-	lang::Scope currentScope;
+	std::optional<directive::LinkageDirective> linkageDirective;
+
+	for (size_t i = directivesStack.size(); i > topDirectivesStack; i--) {
+		auto &directive = directivesStack[i - i];
+		if (auto foundLinkDirective =
+		        dynamic_cast<directive::LinkageDirective *>(directive.get())) {
+			linkageDirective = *foundLinkDirective;
+		} else {
+			messageBag.warning(
+			    directive->getToken(),
+			    std::format("unmatched compiler directive '{}' for function.\n",
+			                directive->directiveName()));
+		}
+		directivesStack.pop_back();
+	}
+
+	std::string structName = std::string(structObj.name.getLexeme());
+	std::string currentModule;
+	std::string mangledStructName =
+	    passes::mangling::NameMangler().mangleStruct(currentModule, structObj,
+	                                                 linkageDirective);
+
+	auto &scope = makeChildScope();
 	// structs can be declared multiple times
 	// this is mostly required for C interop
 	if (structObj.declaration) {
-
+		auto type =
+		    currentDataModel.get().declareStructType(structObj.name.lexeme);
+		if (!scope.declareStruct(type, mangledStructName)) {
+			messageBag.error(structObj.getToken(), "could not declare struct");
+		}
 		return;
 	}
+
+	
 
 	messageBag.error(structObj.getToken(),
 	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
@@ -142,22 +173,15 @@ void TypeScanner::visitParameterExpression(const ast::Parameter &value) {
 
 lang::Scope &TypeScanner::getCurrentScope() { return currentScope.get(); }
 lang::Scope &TypeScanner::makeChildScope() {
-	currentScope.get().innerScopes.push_back({});
+	currentScope.get().innerScopes.push_back(lang::Scope{});
 	currentScope = *currentScope.get().innerScopes.back().get();
 	return currentScope;
 }
-bool TypeScanner::popScope(lang::Scope &targetScope) {
+bool TypeScanner::returnScope(lang::Scope &targetScope) {
 	lang::Scope *scope = &getCurrentScope();
 	while (scope != nullptr) {
 		if (scope == &targetScope) {
-			if (scope->parentScope.has_value()) {
-				currentScope = *scope->parentScope.value();
-			} else {
-				currentScope = *scope;
-				messageBag.bug(
-				    {},
-				    "found scope to pop but no parent scope, setting current scope to found scope");
-			}
+			currentScope = *scope;
 			return true;
 		}
 		scope = scope->parentScope.value_or(nullptr);
