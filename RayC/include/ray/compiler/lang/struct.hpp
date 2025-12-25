@@ -1,9 +1,7 @@
 #pragma once
 #include <cstddef>
-#include <functional>
 #include <string>
 
-#include <ray/compiler/ast/statement.hpp>
 #include <ray/compiler/lang/type.hpp>
 
 namespace ray::compiler::lang {
@@ -28,8 +26,6 @@ class Struct {
 	std::string name;
 	std::string mangledName;
 	std::vector<StructMember> members;
-	// TODO: decouple AST from type data
-	std::reference_wrapper<const ast::Struct> structObj;
 };
 
 } // namespace ray::compiler::lang

@@ -421,7 +421,6 @@ void TypeChecker::visitStructStatement(const ast::Struct &structObj) {
 		    .name = structName,
 		    .mangledName = mangledStructName,
 		    .members = members,
-		    .structObj = structObj,
 		};
 		if (structSize != 0) {
 			// push it to the type stack the top evaluator is responsible to

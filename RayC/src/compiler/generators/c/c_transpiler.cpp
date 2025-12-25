@@ -53,15 +53,9 @@ void CTranspilerGenerator::resolve(
 	}
 	for (const auto &structDefinition :
 	     currentSourceUnit.get().structDefinitions) {
-		auto &structObj = structDefinition.structObj.get();
 		output << std::format("{}typedef struct {}", currentIdent(),
 		                      structDefinition.mangledName);
 		output << " {\n";
-		ident++;
-		for (auto &member : structObj.members) {
-			member.visit(*this);
-		}
-		ident--;
 		output << std::format("{}}}", currentIdent());
 		output << std::format(" {};\n", structDefinition.mangledName);
 	}
