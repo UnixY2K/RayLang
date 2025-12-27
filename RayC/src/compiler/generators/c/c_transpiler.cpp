@@ -703,10 +703,10 @@ CTranspilerGenerator::findCallableName(const ast::Call &callable,
 	// this should be done by the type checker
 	// but for now we do a dumb lookuo
 	std::string key(name);
-	if (currentSourceUnit.get().rootScope.functions.contains(key)) {
-		const auto &functions =
-		    currentSourceUnit.get().rootScope.functions.at(key);
-		for (const auto &function : functions) {
+	const auto functions =
+	    currentSourceUnit.get().rootScope.findFunctionDeclaration(key);
+	if (functions.has_value()) {
+		for (const auto &function : functions.value()) {
 			if (function.signature.parameters.size() ==
 			    callable.arguments.size()) {
 				return function.mangledName;

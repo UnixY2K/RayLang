@@ -10,7 +10,12 @@
 
 namespace ray::compiler::lang {
 
-bool lang::Scope::declareStruct(Type type, const std::string_view mangledName) {
+ScopeContext &ScopeContext::makeChildScope() {
+	innerScopes.push_back(ScopeContext(*this));
+	return *innerScopes.back().get();
+}
+
+bool Scope::declareStruct(Type type, const std::string_view mangledName) {
 	// check if is a new struct
 
 	if (variables.contains(type.name)) {
@@ -33,7 +38,7 @@ bool lang::Scope::declareStruct(Type type, const std::string_view mangledName) {
 	return true;
 }
 
-bool lang::Scope::defineFunction(FunctionDeclaration declaration) {
+bool Scope::defineFunction(FunctionDeclaration declaration) {
 
 	if (variables.contains(declaration.name)) {
 		return false;
@@ -74,7 +79,7 @@ bool lang::Scope::defineFunction(FunctionDeclaration declaration) {
 	return true;
 }
 
-bool lang::Scope::defineLocalVariable(const lang::Symbol symbol) {
+bool Scope::defineLocalVariable(const Symbol symbol) {
 	if (variables.contains(symbol.name)) {
 		return false;
 	}
@@ -82,13 +87,47 @@ bool lang::Scope::defineLocalVariable(const lang::Symbol symbol) {
 	return true;
 }
 
-std::optional<lang::Type>
+// TODO: implement heterogeneous search for std::unordered_map
+// to avoid copying a string on search
+const std::optional<const Symbol>
+Scope::findVariable(const std::string_view name) const {
+	const std::string key(name);
+	if (variables.contains(key)) {
+		return variables.at(key);
+	}
+	return std::nullopt;
+}
+
+const std::optional<const std::vector<FunctionDeclaration>>
+Scope::findFunctionDeclaration(const std::string_view name) const {
+	const std::string key(name);
+	if (functions.contains(key)) {
+		return functions.at(key);
+	}
+	return std::nullopt;
+}
+
+const std::optional<const Struct>
+Scope::findStruct(const std::string_view name) const {
+	const std::string key(name);
+	if (structs.contains(key)) {
+		return structs.at(key);
+	}
+	return std::nullopt;
+}
+
+std::optional<Type>
 SourceUnit::findStructType(const std::string &typeName) const {
 	if (rootScope.variables.contains(typeName)) {
 		return rootScope.variables.at(typeName).innerType;
 	}
 
 	return {};
+}
+
+Scope &Scope::makeChildScope() {
+	innerScopes.push_back(Scope(*this));
+	return *innerScopes.back().get();
 }
 
 } // namespace ray::compiler::lang

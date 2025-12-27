@@ -1,9 +1,8 @@
-#include "ray/compiler/passes/symbol_mangler.hpp"
-#include "ray/util/copy_ptr.hpp"
 #include <format>
 
 #include <ray/compiler/lang/sourceUnit.hpp>
 #include <ray/compiler/lang/type.hpp>
+#include <ray/compiler/passes/symbol_mangler.hpp>
 #include <ray/compiler/passes/typeScanner.hpp>
 
 namespace ray::compiler::passes {
@@ -95,8 +94,6 @@ void TypeScanner::visitStructStatement(const ast::Struct &structObj) {
 		return;
 	}
 
-	
-
 	messageBag.error(structObj.getToken(),
 	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
 }
@@ -173,8 +170,7 @@ void TypeScanner::visitParameterExpression(const ast::Parameter &value) {
 
 lang::Scope &TypeScanner::getCurrentScope() { return currentScope.get(); }
 lang::Scope &TypeScanner::makeChildScope() {
-	currentScope.get().innerScopes.push_back(lang::Scope{});
-	currentScope = *currentScope.get().innerScopes.back().get();
+	currentScope = currentScope.get().makeChildScope();
 	return currentScope;
 }
 bool TypeScanner::returnScope(lang::Scope &targetScope) {

@@ -11,7 +11,9 @@ template <typename T> class soft_reference {
 	std::optional<std::reference_wrapper<const T>> object;
 
   public:
-	soft_reference(const size_t objectId = 0, const T &object = std::nullopt)
+	soft_reference(const size_t objectId = 0,
+	               const std::optional<std::reference_wrapper<const T>> object =
+	                   std::nullopt)
 	    : objectId(objectId), object(object) {}
 
 	size_t getObjectId() const { return objectId; }
