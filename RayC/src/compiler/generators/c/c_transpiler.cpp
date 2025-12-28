@@ -28,10 +28,10 @@ std::string CTranspilerGenerator::currentIdent() const {
 }
 
 CTranspilerGenerator::CTranspilerGenerator(
-    std::string filePath, const lang::SourceUnit &sourceUnit,
+    std::string filePath, const lang::DepSourceUnit &sourceUnit,
     const environment::DataModel &dataModel)
     : messageBag("C-BACKEND", filePath), currentSourceUnit(sourceUnit),
-      currentScope(sourceUnit.rootScope), dataModel(dataModel) {}
+      currentScope(sourceUnit.depRootScope), dataModel(dataModel) {}
 
 void CTranspilerGenerator::resolve(
     const std::vector<std::unique_ptr<ast::Statement>> &statement) {
@@ -704,7 +704,7 @@ CTranspilerGenerator::findCallableName(const ast::Call &callable,
 	// but for now we do a dumb lookuo
 	std::string key(name);
 	const auto functions =
-	    currentSourceUnit.get().rootScope.findFunctionDeclaration(key);
+	    currentSourceUnit.get().depRootScope.findFunctionDeclaration(key);
 	if (functions.has_value()) {
 		for (const auto &function : functions.value()) {
 			if (function.signature.parameters.size() ==
@@ -719,9 +719,9 @@ std::string
 CTranspilerGenerator::findStructName(const std::string_view name) const {
 	// perform a dumb lookup until type checker returns more information
 	std::string key(name);
-	if (currentSourceUnit.get().rootScope.variables.contains(key)) {
+	if (currentSourceUnit.get().depRootScope.variables.contains(key)) {
 		const auto &symbol =
-		    currentSourceUnit.get().rootScope.variables.at(key);
+		    currentSourceUnit.get().depRootScope.variables.at(key);
 		return symbol.mangledName;
 	}
 	return "";

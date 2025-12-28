@@ -8,7 +8,10 @@ rayc_srcs = [
 	'src/compiler/environment/dataModel/dataModel.cpp',
 	# generators/targets outputs
 	'src/compiler/generators/c/c_transpiler.cpp',
+	# lang
+	'src/compiler/lang/scope.cpp',
 	'src/compiler/lang/sourceUnit.cpp',
+	'src/compiler/lang/depSourceUnit.cpp',
 	'src/compiler/lang/type.cpp',
 	'src/compiler/lexer/lexer_error.cpp',
 	'src/compiler/lexer/lexer.cpp',

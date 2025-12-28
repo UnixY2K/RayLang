@@ -20,6 +20,7 @@
 
 #include <ray/compiler/lang/moduleStore.hpp>
 #include <ray/compiler/lang/sourceUnit.hpp>
+#include <ray/compiler/lang/depSourceUnit.hpp>
 
 // wingdi.h is included somewhere and is defining ERROR and as macro...
 #ifdef ERROR

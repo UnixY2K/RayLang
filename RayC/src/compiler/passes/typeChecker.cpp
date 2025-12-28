@@ -8,7 +8,7 @@
 #include <ray/compiler/ast/expression.hpp>
 #include <ray/compiler/ast/statement.hpp>
 #include <ray/compiler/lang/functionDefinition.hpp>
-#include <ray/compiler/lang/sourceUnit.hpp>
+#include <ray/compiler/lang/depSourceUnit.hpp>
 #include <ray/compiler/lang/struct.hpp>
 #include <ray/compiler/lang/symbol.hpp>
 #include <ray/compiler/lang/type.hpp>
@@ -1096,14 +1096,14 @@ TypeChecker::resolveFunctionDeclaration(const ast::Function &function) {
 	return declaration;
 }
 
-lang::Scope &TypeChecker::getCurrentScope() { return currentScope.get(); }
-lang::Scope &TypeChecker::makeChildScope() {
+lang::DepScope &TypeChecker::getCurrentScope() { return currentScope.get(); }
+lang::DepScope &TypeChecker::makeChildScope() {
 	currentScope.get().innerScopes.push_back({});
 	currentScope = *currentScope.get().innerScopes.back().get();
 	return currentScope;
 }
-bool TypeChecker::popScope(lang::Scope &targetScope) {
-	lang::Scope *scope = &getCurrentScope();
+bool TypeChecker::popScope(lang::DepScope &targetScope) {
+	lang::DepScope *scope = &getCurrentScope();
 	while (scope != nullptr) {
 		if (scope == &targetScope) {
 			if (scope->parentScope.has_value()) {
@@ -1126,7 +1126,7 @@ bool TypeChecker::popScope(lang::Scope &targetScope) {
 	} else {
 		messageBag.bug({},
 		               "parent scope not found, setting scope to root scope");
-		currentScope = currentSourceUnit.rootScope;
+		currentScope = currentSourceUnit.depRootScope;
 	}
 	return false;
 }

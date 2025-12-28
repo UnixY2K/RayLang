@@ -10,7 +10,7 @@
 #include <ray/compiler/environment/dataModel/dataModel.hpp>
 #include <ray/compiler/lang/functionDefinition.hpp>
 #include <ray/compiler/lang/moduleStore.hpp>
-#include <ray/compiler/lang/sourceUnit.hpp>
+#include <ray/compiler/lang/depSourceUnit.hpp>
 #include <ray/compiler/lang/struct.hpp>
 #include <ray/compiler/lang/type.hpp>
 #include <ray/compiler/message_bag.hpp>
@@ -26,8 +26,8 @@ class TypeChecker : public ast::StatementVisitor,
 
 	std::vector<lang::Type> typeStack;
 
-	lang::SourceUnit currentSourceUnit;
-	std::reference_wrapper<lang::Scope> currentScope;
+	lang::DepSourceUnit currentSourceUnit;
+	std::reference_wrapper<lang::DepScope> currentScope;
 	std::reference_wrapper<const environment::DataModel> currentDataModel;
 	// lang::ModuleStore &moduleStore;
 
@@ -35,14 +35,14 @@ class TypeChecker : public ast::StatementVisitor,
 	TypeChecker(std::string filePath, lang::ModuleStore &moduleStore,
 	            const environment::DataModel &dataModel)
 	    : messageBag("TYPE-CHECKER", filePath), typeStack(),
-	      currentSourceUnit(), currentScope(currentSourceUnit.rootScope),
+	      currentSourceUnit(), currentScope(currentSourceUnit.depRootScope),
 	      currentDataModel(dataModel)
 	//,moduleStore(moduleStore)
 	{}
 
 	void resolve(const std::vector<std::unique_ptr<ast::Statement>> &statement);
 
-	const lang::SourceUnit &getCurrentSourceUnit() const {
+	const lang::DepSourceUnit &getCurrentSourceUnit() const {
 		return currentSourceUnit;
 	}
 
@@ -95,10 +95,10 @@ class TypeChecker : public ast::StatementVisitor,
 	resolveFunctionDeclaration(const ast::Function &functionExpr);
 
 	// gets the current scope
-	lang::Scope &getCurrentScope();
+	lang::DepScope &getCurrentScope();
 	// makes a new child scope and sets it as the root scope
-	lang::Scope &makeChildScope();
+	lang::DepScope &makeChildScope();
 	// pops until found the passed scope, if not found makes an error
-	bool popScope(lang::Scope &scope);
+	bool popScope(lang::DepScope &scope);
 };
 } // namespace ray::compiler::passes

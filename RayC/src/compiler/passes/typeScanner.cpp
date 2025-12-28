@@ -1,6 +1,5 @@
 #include <format>
 
-#include <ray/compiler/lang/sourceUnit.hpp>
 #include <ray/compiler/lang/type.hpp>
 #include <ray/compiler/passes/symbol_mangler.hpp>
 #include <ray/compiler/passes/typeScanner.hpp>
@@ -180,13 +179,15 @@ bool TypeScanner::returnScope(lang::Scope &targetScope) {
 			currentScope = *scope;
 			return true;
 		}
-		scope = scope->parentScope.value_or(nullptr);
+		scope = scope->getParentScope()
+		            .transform([](auto v) { return &v.get(); })
+		            .value_or(nullptr);
 	}
 
 	messageBag.bug({},
 	               "could not pop current scope, pop to first parent scope");
-	if (currentScope.get().parentScope.has_value()) {
-		currentScope = *currentScope.get().parentScope.value();
+	if (currentScope.get().getParentScope().has_value()) {
+		currentScope = currentScope.get().getParentScope().value();
 	} else {
 		messageBag.bug({},
 		               "parent scope not found, setting scope to root scope");
