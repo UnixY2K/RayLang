@@ -30,6 +30,8 @@ class Scope {
 	    std::optional<std::reference_wrapper<Scope>> parentScope = std::nullopt)
 	    : parentScope(parentScope) {}
 
+	bool bindStruct(std::string_view name, util::soft_reference<Struct>& structRef);
+
 	bool declareStruct(Type type, const std::string_view mangledName);
 	bool defineFunction(FunctionDeclaration declaration);
 	bool defineLocalVariable(const Symbol symbol);

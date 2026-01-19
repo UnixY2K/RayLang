@@ -1,11 +1,27 @@
 #include <cstddef>
 #include <optional>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 #include <ray/compiler/lang/scope.hpp>
+#include <ray/compiler/lang/struct.hpp>
+#include <ray/util/soft_reference.hpp>
 
 namespace ray::compiler::lang {
+
+bool Scope::bindStruct(const std::string_view name,
+                       util::soft_reference<Struct> &structRef) {
+	auto val = structs.insert(std::make_pair(std::string(name), structRef));
+	if(!val.second){
+		if(val.first->second.getObjectId() != 0){
+			return false;
+		}
+		val.first->second = structRef;
+	}
+	return true;
+}
+
 bool Scope::declareStruct(Type type, const std::string_view mangledName) {
 	return false;
 }

@@ -58,7 +58,7 @@ void TypeScanner::visitWhileStatement(const ast::While &value) {
 	messageBag.error(value.getToken(),
 	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
 }
-void TypeScanner::visitStructStatement(const ast::Struct &structObj) {
+void TypeScanner::visitStructStatement(const ast::Struct &structObjAst) {
 	std::optional<directive::LinkageDirective> linkageDirective;
 
 	for (size_t i = directivesStack.size(); i > topDirectivesStack; i--) {
@@ -75,26 +75,43 @@ void TypeScanner::visitStructStatement(const ast::Struct &structObj) {
 		directivesStack.pop_back();
 	}
 
-	std::string structName = std::string(structObj.name.getLexeme());
+	std::string structName = std::string(structObjAst.name.getLexeme());
 	std::string currentModule;
 	std::string mangledStructName =
-	    passes::mangling::NameMangler().mangleStruct(currentModule, structObj,
-	                                                 linkageDirective);
+	    passes::mangling::NameMangler().mangleStruct(
+	        currentModule, structObjAst, linkageDirective);
 
 	auto &scope = makeChildScope();
 	// structs can be declared multiple times
 	// this is mostly required for C interop
-	if (structObj.declaration) {
-		auto type =
-		    currentDataModel.get().declareStructType(structObj.name.lexeme);
+	if (structObjAst.declaration) {
+		auto type = currentDataModel.get().declareStructType(structName);
 		if (!scope.declareStruct(type, mangledStructName)) {
-			messageBag.error(structObj.getToken(), "could not declare struct");
+			messageBag.error(structObjAst.getToken(),
+			                 "could not declare struct");
 		}
 		return;
 	}
 
-	messageBag.error(structObj.getToken(),
-	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
+	if (scope.findStruct(structName)) {
+		messageBag.error(
+		    structObjAst.getToken(),
+		    std::format("{} is defined multiple times", structName));
+	}
+
+	auto structRef = currentSourceUnit.declareStruct( //
+	    lang::Struct{
+	        .name = structName,               //
+	        .mangledName = mangledStructName, //
+	        .members = {}                     //
+	    });
+	if (!structRef.has_value()) {
+		messageBag.error(structObjAst.getToken(),
+		                 std::format("could not bind struct '{}'", structName));
+		return;
+	}
+
+	scope.bindStruct(structName, structRef.value());
 }
 void TypeScanner::visitCompDirectiveStatement(const ast::CompDirective &value) {
 	messageBag.error(value.getToken(),
