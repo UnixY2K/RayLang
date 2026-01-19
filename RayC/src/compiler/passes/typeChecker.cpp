@@ -7,8 +7,8 @@
 
 #include <ray/compiler/ast/expression.hpp>
 #include <ray/compiler/ast/statement.hpp>
-#include <ray/compiler/lang/functionDefinition.hpp>
 #include <ray/compiler/lang/depSourceUnit.hpp>
+#include <ray/compiler/lang/functionDefinition.hpp>
 #include <ray/compiler/lang/struct.hpp>
 #include <ray/compiler/lang/symbol.hpp>
 #include <ray/compiler/lang/type.hpp>
@@ -292,7 +292,7 @@ void TypeChecker::visitVarDeclStatement(const ast::VarDecl &variable) {
 
 	messageBag.error(
 	    variable.getToken(),
-	    "variable does not have a type assigned nor an valid initialization");
+	    "variable does not have a valid type assigned nor an valid initialization");
 }
 void TypeChecker::visitMemberStatement(const ast::Member &variable) {
 	auto variableType = lang::Type{};
@@ -405,7 +405,7 @@ void TypeChecker::visitStructStatement(const ast::Struct &structObj) {
 				    member.getToken(),
 				    std::format("could not get type information for '{}'",
 				                member.name.lexeme));
-				return;
+				memberType = lang::Type::defineUnknownType();
 			}
 
 			auto newMember = lang::StructMember{
@@ -866,10 +866,13 @@ void TypeChecker::visitArrayAccessExpression(
 void TypeChecker::visitTypeExpression(const ast::Type &typeExpr) {
 	if (typeExpr.isPointer) {
 		auto innerType = resolveType(*typeExpr.subtype.value());
-		if (!innerType.has_value()) {
-			messageBag.error(typeExpr.getToken(),
-			                 std::format("could not evaluate type for {}",
-			                             typeExpr.getToken().getLexeme()));
+		if (innerType.value_or(lang::Type::defineUnknownType()) ==
+		    lang::Type::defineUnknownType()) {
+			messageBag.error(
+			    typeExpr.getToken(),
+			    std::format("could not evaluate type expression for {}",
+			                typeExpr.getToken().getLexeme()));
+			typeStack.push_back(lang::Type::defineUnknownType());
 			return;
 		}
 		lang::Type pointerType = makePointerType(innerType.value());
@@ -885,6 +888,7 @@ void TypeChecker::visitTypeExpression(const ast::Type &typeExpr) {
 			messageBag.error(
 			    typeExpr.getToken(),
 			    std::format("type not found for {}", typeExpr.name.lexeme));
+			typeStack.push_back(lang::Type::defineUnknownType());
 		}
 	}
 }
@@ -971,9 +975,11 @@ TypeChecker::resolveTypes(const ast::Expression &expression) {
 		returnTypes.push_back(returnType);
 	}
 	if (returnTypes.size() < 1) {
-		messageBag.bug(expression.getToken(),
-		               std::format("'{}' did not yield any return type",
-		                           expression.variantName()));
+		messageBag.bug(
+		    expression.getToken(),
+		    std::format("'{}' did not resolve a type, assuming statement",
+		                expression.variantName()));
+		typeStack.push_back(lang::Type::defineStmtType());
 	}
 	return returnTypes;
 }

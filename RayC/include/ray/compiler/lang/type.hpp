@@ -49,10 +49,62 @@ class Type {
 
 	// returns a type that is not instatiable and cannot be used
 	// used by statements in the type checker
-	static Type defineStmtType();
+	static constexpr Type defineStmtType() {
+		return Type{
+		    // an statement does not even return an initialized type
+		    false,
+		    false, // non scalar
+		    // name cannot be mangled nor referenced
+		    "%<stmt>%",
+		    // size is 0 so it cannot be passed
+		    0,
+		    false, // non mutable
+		    false, // non pointer
+		    false, // non signed
+		    false, // non overloaded
+		    {},    // no subtype data
+		    {},    // no signature data
+		};
+	}
+
+	// defines an unknown type which is used when a child expression searched
+	// for a valid type but did not found a matching value
+	static constexpr Type defineUnknownType() {
+		return Type{
+		    // an statement does not even return an initialized type
+		    false,
+		    false, // non scalar
+		    // name cannot be mangled nor referenced
+		    "%<unknown>%",
+		    // size is 0 so it cannot be passed
+		    0,
+		    false, // non mutable
+		    false, // non pointer
+		    false, // non signed
+		    false, // non overloaded
+		    {},    // no subtype data
+		    {},    // no signature data
+		};
+	}
 
 	// defines an empty module type used by the type checker
-	static Type defineModuleType();
+	static constexpr Type defineModuleType() {
+		return Type{
+		    // an statement does not even return an initialized type
+		    true,
+		    false, // non scalar
+		    // name cannot be mangled nor referenced
+		    "%<module>%",
+		    // size is 0 so it cannot be passed
+		    0,
+		    false, // non mutable
+		    false, // non pointer
+		    false, // non signed
+		    false, // non overloaded
+		    {},    // no subtype data
+		    {},    // no signature data
+		};
+	}
 
   private:
 	bool baseMatches(const Type &other) const;

@@ -73,42 +73,6 @@ bool Type::operator==(const Type &other) const {
 	           other); // signature is a heavier comparison that goes last
 }
 
-Type Type::defineStmtType() {
-	return Type{
-	    // an statement does not even return an initialized type
-	    false,
-	    false, // non scalar
-	    // name cannot be mangled nor referenced
-	    "%<stmt>%",
-	    // size is 0 so it cannot be passed
-	    0,
-	    false, // non mutable
-	    false, // non pointer
-	    false, // non signed
-	    false, // non overloaded
-	    {},    // no subtype data
-	    {},    // no signature data
-	};
-}
-
-Type Type::defineModuleType() {
-	return Type{
-	    // an statement does not even return an initialized type
-	    true,
-	    false, // non scalar
-	    // name cannot be mangled nor referenced
-	    "%<module>%",
-	    // size is 0 so it cannot be passed
-	    0,
-	    false, // non mutable
-	    false, // non pointer
-	    false, // non signed
-	    false, // non overloaded
-	    {},    // no subtype data
-	    {},    // no signature data
-	};
-}
-
 bool Type::baseMatches(const Type &other) const {
 	return initialized == other.initialized &&       // has to be the same
 	       scalar == other.scalar &&                 // |
