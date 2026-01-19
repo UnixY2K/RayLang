@@ -32,7 +32,7 @@ class Scope {
 
 	bool bindStruct(std::string_view name, util::soft_reference<Struct>& structRef);
 
-	bool declareStruct(Type type, const std::string_view mangledName);
+	bool declareStruct(const std::string_view name);
 	bool defineFunction(FunctionDeclaration declaration);
 	bool defineLocalVariable(const Symbol symbol);
 

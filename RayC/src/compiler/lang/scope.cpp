@@ -13,17 +13,20 @@ namespace ray::compiler::lang {
 bool Scope::bindStruct(const std::string_view name,
                        util::soft_reference<Struct> &structRef) {
 	auto val = structs.insert(std::make_pair(std::string(name), structRef));
-	if(!val.second){
-		if(val.first->second.getObjectId() != 0){
+	if (!val.second) {
+		auto &sourceStructRef = val.first->second;
+		if (sourceStructRef.getObjectId() != 0) {
 			return false;
 		}
-		val.first->second = structRef;
+		sourceStructRef = structRef;
 	}
 	return true;
 }
 
-bool Scope::declareStruct(Type type, const std::string_view mangledName) {
-	return false;
+bool Scope::declareStruct(const std::string_view name) {
+	auto val = structs.insert(
+	    std::make_pair(std::string(name), util::soft_reference<Struct>()));
+	return true;
 }
 bool Scope::defineFunction(FunctionDeclaration declaration) { return false; }
 bool Scope::defineLocalVariable(const Symbol symbol) { return false; }

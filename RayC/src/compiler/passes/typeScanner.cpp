@@ -86,7 +86,7 @@ void TypeScanner::visitStructStatement(const ast::Struct &structObjAst) {
 	// this is mostly required for C interop
 	if (structObjAst.declaration) {
 		auto type = currentDataModel.get().declareStructType(structName);
-		if (!scope.declareStruct(type, mangledStructName)) {
+		if (!scope.declareStruct(structName)) {
 			messageBag.error(structObjAst.getToken(),
 			                 "could not declare struct");
 		}
