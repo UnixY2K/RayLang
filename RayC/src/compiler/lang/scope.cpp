@@ -24,7 +24,7 @@ bool Scope::bindStruct(const std::string_view name,
 }
 
 bool Scope::declareStruct(const std::string_view name) {
-	auto val = structs.insert(
+	auto _ = structs.insert(
 	    std::make_pair(std::string(name), util::soft_reference<Struct>()));
 	return true;
 }

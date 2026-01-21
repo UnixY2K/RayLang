@@ -16,6 +16,7 @@
 #include <ray/compiler/passes/symbol_mangler.hpp>
 #include <ray/compiler/passes/typeChecker.hpp>
 #include <ray/util/copy_ptr.hpp>
+#include <ray/util/soft_reference.hpp>
 
 namespace ray::compiler::passes {
 
@@ -30,7 +31,7 @@ void TypeChecker::resolve(
 
 			auto declaration = resolveFunctionDeclaration(*functionExpr);
 			if (declaration.has_value()) {
-				currentSourceUnit.functionDeclarations.push_back(
+				depCurrentSourceUnit.functionDeclarations.push_back(
 				    declaration.value());
 			}
 		}
@@ -46,7 +47,7 @@ void TypeChecker::resolve(
 				// TODO: optimize this search
 				// the types could have a reference to the specific struct
 				for (const auto &structDeclaration :
-				     currentSourceUnit.structDeclarations) {
+				     depCurrentSourceUnit.structDeclarations) {
 					if (structDeclaration.name == type.name) {
 						if (!getCurrentScope().declareStruct(
 						        type, structDeclaration.mangledName)) {
@@ -153,7 +154,7 @@ void TypeChecker::visitFunctionStatement(const ast::Function &function) {
 		// declaration was already defined, so it does not require to be defined
 		// again, just the body
 		if (function.body.has_value()) {
-			currentSourceUnit.functionDefinitions.push_back(definition);
+			depCurrentSourceUnit.functionDefinitions.push_back(definition);
 
 			// add functions to the current scope and validate that each
 			for (const auto &param : declaration.signature.parameters) {
@@ -426,13 +427,13 @@ void TypeChecker::visitStructStatement(const ast::Struct &structObj) {
 			// push it to the type stack the top evaluator is responsible to
 			// define
 			// it at its own level and potentially mangle its name again
-			currentSourceUnit.structDefinitions.push_back(newStruct);
+			depCurrentSourceUnit.structDefinitions.push_back(newStruct);
 		}
 	}
 
 	auto structType =
 	    currentDataModel.get().defineStructType(structName, structSize);
-	currentSourceUnit.structDeclarations.push_back(lang::StructDeclaration{
+	depCurrentSourceUnit.structDeclarations.push_back(lang::StructDeclaration{
 	    .name = structName,
 	    .mangledName = mangledStructName,
 	});
@@ -506,7 +507,7 @@ void TypeChecker::visitVariableExpression(const ast::Variable &variableExpr) {
 	// an overloadedFunction Type
 	lang::Type functionType;
 	for (const auto &functionDeclaration :
-	     currentSourceUnit.functionDeclarations) {
+	     depCurrentSourceUnit.functionDeclarations) {
 		if (functionDeclaration.name == variableExpr.name.lexeme) {
 			if (!functionType.isInitialized()) {
 				functionType = functionDeclaration.signature.getFunctionType(
@@ -995,7 +996,7 @@ TypeChecker::findTypeInfo(const std::string_view typeName) {
 		return scalarType;
 	}
 	// a defined type in the source unit cannot shadow a primitive/scalar type
-	return currentSourceUnit.findStructType(std::string(typeName));
+	return depCurrentSourceUnit.findStructType(std::string(typeName));
 }
 
 lang::Type TypeChecker::makePointerType(const lang::Type &innerType) {
@@ -1102,20 +1103,20 @@ TypeChecker::resolveFunctionDeclaration(const ast::Function &function) {
 	return declaration;
 }
 
-lang::DepScope &TypeChecker::getCurrentScope() { return currentScope.get(); }
+lang::DepScope &TypeChecker::getCurrentScope() { return depCurrentScope.get(); }
 lang::DepScope &TypeChecker::makeChildScope() {
-	currentScope.get().innerScopes.push_back({});
-	currentScope = *currentScope.get().innerScopes.back().get();
-	return currentScope;
+	depCurrentScope.get().innerScopes.push_back({});
+	depCurrentScope = *depCurrentScope.get().innerScopes.back().get();
+	return depCurrentScope;
 }
 bool TypeChecker::popScope(lang::DepScope &targetScope) {
 	lang::DepScope *scope = &getCurrentScope();
 	while (scope != nullptr) {
 		if (scope == &targetScope) {
 			if (scope->parentScope.has_value()) {
-				currentScope = *scope->parentScope.value();
+				depCurrentScope = *scope->parentScope.value();
 			} else {
-				currentScope = *scope;
+				depCurrentScope = *scope;
 				messageBag.bug(
 				    {},
 				    "found scope to pop but no parent scope, setting current scope to found scope");
@@ -1127,12 +1128,12 @@ bool TypeChecker::popScope(lang::DepScope &targetScope) {
 
 	messageBag.bug({},
 	               "could not pop current scope, pop to first parent scope");
-	if (currentScope.get().parentScope.has_value()) {
-		currentScope = *currentScope.get().parentScope.value();
+	if (depCurrentScope.get().parentScope.has_value()) {
+		depCurrentScope = *depCurrentScope.get().parentScope.value();
 	} else {
 		messageBag.bug({},
 		               "parent scope not found, setting scope to root scope");
-		currentScope = currentSourceUnit.depRootScope;
+		depCurrentScope = depCurrentSourceUnit.depRootScope;
 	}
 	return false;
 }

@@ -18,9 +18,9 @@
 
 #include <ray/compiler/generators/c/c_transpiler.hpp>
 
+#include <ray/compiler/lang/depSourceUnit.hpp>
 #include <ray/compiler/lang/moduleStore.hpp>
 #include <ray/compiler/lang/sourceUnit.hpp>
-#include <ray/compiler/lang/depSourceUnit.hpp>
 
 // wingdi.h is included somewhere and is defining ERROR and as macro...
 #ifdef ERROR
@@ -132,8 +132,8 @@ int main(int argc, char **argv) {
 				return 1;
 			}
 
-			passes::TypeChecker typeChecker(sourceFile, moduleStore,
-			                                *dataModel);
+			passes::TypeChecker typeChecker(sourceFile, moduleStore, *dataModel,
+			                                typeScanner.getCurrentSourceUnit());
 
 			typeChecker.resolve(statements);
 			if (typeChecker.hasFailed()) {

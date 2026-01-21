@@ -8,9 +8,10 @@
 #include <ray/compiler/directives/compilerDirective.hpp>
 #include <ray/compiler/directives/linkageDirective.hpp>
 #include <ray/compiler/environment/dataModel/dataModel.hpp>
+#include <ray/compiler/lang/depSourceUnit.hpp>
 #include <ray/compiler/lang/functionDefinition.hpp>
 #include <ray/compiler/lang/moduleStore.hpp>
-#include <ray/compiler/lang/depSourceUnit.hpp>
+#include <ray/compiler/lang/sourceUnit.hpp>
 #include <ray/compiler/lang/struct.hpp>
 #include <ray/compiler/lang/type.hpp>
 #include <ray/compiler/message_bag.hpp>
@@ -26,16 +27,21 @@ class TypeChecker : public ast::StatementVisitor,
 
 	std::vector<lang::Type> typeStack;
 
-	lang::DepSourceUnit currentSourceUnit;
-	std::reference_wrapper<lang::DepScope> currentScope;
+	lang::SourceUnit currentSourceUnit;
+	lang::DepSourceUnit depCurrentSourceUnit;
+	std::reference_wrapper<lang::Scope> currentScope;
+	std::reference_wrapper<lang::DepScope> depCurrentScope;
 	std::reference_wrapper<const environment::DataModel> currentDataModel;
 	// lang::ModuleStore &moduleStore;
 
   public:
-	TypeChecker(std::string filePath, lang::ModuleStore &moduleStore,
-	            const environment::DataModel &dataModel)
+	TypeChecker(std::string filePath, const lang::ModuleStore &moduleStore,
+	            const environment::DataModel &dataModel,
+	            const lang::SourceUnit &sourceUnit)
 	    : messageBag("TYPE-CHECKER", filePath), typeStack(),
-	      currentSourceUnit(), currentScope(currentSourceUnit.depRootScope),
+	      currentSourceUnit(sourceUnit), depCurrentSourceUnit(),
+	      currentScope(currentSourceUnit.rootScope),
+	      depCurrentScope(depCurrentSourceUnit.depRootScope),
 	      currentDataModel(dataModel)
 	//,moduleStore(moduleStore)
 	{}
@@ -43,7 +49,7 @@ class TypeChecker : public ast::StatementVisitor,
 	void resolve(const std::vector<std::unique_ptr<ast::Statement>> &statement);
 
 	const lang::DepSourceUnit &getCurrentSourceUnit() const {
-		return currentSourceUnit;
+		return depCurrentSourceUnit;
 	}
 
 	bool hasFailed() const;
