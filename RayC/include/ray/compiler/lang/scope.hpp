@@ -30,7 +30,8 @@ class Scope {
 	    std::optional<std::reference_wrapper<Scope>> parentScope = std::nullopt)
 	    : parentScope(parentScope) {}
 
-	bool bindStruct(std::string_view name, util::soft_reference<Struct>& structRef);
+	bool bindStruct(std::string_view name,
+	                util::soft_reference<Struct> &structRef);
 
 	bool declareStruct(const std::string_view name);
 	bool defineFunction(FunctionDeclaration declaration);
@@ -42,6 +43,9 @@ class Scope {
 	const std::optional<
 	    const std::vector<util::soft_reference<FunctionDeclaration>>>
 	findFunctionDeclaration(const std::string_view name) const;
+
+	const std::optional<const util::soft_reference<Struct>>
+	findLocalStruct(const std::string_view name) const;
 
 	const std::optional<const util::soft_reference<Struct>>
 	findStruct(const std::string_view name) const;

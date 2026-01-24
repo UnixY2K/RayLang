@@ -1,5 +1,7 @@
 #include <cassert>
+#include <functional>
 #include <optional>
+#include <string_view>
 #include <utility>
 
 #include <ray/compiler/lang/sourceUnit.hpp>
@@ -7,13 +9,19 @@
 #include <ray/util/soft_reference.hpp>
 
 namespace ray::compiler::lang {
-std::optional<util::soft_reference<Struct>>
-SourceUnit::declareStruct(const Struct &structObj) {
+bool SourceUnit::bindStruct(const Struct &structObj, Scope &scope) {
 	auto val = this->structs.insert(std::make_pair(nextId, structObj));
 	assert(val.second);
 	auto &structRef = val.first->second;
 	structRef.structID = nextId++;
+	auto structSoftRef =
+	    util::soft_reference<Struct>{structRef.structID, structRef};
 
-	return {{structRef.structID, structRef}};
+	return scope.bindStruct(structObj.name, structSoftRef);
+}
+
+std::optional<std::reference_wrapper<Struct>>
+SourceUnit::findStruct(std::string_view structName, Scope &currentScope) {
+	return std::nullopt;
 }
 } // namespace ray::compiler::lang

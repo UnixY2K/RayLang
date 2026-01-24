@@ -43,6 +43,15 @@ Scope::findFunctionDeclaration(const std::string_view name) const {
 }
 
 const std::optional<const util::soft_reference<Struct>>
+Scope::findLocalStruct(const std::string_view name) const {
+	std::string key = std::string(name);
+	if (structs.contains(key)) {
+		return structs.at(key);
+	}
+	return std::nullopt;
+}
+
+const std::optional<const util::soft_reference<Struct>>
 Scope::findStruct(const std::string_view name) const {
 	return std::nullopt;
 }

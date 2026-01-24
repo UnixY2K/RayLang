@@ -12,6 +12,8 @@ namespace ray::compiler::environment {
 lang::Type DataModel::defineStructType(std::string name,
                                        size_t aproximatedSize) const {
 	return {
+	    // by default its type is unknown
+	    0,
 	    // initialized
 	    true,
 	    // non-scalar
@@ -30,6 +32,8 @@ lang::Type DataModel::defineStructType(std::string name,
 
 lang::Type DataModel::declareStructType(std::string name) const {
 	return {
+	    // by default its typeID is unknown
+	    0,
 	    // initialized
 	    true,
 	    // non-scalar
@@ -51,7 +55,10 @@ lang::Type DataModel::defineFunctionType(
     lang::Type returnType,
     std::vector<util::copy_ptr<lang::Type>> signature) const {
 	return definePointerType(lang::Type(
-	    false,
+	    // pointer do not have a known typeID
+	    0,
+	    // known initializable value
+	    true,
 	    // a pointer is not a scalar as it is an address memory
 	    // that references an object
 	    false,
@@ -70,6 +77,9 @@ lang::Type DataModel::defineFunctionType(
 lang::Type
 DataModel::defineOverloadedFunctionType(lang::Type returnType) const {
 	return lang::Type(
+	    // no type ID
+	    0,
+	    // initialized as its overloads are initialized
 	    true,
 	    // a pointer is not a scalar as it is an address memory
 	    // that references an object
@@ -171,6 +181,8 @@ DataModel::findScalarType(const std::string_view name) const {
 lang::Type DataModel::defineScalarType(std::string name, size_t calculatedSize,
                                        bool signedType) const {
 	return lang::Type{
+	    // scalars do not have typeID
+	    0,
 	    true,           // initialized type
 	    true,           // it is an scalar type
 	    name,           // specified name
@@ -186,16 +198,18 @@ lang::Type DataModel::defineScalarType(std::string name, size_t calculatedSize,
 
 lang::Type DataModel::definePointerType(lang::Type returnType) const {
 	return lang::Type{
-	    true,         // initialized type
-	    true,         // it is an scalar type
-	    "//ptr",      // specified name
-	    pointerSize,  // 64bit/8 bytes in DataModel
-	    false,        // by default all scalar types are const
-	    true,         // is not a pointer type
-	    false,        // a pointer is not signed
-	    false,        // no overload
-	    returnType,   // its subtype is the returnType
-	    std::nullopt, // no signature
+	    // pointers do not have typeID
+	    0,
+	    true,          // initialized type
+	    true,          // it is an scalar type
+	    "%<pointer>%", // specified name
+	    pointerSize,   // varies depending on the data model
+	    false,         // by default all scalar types are const
+	    true,          // is not a pointer type
+	    false,         // a pointer is not signed
+	    false,         // no overload
+	    returnType,    // its subtype is the returnType
+	    std::nullopt,  // no signature
 	};
 }
 

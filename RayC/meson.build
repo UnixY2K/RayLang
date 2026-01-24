@@ -11,6 +11,7 @@ rayc_srcs = [
 	# lang
 	'src/compiler/lang/scope.cpp',
 	'src/compiler/lang/sourceUnit.cpp',
+	'src/compiler/lang/struct.cpp',
 	'src/compiler/lang/depSourceUnit.cpp',
 	'src/compiler/lang/type.cpp',
 	'src/compiler/lexer/lexer_error.cpp',

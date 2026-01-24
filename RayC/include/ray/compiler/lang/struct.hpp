@@ -15,10 +15,9 @@ class StructMember {
 	bool publicVisibility = false;
 	bool isMutable = false;
 	std::string name;
-	size_t typeId;
 	Type type;
 
-	size_t calculateSize() const { return type.calculatedSize; }
+	size_t calculateSize() const;
 };
 class Struct {
   public:
@@ -26,6 +25,8 @@ class Struct {
 	std::string name;
 	std::string mangledName;
 	std::vector<StructMember> members;
+
+	const lang::Type toType() const;
 };
 
 } // namespace ray::compiler::lang

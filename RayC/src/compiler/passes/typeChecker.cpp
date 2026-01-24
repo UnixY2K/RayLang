@@ -752,7 +752,8 @@ void TypeChecker::visitLiteralExpression(const ast::Literal &literalExpr) {
 	case Token::TokenType::TOKEN_STRING: {
 		const auto baseType =
 		    currentDataModel.get().findScalarType("u8").value();
-		const auto arrayType = makePointerType(baseType);
+		const auto arrayType =
+		    currentDataModel.get().definePointerType(baseType);
 		typeStack.push_back(arrayType);
 		break;
 	}
@@ -864,31 +865,32 @@ void TypeChecker::visitArrayAccessExpression(
 
 	typeStack.push_back(*subType);
 }
-void TypeChecker::visitTypeExpression(const ast::Type &typeExpr) {
-	if (typeExpr.isPointer) {
-		auto innerType = resolveType(*typeExpr.subtype.value());
+void TypeChecker::visitTypeExpression(const ast::Type &typeAst) {
+	if (typeAst.isPointer) {
+		auto innerType = resolveType(*typeAst.subtype.value());
 		if (innerType.value_or(lang::Type::defineUnknownType()) ==
 		    lang::Type::defineUnknownType()) {
 			messageBag.error(
-			    typeExpr.getToken(),
+			    typeAst.getToken(),
 			    std::format("could not evaluate type expression for {}",
-			                typeExpr.getToken().getLexeme()));
+			                typeAst.getToken().getLexeme()));
 			typeStack.push_back(lang::Type::defineUnknownType());
 			return;
 		}
-		lang::Type pointerType = makePointerType(innerType.value());
-		pointerType.isMutable = typeExpr.isMutable;
+		lang::Type pointerType =
+		    currentDataModel.get().definePointerType(innerType.value());
+		pointerType.isMutable = typeAst.isMutable;
 		typeStack.push_back(pointerType);
 	} else {
-		auto result = findTypeInfo(typeExpr.name.lexeme);
+		auto result = findTypeInfo(typeAst.name.lexeme);
 		if (result.has_value()) {
 			lang::Type obtainedType = result.value();
-			obtainedType.isMutable = typeExpr.isMutable;
+			obtainedType.isMutable = typeAst.isMutable;
 			typeStack.push_back(obtainedType);
 		} else {
 			messageBag.error(
-			    typeExpr.getToken(),
-			    std::format("type not found for {}", typeExpr.name.lexeme));
+			    typeAst.getToken(),
+			    std::format("type not found for {}", typeAst.name.lexeme));
 			typeStack.push_back(lang::Type::defineUnknownType());
 		}
 	}
@@ -996,29 +998,11 @@ TypeChecker::findTypeInfo(const std::string_view typeName) {
 		return scalarType;
 	}
 	// a defined type in the source unit cannot shadow a primitive/scalar type
+	auto foundStruct = currentSourceUnit.findStruct(typeName, currentScope);
+	if (foundStruct.has_value()) {
+		return foundStruct.value().get().toType();
+	}
 	return depCurrentSourceUnit.findStructType(std::string(typeName));
-}
-
-lang::Type TypeChecker::makePointerType(const lang::Type &innerType) {
-	// TODO: move this to a separate code section
-	return lang::Type(true,
-	                  // a pointer is not a scalar as it is an address memory
-	                  // that references an object
-	                  false,
-	                  // define the name as pointer
-	                  "%<pointer>%",
-	                  // we need to get this from the platform in the future
-	                  // for now assuming 64bits/8bytes
-	                  8,
-	                  // if the pointer type is const or not is decided later
-	                  true,
-	                  // we are a pointer type
-	                  true,        // pointer
-	                  false,       // non signed
-	                  false,       // non overloaded
-	                  {innerType}, // inner type
-	                  {}           // no signature
-	);
 }
 
 std::optional<lang::FunctionDeclaration>

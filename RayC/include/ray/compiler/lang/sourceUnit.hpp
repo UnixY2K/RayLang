@@ -1,9 +1,11 @@
 #pragma once
+#include <functional>
 #include <optional>
 
 #include <ray/compiler/lang/scope.hpp>
 #include <ray/compiler/lang/struct.hpp>
 #include <ray/util/soft_reference.hpp>
+#include <string_view>
 
 namespace ray::compiler::lang {
 class SourceUnit {
@@ -16,7 +18,9 @@ class SourceUnit {
   public:
 	Scope rootScope;
 
-	std::optional<util::soft_reference<Struct>>
-	declareStruct(const Struct &structobj);
+	bool bindStruct(const Struct &structobj, Scope &scope);
+
+	std::optional<std::reference_wrapper<Struct>>
+	findStruct(std::string_view structName, Scope &currentScope);
 };
 } // namespace ray::compiler::lang

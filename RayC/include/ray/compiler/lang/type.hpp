@@ -17,7 +17,7 @@ class Type {
   public:
 	// an internal id used to track additional type information
 	// such as struct or function data
-	size_t typeId;
+	size_t typeId = 0;
 	std::string name;
 	size_t calculatedSize = 0;
 	bool isMutable = false;
@@ -28,9 +28,9 @@ class Type {
 	std::optional<std::vector<util::copy_ptr<Type>>> signature = std::nullopt;
 
 	Type() = default;
-	Type(bool initialized, bool scalar, std::string name, size_t calculatedSize,
-	     bool isMutable, bool isPointer, bool signedType, bool overloaded,
-	     std::optional<util::copy_ptr<Type>> subType,
+	Type(size_t typeId, bool initialized, bool scalar, std::string name,
+	     size_t calculatedSize, bool isMutable, bool isPointer, bool signedType,
+	     bool overloaded, std::optional<util::copy_ptr<Type>> subType,
 	     std::optional<std::vector<util::copy_ptr<Type>>> signature)
 	    : initialized{initialized}, scalar{scalar}, name{name},
 	      calculatedSize{calculatedSize}, isMutable{isMutable},
@@ -51,6 +51,8 @@ class Type {
 	// used by statements in the type checker
 	static constexpr Type defineStmtType() {
 		return Type{
+		    // not defined typeID
+		    0,
 		    // an statement does not even return an initialized type
 		    false,
 		    false, // non scalar
@@ -71,6 +73,8 @@ class Type {
 	// for a valid type but did not found a matching value
 	static constexpr Type defineUnknownType() {
 		return Type{
+		    // unknown type without ID
+		    0,
 		    // an statement does not even return an initialized type
 		    false,
 		    false, // non scalar
@@ -90,6 +94,8 @@ class Type {
 	// defines an empty module type used by the type checker
 	static constexpr Type defineModuleType() {
 		return Type{
+		    // modules do not have a defined typeID
+		    0,
 		    // an statement does not even return an initialized type
 		    true,
 		    false, // non scalar

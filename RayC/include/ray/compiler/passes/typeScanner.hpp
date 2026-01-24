@@ -6,6 +6,7 @@
 #include <ray/compiler/directives/compilerDirective.hpp>
 #include <ray/compiler/environment/dataModel/dataModel.hpp>
 #include <ray/compiler/lang/sourceUnit.hpp>
+#include <ray/compiler/lang/struct.hpp>
 #include <ray/compiler/lang/type.hpp>
 #include <ray/compiler/message_bag.hpp>
 
@@ -15,6 +16,8 @@ class TypeScanner : public ast::StatementVisitor,
 	MessageBag messageBag;
 
 	std::vector<std::unique_ptr<directive::CompilerDirective>> directivesStack;
+	std::vector<lang::Type> typeStack;
+	std::vector<lang::StructMember> structMemberStack;
 	size_t topDirectivesStack = 0;
 
 	std::reference_wrapper<const environment::DataModel> currentDataModel;
@@ -69,11 +72,18 @@ class TypeScanner : public ast::StatementVisitor,
 	void visitCastExpression(const ast::Cast &value) override;
 	void visitParameterExpression(const ast::Parameter &value) override;
 
+	std::optional<lang::Type> resolveType(const ast::Statement &statement);
+	std::optional<lang::Type> resolveType(const ast::Expression &expression);
+	std::vector<lang::Type> resolveTypes(const ast::Statement &statement);
+	std::vector<lang::Type> resolveTypes(const ast::Expression &expression);
+
 	// gets the current scope
 	lang::Scope &getCurrentScope();
 	// makes a new child scope and sets it as the root scope
 	lang::Scope &makeChildScope();
 	// pops until located at the requested scope, if not found makes an error
 	bool returnScope(lang::Scope &scope);
+
+	void discoverStruct(const ast::Struct &structAst);
 };
 } // namespace ray::compiler::passes
