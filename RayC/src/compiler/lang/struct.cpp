@@ -5,5 +5,4 @@ namespace ray::compiler::lang {
 
 size_t StructMember::calculateSize() const { return type.calculatedSize; }
 
-const Type Struct::toType() const { return {}; }
 } // namespace ray::compiler::lang

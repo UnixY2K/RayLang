@@ -431,13 +431,13 @@ void TypeChecker::visitStructStatement(const ast::Struct &structObj) {
 		}
 	}
 
-	auto structType =
-	    currentDataModel.get().defineStructType(structName, structSize);
+	auto depStructType =
+	    currentDataModel.get().defineStructType(0, structName, structSize);
 	depCurrentSourceUnit.structDeclarations.push_back(lang::StructDeclaration{
 	    .name = structName,
 	    .mangledName = mangledStructName,
 	});
-	typeStack.push_back(structType);
+	typeStack.push_back(depStructType);
 }
 void TypeChecker::visitCompDirectiveStatement(
     const ast::CompDirective &compDirective) {
@@ -1000,7 +1000,9 @@ TypeChecker::findTypeInfo(const std::string_view typeName) {
 	// a defined type in the source unit cannot shadow a primitive/scalar type
 	auto foundStruct = currentSourceUnit.findStruct(typeName, currentScope);
 	if (foundStruct.has_value()) {
-		return foundStruct.value().get().toType();
+		return currentDataModel.get().defineStructType(
+		    foundStruct.value().get().structID, foundStruct.value().get().name,
+		    0);
 	}
 	return depCurrentSourceUnit.findStructType(std::string(typeName));
 }

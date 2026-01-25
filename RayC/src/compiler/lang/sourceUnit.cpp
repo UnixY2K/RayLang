@@ -22,6 +22,14 @@ bool SourceUnit::bindStruct(const Struct &structObj, Scope &scope) {
 
 std::optional<std::reference_wrapper<Struct>>
 SourceUnit::findStruct(std::string_view structName, Scope &currentScope) {
-	return std::nullopt;
+
+	return currentScope.findLocalStruct(structName)
+	    .transform([](auto structRef) { return structRef.getObject().value(); })
+	    .or_else([&] {
+		    return currentScope.getParentScope().and_then(
+		        [&](Scope &parentScope) {
+			        return this->findStruct(structName, parentScope);
+		        });
+	    });
 }
 } // namespace ray::compiler::lang

@@ -7,11 +7,10 @@
 namespace ray::compiler::environment {
 class DataModel {
   public:
-	// allows to define a struct type, if definition is external then the size
-	// is 0 and can only be referenced as a pointer
-	lang::Type defineStructType(std::string name, size_t aproximatedSize) const;
-	// declares an struct type whose internal details are unknown
-	lang::Type declareStructType(std::string name) const;
+	// allows to define a struct type, if definition is external/unknown then
+	// the size is 0 and can only be referenced as a pointer
+	lang::Type defineStructType(size_t structID, std::string name,
+	                            size_t aproximatedSize) const;
 	// defines a new function type
 	lang::Type
 	defineFunctionType(lang::Type returnType,

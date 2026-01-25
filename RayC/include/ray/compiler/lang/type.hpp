@@ -32,7 +32,7 @@ class Type {
 	     size_t calculatedSize, bool isMutable, bool isPointer, bool signedType,
 	     bool overloaded, std::optional<util::copy_ptr<Type>> subType,
 	     std::optional<std::vector<util::copy_ptr<Type>>> signature)
-	    : initialized{initialized}, scalar{scalar}, name{name},
+	    : initialized{initialized}, scalar{scalar}, typeId(typeId), name{name},
 	      calculatedSize{calculatedSize}, isMutable{isMutable},
 	      isPointer{isPointer}, signedType{signedType}, overloaded{overloaded},
 	      subtype{subType}, signature{signature} {};

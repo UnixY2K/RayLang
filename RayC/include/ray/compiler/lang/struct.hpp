@@ -25,8 +25,6 @@ class Struct {
 	std::string name;
 	std::string mangledName;
 	std::vector<StructMember> members;
-
-	const lang::Type toType() const;
 };
 
 } // namespace ray::compiler::lang

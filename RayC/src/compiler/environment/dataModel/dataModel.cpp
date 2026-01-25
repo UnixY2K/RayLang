@@ -9,38 +9,17 @@
 
 namespace ray::compiler::environment {
 
-lang::Type DataModel::defineStructType(std::string name,
+lang::Type DataModel::defineStructType(size_t structID, std::string name,
                                        size_t aproximatedSize) const {
 	return {
-	    // by default its type is unknown
-	    0,
+	    // its type is the same as structID
+	    structID,
 	    // initialized
 	    true,
 	    // non-scalar
 	    false,
 	    name,
 	    aproximatedSize,
-	    false, // non mutable
-	    false, // non pointer
-	    false, // non signed
-	    false, // cannot be overloaded
-	    {},    // no subtype
-	    {},    // no signature? depending on layout and underlying architecture
-	           // cannot be guaranteed
-	};
-}
-
-lang::Type DataModel::declareStructType(std::string name) const {
-	return {
-	    // by default its typeID is unknown
-	    0,
-	    // initialized
-	    true,
-	    // non-scalar
-	    false,
-	    name,
-	    // unknown size
-	    0,
 	    false, // non mutable
 	    false, // non pointer
 	    false, // non signed

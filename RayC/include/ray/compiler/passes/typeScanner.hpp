@@ -77,6 +77,9 @@ class TypeScanner : public ast::StatementVisitor,
 	std::vector<lang::Type> resolveTypes(const ast::Statement &statement);
 	std::vector<lang::Type> resolveTypes(const ast::Expression &expression);
 
+	std::optional<lang::Type> findScalarTypeInfo(const std::string_view lexeme);
+	lang::Type findTypeInfo(const std::string_view lexeme);
+
 	// gets the current scope
 	lang::Scope &getCurrentScope();
 	// makes a new child scope and sets it as the root scope

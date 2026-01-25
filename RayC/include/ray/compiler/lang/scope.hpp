@@ -47,6 +47,9 @@ class Scope {
 	const std::optional<const util::soft_reference<Struct>>
 	findLocalStruct(const std::string_view name) const;
 
+	std::optional<util::soft_reference<Struct>>
+	findLocalStruct(const std::string_view name);
+
 	const std::optional<const util::soft_reference<Struct>>
 	findStruct(const std::string_view name) const;
 

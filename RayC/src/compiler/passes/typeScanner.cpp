@@ -1,5 +1,6 @@
 #include <cassert>
 #include <format>
+#include <functional>
 #include <optional>
 
 #include <ray/compiler/ast/statement.hpp>
@@ -66,10 +67,8 @@ void TypeScanner::visitVarDeclStatement(const ast::VarDecl &value) {
 void TypeScanner::visitMemberStatement(const ast::Member &memberAst) {
 	std::string memberName = memberAst.name.lexeme;
 
-	memberAst.visit(*this);
-	lang::Type memberTypeObj{
-
-	};
+	auto memberTypeObj =
+	    resolveType(memberAst.type).value_or(lang::Type::defineUnknownType());
 	lang::StructMember structMember{
 	    // we do not care about this
 	    .publicVisibility = false,
@@ -126,8 +125,8 @@ void TypeScanner::visitStructStatement(const ast::Struct &structAst) {
 	for (const auto &member : structAst.members) {
 		member.visit(*this);
 		assert(!structMemberStack.empty());
-		structMemberStack.pop_back();
 		auto memberObj = structMemberStack.back();
+		structMemberStack.pop_back();
 
 		members.push_back(memberObj);
 	}
@@ -193,11 +192,34 @@ void TypeScanner::visitArrayAccessExpression(const ast::ArrayAccess &value) {
 	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
 }
 void TypeScanner::visitTypeExpression(const ast::Type &typeAst) {
-	// TODO: adapt this from type checker 
-
-	
-	messageBag.error(typeAst.getToken(),
-	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
+	if (typeAst.isPointer) {
+		auto innerType = resolveType(*typeAst.subtype.value());
+		if (innerType.value_or(lang::Type::defineUnknownType()) ==
+		    lang::Type::defineUnknownType()) {
+			messageBag.error(
+			    typeAst.getToken(),
+			    std::format("could not evaluate type expression for {}",
+			                typeAst.getToken().getLexeme()));
+			typeStack.push_back(lang::Type::defineUnknownType());
+			return;
+		}
+		lang::Type pointerType =
+		    currentDataModel.get().definePointerType(innerType.value());
+		pointerType.isMutable = typeAst.isMutable;
+		typeStack.push_back(pointerType);
+	} else {
+		auto queriedType = findTypeInfo(typeAst.name.lexeme);
+		if (queriedType != lang::Type::defineUnknownType()) {
+			lang::Type obtainedType = queriedType;
+			obtainedType.isMutable = typeAst.isMutable;
+			typeStack.push_back(obtainedType);
+		} else {
+			messageBag.error(
+			    typeAst.getToken(),
+			    std::format("type not found for {}", typeAst.name.lexeme));
+			typeStack.push_back(lang::Type::defineUnknownType());
+		}
+	}
 }
 void TypeScanner::visitCastExpression(const ast::Cast &value) {
 	messageBag.error(value.getToken(),
@@ -273,6 +295,25 @@ TypeScanner::resolveTypes(const ast::Expression &expression) {
 	return returnTypes;
 }
 
+std::optional<lang::Type>
+TypeScanner::findScalarTypeInfo(const std::string_view lexeme) {
+	return currentDataModel.get().findScalarType(lexeme);
+}
+lang::Type TypeScanner::findTypeInfo(const std::string_view typeName) {
+	auto scalarType = findScalarTypeInfo(typeName);
+	if (scalarType) {
+		return scalarType.value();
+	}
+	// a defined type in the source unit cannot shadow a primitive/scalar type
+	auto foundStruct = currentSourceUnit.findStruct(typeName, currentScope);
+	return foundStruct
+	    .transform([&](auto &structObj) {
+		    return currentDataModel.get().defineStructType(
+		        structObj.get().structID, structObj.get().name, 0);
+	    })
+	    .value_or(lang::Type::defineUnknownType());
+}
+
 lang::Scope &TypeScanner::getCurrentScope() { return currentScope.get(); }
 lang::Scope &TypeScanner::makeChildScope() {
 	currentScope = currentScope.get().makeChildScope();
@@ -329,7 +370,7 @@ void TypeScanner::discoverStruct(const ast::Struct &structAst) {
 	// structs can be declared multiple times
 	// this is mostly required for C interop
 	if (structAst.declaration) {
-		auto type = currentDataModel.get().declareStructType(structName);
+		auto type = currentDataModel.get().defineStructType(0, structName, 0);
 		if (!scope.declareStruct(structName)) {
 			messageBag.error(structAst.getToken(), "could not declare struct");
 		}
