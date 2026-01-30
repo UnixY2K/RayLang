@@ -1,3 +1,4 @@
+#include "ray/util/soft_reference.hpp"
 #include <cassert>
 #include <format>
 #include <functional>
@@ -112,8 +113,9 @@ void TypeScanner::visitStructStatement(const ast::Struct &structAst) {
 	                                                 linkageDirective);
 
 	auto &scope = currentScope.get();
-	auto structObjRes =
-	    scope.findLocalStruct(structName).value_or({}).getObject();
+	auto structObjRes = scope.findLocalStruct(structName)
+	                        .value_or(util::soft_reference<lang::Struct>())
+	                        .getObject();
 	if (!structObjRes.has_value()) {
 		messageBag.bug(structAst.getToken(),
 		               std::format("could not find internal reference for {}",
