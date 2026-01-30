@@ -43,7 +43,7 @@ void TypeChecker::resolve(
 		// structs
 		if (stmtType.has_value()) {
 			auto type = stmtType.value();
-			if (!type.isScalar()) {
+			if (type.getKind() != lang::TypeKind::scalar) {
 				// TODO: optimize this search
 				// the types could have a reference to the specific struct
 				for (const auto &structDeclaration :
@@ -51,6 +51,18 @@ void TypeChecker::resolve(
 					if (structDeclaration.name == type.name) {
 						if (!getCurrentScope().declareStruct(
 						        type, structDeclaration.mangledName)) {
+							messageBag.error(
+							    stmt->getToken(),
+							    std::format("cannot redefine type '{}'",
+							                type.name));
+						}
+					}
+				}
+				for (const auto &functionDeclaration :
+				     depCurrentSourceUnit.functionDeclarations) {
+					if (functionDeclaration.name == type.name) {
+						if (!getCurrentScope().defineFunction(
+						        functionDeclaration)) {
 							messageBag.error(
 							    stmt->getToken(),
 							    std::format("cannot redefine type '{}'",
@@ -376,7 +388,7 @@ void TypeChecker::visitStructStatement(const ast::Struct &structObj) {
 
 	std::optional<directive::LinkageDirective> linkageDirective;
 
-	for (size_t i = directivesStack.size(); i > top; i--) {
+	for (size_t i = directivesStack.size(); i > directivesStackTop; i--) {
 		auto &directive = directivesStack[i - i];
 		if (auto foundLinkDirective =
 		        dynamic_cast<directive::LinkageDirective *>(directive.get())) {
@@ -440,11 +452,11 @@ void TypeChecker::visitStructStatement(const ast::Struct &structObj) {
 	typeStack.push_back(depStructType);
 }
 void TypeChecker::visitCompDirectiveStatement(
-    const ast::CompDirective &compDirective) {
-	auto directiveToken = compDirective.name;
-	auto directiveName = compDirective.name.getLexeme();
+    const ast::CompDirective &compDirectiveAst) {
+	auto directiveToken = compDirectiveAst.name;
+	auto directiveName = compDirectiveAst.name.getLexeme();
 	if (directiveName == "Linkage") {
-		auto &attributes = compDirective.values;
+		auto &attributes = compDirectiveAst.values;
 		auto directive = directive::LinkageDirective(
 		    attributes.find("name") != attributes.end() ? attributes.at("name")
 		                                                : "",
@@ -457,16 +469,16 @@ void TypeChecker::visitCompDirectiveStatement(
 		              : directive::LinkageDirective::ManglingType::Unknonw
 		        : directive::LinkageDirective::ManglingType::Default,
 		    directiveToken);
-		if (compDirective.child) {
-			auto childValue = compDirective.child.get();
+		if (compDirectiveAst.child) {
+			auto childValue = compDirectiveAst.child.get();
 			if (dynamic_cast<ast::Function *>(childValue) ||
 			    dynamic_cast<ast::Struct *>(childValue)) {
 				size_t startDirectives = directivesStack.size();
-				size_t originalTop = top + 1;
-				top = startDirectives;
+				size_t originalTop = directivesStackTop + 1;
+				directivesStackTop = startDirectives;
 				directivesStack.push_back(
 				    std::make_unique<directive::LinkageDirective>(directive));
-				auto directiveType = resolveType(*compDirective.child);
+				auto directiveType = resolveType(*compDirectiveAst.child);
 				if (directiveType.has_value()) {
 					typeStack.push_back(directiveType.value());
 				}
@@ -475,7 +487,7 @@ void TypeChecker::visitCompDirectiveStatement(
 					               "unprocessed compiler directives");
 				}
 
-				top = originalTop;
+				directivesStackTop = originalTop;
 			} else {
 				messageBag.error(
 				    childValue->getToken(),
@@ -484,13 +496,13 @@ void TypeChecker::visitCompDirectiveStatement(
 				        directive.directiveName()));
 			}
 		} else {
-			messageBag.error(compDirective.getToken(),
+			messageBag.error(compDirectiveAst.getToken(),
 			                 std::format("{} must have a child expression.",
 			                             directive.directiveName()));
 		}
 	} else {
 		messageBag.error(
-		    compDirective.getToken(),
+		    compDirectiveAst.getToken(),
 		    std::format("Unknown compiler directive '{}'.", directiveName));
 	}
 }
@@ -1008,12 +1020,12 @@ TypeChecker::findTypeInfo(const std::string_view typeName) {
 }
 
 std::optional<lang::FunctionDeclaration>
-TypeChecker::resolveFunctionDeclaration(const ast::Function &function) {
+TypeChecker::resolveFunctionDeclaration(const ast::Function &functionAst) {
 	std::string currentModule;
 
 	std::optional<directive::LinkageDirective> linkageDirective;
 
-	for (size_t i = directivesStack.size(); i > top; i--) {
+	for (size_t i = directivesStack.size(); i > directivesStackTop; i--) {
 		auto &directive = directivesStack[i - i];
 		if (auto foundLinkDirective =
 		        dynamic_cast<directive::LinkageDirective *>(directive.get())) {
@@ -1023,17 +1035,17 @@ TypeChecker::resolveFunctionDeclaration(const ast::Function &function) {
 			    directive->getToken(),
 			    std::format(
 			        "unmatched compiler directive '{}' for function '{}'",
-			        directive->directiveName(), function.name.getLexeme()));
+			        directive->directiveName(), functionAst.name.getLexeme()));
 		}
 		directivesStack.pop_back();
 	}
 	std::string mangledFunctionName =
-	    passes::mangling::NameMangler().mangleFunction(currentModule, function,
+	    passes::mangling::NameMangler().mangleFunction(currentModule, functionAst,
 	                                                   linkageDirective);
 
 	std::vector<lang::FunctionParameter> parameters;
 	bool failed = false;
-	for (const auto &parameter : function.params) {
+	for (const auto &parameter : functionAst.params) {
 		auto paramType = resolveType(parameter);
 		if (!paramType.has_value()) {
 			messageBag.bug(parameter.getToken(),
@@ -1059,14 +1071,16 @@ TypeChecker::resolveFunctionDeclaration(const ast::Function &function) {
 		});
 	}
 
-	auto functionReturnType = resolveType(function.returnType);
+	auto functionReturnType = resolveType(functionAst.returnType);
 	if (!functionReturnType.has_value()) {
 		return std::nullopt;
 	}
 	auto returnType = functionReturnType.value();
-	if (!returnType.isScalar() && returnType.calculatedSize == 0) {
+	// TODO: make this use the type kind instead for checks of the size
+	if ((returnType.getKind() != lang::TypeKind::scalar) &&
+	    returnType.calculatedSize == 0) {
 		messageBag.error(
-		    function.returnType.getToken(),
+		    functionAst.returnType.getToken(),
 		    std::format("cannot return a type with unknown size for '{}'",
 		                returnType.name));
 		failed = true;
@@ -1077,9 +1091,9 @@ TypeChecker::resolveFunctionDeclaration(const ast::Function &function) {
 	}
 
 	auto declaration = lang::FunctionDeclaration{
-	    .name = std::string(function.name.getLexeme()),
+	    .name = std::string(functionAst.name.getLexeme()),
 	    .mangledName = mangledFunctionName,
-	    .publicVisibility = function.publicVisibility,
+	    .publicVisibility = functionAst.publicVisibility,
 	    .signature =
 	        lang::FunctionSignature{
 	            .returnType = returnType,

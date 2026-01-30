@@ -16,9 +16,10 @@ class TypeScanner : public ast::StatementVisitor,
 	MessageBag messageBag;
 
 	std::vector<std::unique_ptr<directive::CompilerDirective>> directivesStack;
+	size_t directivesStackTop = 0;
+
 	std::vector<lang::Type> typeStack;
 	std::vector<lang::StructMember> structMemberStack;
-	size_t topDirectivesStack = 0;
 
 	std::reference_wrapper<const environment::DataModel> currentDataModel;
 

@@ -23,7 +23,7 @@ class TypeChecker : public ast::StatementVisitor,
 	MessageBag messageBag;
 
 	std::vector<std::unique_ptr<directive::CompilerDirective>> directivesStack;
-	size_t top = 0;
+	size_t directivesStackTop = 0;
 
 	std::vector<lang::Type> typeStack;
 

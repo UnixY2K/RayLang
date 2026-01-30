@@ -8,11 +8,13 @@
 #include <ray/util/copy_ptr.hpp>
 
 namespace ray::compiler::lang {
+
+enum class TypeKind { scalar, aggregate, pointer, abstract };
 class Type;
 class Type {
 
 	bool initialized = false;
-	bool scalar = false;
+	TypeKind kind = TypeKind::abstract;
 
   public:
 	// an internal id used to track additional type information
@@ -28,18 +30,18 @@ class Type {
 	std::optional<std::vector<util::copy_ptr<Type>>> signature = std::nullopt;
 
 	Type() = default;
-	Type(size_t typeId, bool initialized, bool scalar, std::string name,
+	Type(size_t typeId, bool initialized, TypeKind kind, std::string name,
 	     size_t calculatedSize, bool isMutable, bool isPointer, bool signedType,
 	     bool overloaded, std::optional<util::copy_ptr<Type>> subType,
 	     std::optional<std::vector<util::copy_ptr<Type>>> signature)
-	    : initialized{initialized}, scalar{scalar}, typeId(typeId), name{name},
+	    : initialized{initialized}, kind{kind}, typeId(typeId), name{name},
 	      calculatedSize{calculatedSize}, isMutable{isMutable},
 	      isPointer{isPointer}, signedType{signedType}, overloaded{overloaded},
 	      subtype{subType}, signature{signature} {};
 
 	void initialize() { initialized = true; }
 	bool isInitialized() const { return initialized; }
-	bool isScalar() const { return scalar; }
+	TypeKind getKind() const { return kind; }
 
 	bool coercercesInto(const Type &targetType) const;
 	bool signatureEquals(const Type &targetType) const;
@@ -55,7 +57,7 @@ class Type {
 		    0,
 		    // an statement does not even return an initialized type
 		    false,
-		    false, // non scalar
+		    TypeKind::abstract, // abstract kind (non valid at runtime)
 		    // name cannot be mangled nor referenced
 		    "%<stmt>%",
 		    // size is 0 so it cannot be passed
@@ -77,7 +79,7 @@ class Type {
 		    0,
 		    // an statement does not even return an initialized type
 		    false,
-		    false, // non scalar
+		    TypeKind::abstract, // abstract (unknown type not valid)
 		    // name cannot be mangled nor referenced
 		    "%<unknown>%",
 		    // size is 0 so it cannot be passed
@@ -98,7 +100,7 @@ class Type {
 		    0,
 		    // an statement does not even return an initialized type
 		    true,
-		    false, // non scalar
+		    TypeKind::abstract, // abstract (module type)
 		    // name cannot be mangled nor referenced
 		    "%<module>%",
 		    // size is 0 so it cannot be passed

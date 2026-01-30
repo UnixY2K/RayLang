@@ -1,14 +1,12 @@
-#include <charconv>
 #include <cstddef>
-#include <cstdint>
 #include <cstdlib>
-#include <format>
 #include <optional>
 
 #include <ray/compiler/lang/type.hpp>
 namespace ray::compiler::lang {
 
 bool Type::coercercesInto(const Type &targetType) const {
+	// TODO: rework this to keep in mind the typekind when comparing coercion
 	// for now just validate wether the type is the same minus constness
 	return baseMatches(
 	           targetType) && // base has to match
@@ -16,7 +14,8 @@ bool Type::coercercesInto(const Type &targetType) const {
 	                          // same level as target
 	                          // for scalar types they can be trivially coerced
 	                          // as its contents are copied directly
-	       (isScalar() || isMutable || isMutable == targetType.isMutable) &&
+	       ((kind == TypeKind::scalar) || isMutable ||
+	        isMutable == targetType.isMutable) &&
 	       signatureMatches(targetType); // signature is a heavier
 	                                     // comparison that goes last
 }
@@ -75,7 +74,7 @@ bool Type::operator==(const Type &other) const {
 
 bool Type::baseMatches(const Type &other) const {
 	return initialized == other.initialized &&       // has to be the same
-	       scalar == other.scalar &&                 // |
+	       kind == other.kind &&                     // |
 	       name == other.name &&                     // |
 	       calculatedSize == other.calculatedSize && // same size
 	       isPointer == other.isPointer &&           // |

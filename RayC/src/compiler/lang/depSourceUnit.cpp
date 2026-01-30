@@ -15,7 +15,7 @@ bool DepScope::declareStruct(Type type, const std::string_view mangledName) {
 
 	if (variables.contains(type.name)) {
 		const auto &symbol = variables.at(type.name);
-		if (!symbol.innerType.isScalar() &&
+		if (!(symbol.innerType.getKind() == TypeKind::scalar) &&
 		    symbol.innerType.calculatedSize > 0) {
 			// we cannot redefine a known non scalar type
 			return false;

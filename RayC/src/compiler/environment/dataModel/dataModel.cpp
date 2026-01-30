@@ -1,3 +1,4 @@
+#include "ray/compiler/lang/type.hpp"
 #include <charconv>
 #include <cstddef>
 #include <format>
@@ -16,8 +17,7 @@ lang::Type DataModel::defineStructType(size_t structID, std::string name,
 	    structID,
 	    // initialized
 	    true,
-	    // non-scalar
-	    false,
+	    lang::TypeKind::aggregate,
 	    name,
 	    aproximatedSize,
 	    false, // non mutable
@@ -33,14 +33,14 @@ lang::Type DataModel::defineStructType(size_t structID, std::string name,
 lang::Type DataModel::defineFunctionType(
     lang::Type returnType,
     std::vector<util::copy_ptr<lang::Type>> signature) const {
-	return definePointerType(lang::Type(
+	auto fn = definePointerType(lang::Type(
 	    // pointer do not have a known typeID
 	    0,
 	    // known initializable value
 	    true,
 	    // a pointer is not a scalar as it is an address memory
-	    // that references an object
-	    false,
+	    // that references an object so it is its own (pointer type)
+	    lang::TypeKind::pointer,
 	    "//fn", // define the name as pointer
 	    0, // a function is itself a pointer, so no size of its underlying type
 	    false,      // if the pointer type is const or not is decided later
@@ -51,6 +51,9 @@ lang::Type DataModel::defineFunctionType(
 	    signature // signature data is always provided so the caller can know it
 	              // is valid to call it
 	    ));
+	// TODO: remove this ugly hack once the new type scanner is set in place
+	fn.name = "//fn";
+	return fn;
 }
 
 lang::Type
@@ -62,7 +65,7 @@ DataModel::defineOverloadedFunctionType(lang::Type returnType) const {
 	    true,
 	    // a pointer is not a scalar as it is an address memory
 	    // that references an object
-	    false,
+	    lang::TypeKind::pointer,
 	    // define the name as pointer
 	    "//fn-overload",
 	    0,          // an overloaded function does not hold any size
@@ -162,9 +165,9 @@ lang::Type DataModel::defineScalarType(std::string name, size_t calculatedSize,
 	return lang::Type{
 	    // scalars do not have typeID
 	    0,
-	    true,           // initialized type
-	    true,           // it is an scalar type
-	    name,           // specified name
+	    true,                   // initialized type
+	    lang::TypeKind::scalar, // it is an scalar type
+	    name,                   // specified name
 	    calculatedSize, // size is known even without platform information
 	    false,          // by default all scalar types are const
 	    false,          // is not a pointer type
@@ -179,16 +182,16 @@ lang::Type DataModel::definePointerType(lang::Type returnType) const {
 	return lang::Type{
 	    // pointers do not have typeID
 	    0,
-	    true,          // initialized type
-	    true,          // it is an scalar type
-	    "%<pointer>%", // specified name
-	    pointerSize,   // varies depending on the data model
-	    false,         // by default all scalar types are const
-	    true,          // is not a pointer type
-	    false,         // a pointer is not signed
-	    false,         // no overload
-	    returnType,    // its subtype is the returnType
-	    std::nullopt,  // no signature
+	    true,                    // initialized type
+	    lang::TypeKind::pointer, // it is an scalar type
+	    "%<pointer>%",           // specified name
+	    pointerSize,             // varies depending on the data model
+	    false,                   // by default all scalar types are const
+	    true,                    // is not a pointer type
+	    false,                   // a pointer is not signed
+	    false,                   // no overload
+	    returnType,              // its subtype is the returnType
+	    std::nullopt,            // no signature
 	};
 }
 

@@ -36,30 +36,63 @@ const std::vector<std::string> TypeScanner::getWarnings() const {
 	return messageBag.getWarnings();
 }
 
-void TypeScanner::visitBlockStatement(const ast::Block &value) {
-	messageBag.error(value.getToken(),
-	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
+void TypeScanner::visitBlockStatement(const ast::Block &blockAst) {
+	auto &parentScope = currentScope.get();
+	currentScope = parentScope.makeChildScope();
+
+	for (const auto &astStatement : blockAst.statements) {
+		astStatement->visit(*this);
+	}
+
+	currentScope = parentScope;
 }
-void TypeScanner::visitTerminalExprStatement(const ast::TerminalExpr &value) {
-	messageBag.error(value.getToken(),
-	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
+void TypeScanner::visitTerminalExprStatement(
+    const ast::TerminalExpr &terminalExprAst) {
+	if (terminalExprAst.expression.has_value()) {
+		terminalExprAst.expression->get()->visit(*this);
+	}
 }
 void TypeScanner::visitExpressionStmtStatement(
     const ast::ExpressionStmt &value) {
 	messageBag.error(value.getToken(),
 	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
 }
-void TypeScanner::visitFunctionStatement(const ast::Function &value) {
-	messageBag.error(value.getToken(),
-	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
+void TypeScanner::visitFunctionStatement(const ast::Function &functionAst) {
+	std::string currentModule;
+
+	std::optional<directive::LinkageDirective> linkageDirective;
+
+	for (size_t i = directivesStack.size(); i > directivesStackTop; i--) {
+		auto &directive = directivesStack[i - i];
+		if (auto foundLinkDirective =
+		        dynamic_cast<directive::LinkageDirective *>(directive.get())) {
+			linkageDirective = *foundLinkDirective;
+		} else {
+			messageBag.warning(
+			    directive->getToken(),
+			    std::format(
+			        "unmatched compiler directive '{}' for function '{}'",
+			        directive->directiveName(), functionAst.name.getLexeme()));
+		}
+		directivesStack.pop_back();
+	}
+	std::string mangledFunctionName =
+	    passes::mangling::NameMangler().mangleFunction(
+	        currentModule, functionAst, linkageDirective);
+
+	auto type = resolveType(functionAst.returnType);
+	if (functionAst.body.has_value()) {
+		functionAst.body->visit(*this);
+	}
 }
 void TypeScanner::visitIfStatement(const ast::If &value) {
 	messageBag.error(value.getToken(),
 	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
 }
-void TypeScanner::visitJumpStatement(const ast::Jump &value) {
-	messageBag.error(value.getToken(),
-	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
+void TypeScanner::visitJumpStatement(const ast::Jump &jumpAst) {
+	if (jumpAst.value.has_value()) {
+		jumpAst.value->get()->visit(*this);
+	}
 }
 void TypeScanner::visitVarDeclStatement(const ast::VarDecl &value) {
 	messageBag.error(value.getToken(),
@@ -92,7 +125,7 @@ void TypeScanner::visitStructStatement(const ast::Struct &structAst) {
 
 	std::optional<directive::LinkageDirective> linkageDirective;
 
-	for (size_t i = directivesStack.size(); i > topDirectivesStack; i--) {
+	for (size_t i = directivesStack.size(); i > directivesStackTop; i--) {
 		auto &directive = directivesStack[i - i];
 		if (auto foundLinkDirective =
 		        dynamic_cast<directive::LinkageDirective *>(directive.get())) {
@@ -135,9 +168,60 @@ void TypeScanner::visitStructStatement(const ast::Struct &structAst) {
 
 	structObj.members = members;
 }
-void TypeScanner::visitCompDirectiveStatement(const ast::CompDirective &value) {
-	messageBag.error(value.getToken(),
-	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
+void TypeScanner::visitCompDirectiveStatement(
+    const ast::CompDirective &compDirectiveAst) {
+	auto directiveToken = compDirectiveAst.name;
+	auto directiveName = compDirectiveAst.name.getLexeme();
+	if (directiveName == "Linkage") {
+		auto &attributes = compDirectiveAst.values;
+		auto directive = directive::LinkageDirective(
+		    attributes.find("name") != attributes.end() ? attributes.at("name")
+		                                                : "",
+		    attributes.find("resolution") != attributes.end()
+		        ? attributes.at("resolution") == "external"
+		        : false,
+		    attributes.find("mangling") != attributes.end()
+		        ? attributes.at("mangling") == "c"
+		              ? directive::LinkageDirective::ManglingType::C
+		              : directive::LinkageDirective::ManglingType::Unknonw
+		        : directive::LinkageDirective::ManglingType::Default,
+		    directiveToken);
+		if (compDirectiveAst.child) {
+			auto childValue = compDirectiveAst.child.get();
+			if (dynamic_cast<ast::Function *>(childValue) ||
+			    dynamic_cast<ast::Struct *>(childValue)) {
+				size_t startDirectives = directivesStack.size();
+				size_t originalTop = directivesStackTop + 1;
+				directivesStackTop = startDirectives;
+				directivesStack.push_back(
+				    std::make_unique<directive::LinkageDirective>(directive));
+				auto directiveType = resolveType(*compDirectiveAst.child);
+				if (directiveType.has_value()) {
+					typeStack.push_back(directiveType.value());
+				}
+				if (directivesStack.size() != startDirectives) {
+					messageBag.bug(childValue->getToken(),
+					               "unprocessed compiler directives");
+				}
+
+				directivesStackTop = originalTop;
+			} else {
+				messageBag.error(
+				    childValue->getToken(),
+				    std::format(
+				        "{} child expression must be a function or a struct.",
+				        directive.directiveName()));
+			}
+		} else {
+			messageBag.error(compDirectiveAst.getToken(),
+			                 std::format("{} must have a child expression.",
+			                             directive.directiveName()));
+		}
+	} else {
+		messageBag.error(
+		    compDirectiveAst.getToken(),
+		    std::format("Unknown compiler directive '{}'.", directiveName));
+	}
 }
 // Expression
 void TypeScanner::visitVariableExpression(const ast::Variable &value) {
@@ -173,9 +257,8 @@ void TypeScanner::visitGroupingExpression(const ast::Grouping &value) {
 	messageBag.error(value.getToken(),
 	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
 }
-void TypeScanner::visitLiteralExpression(const ast::Literal &value) {
-	messageBag.error(value.getToken(),
-	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
+void TypeScanner::visitLiteralExpression(const ast::Literal &literalExpr) {
+	// we do not care about literal expression in the early scan phase
 }
 void TypeScanner::visitLogicalExpression(const ast::Logical &value) {
 	messageBag.error(value.getToken(),
@@ -348,7 +431,7 @@ bool TypeScanner::returnScope(lang::Scope &targetScope) {
 void TypeScanner::discoverStruct(const ast::Struct &structAst) {
 	std::optional<directive::LinkageDirective> linkageDirective;
 
-	for (size_t i = directivesStack.size(); i > topDirectivesStack; i--) {
+	for (size_t i = directivesStack.size(); i > directivesStackTop; i--) {
 		auto &directive = directivesStack[i - i];
 		if (auto foundLinkDirective =
 		        dynamic_cast<directive::LinkageDirective *>(directive.get())) {
