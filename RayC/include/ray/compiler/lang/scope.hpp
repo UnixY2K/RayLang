@@ -32,10 +32,12 @@ class Scope {
 
 	bool bindStruct(std::string_view name,
 	                util::soft_reference<Struct> &structRef);
+	bool bindFunctionDeclaration(
+	    std::string_view name,
+	    util::soft_reference<FunctionDeclaration> &functionDeclarationRef);
 
 	bool declareStruct(const std::string_view name);
-	bool defineFunction(FunctionDeclaration declaration);
-	bool defineLocalVariable(const Symbol symbol);
+	bool declareLocalVariable(const Symbol symbol);
 
 	const std::optional<const util::soft_reference<Symbol>>
 	findVariable(const std::string_view name) const;

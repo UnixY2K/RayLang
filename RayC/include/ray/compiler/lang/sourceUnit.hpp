@@ -1,4 +1,5 @@
 #pragma once
+#include "ray/compiler/lang/functionDefinition.hpp"
 #include <functional>
 #include <optional>
 
@@ -19,6 +20,7 @@ class SourceUnit {
 	Scope rootScope;
 
 	bool bindStruct(const Struct &structobj, Scope &scope);
+	bool declareFunction(const FunctionDeclaration& functionDeclaration, Scope &scope);
 
 	std::optional<std::reference_wrapper<Struct>>
 	findStruct(std::string_view structName, Scope &currentScope);

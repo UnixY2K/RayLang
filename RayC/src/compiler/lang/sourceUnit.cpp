@@ -1,3 +1,4 @@
+#include "ray/compiler/lang/functionDefinition.hpp"
 #include <cassert>
 #include <functional>
 #include <optional>
@@ -18,6 +19,19 @@ bool SourceUnit::bindStruct(const Struct &structObj, Scope &scope) {
 	    util::soft_reference<Struct>{structRef.structID, structRef};
 
 	return scope.bindStruct(structObj.name, structSoftRef);
+}
+bool SourceUnit::declareFunction(const FunctionDeclaration &functionDeclaration,
+                                 Scope &scope) {
+	auto val =
+	    this->functions.insert(std::make_pair(nextId, functionDeclaration));
+	assert(val.second);
+	auto &functionDeclarationRef = val.first->second;
+	functionDeclarationRef.functionID = nextId++;
+	auto functionDeclarationSoftRef = util::soft_reference<lang::FunctionDeclaration>{
+	    functionDeclarationRef.functionID, functionDeclarationRef};
+
+
+	return scope.bindFunctionDeclaration(functionDeclaration.name, functionDeclarationSoftRef);
 }
 
 std::optional<std::reference_wrapper<Struct>>

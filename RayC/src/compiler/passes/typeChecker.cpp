@@ -1,6 +1,7 @@
 #include <cstddef>
 #include <cstdio>
 #include <format>
+#include <functional>
 #include <optional>
 #include <string_view>
 #include <vector>
@@ -9,6 +10,7 @@
 #include <ray/compiler/ast/statement.hpp>
 #include <ray/compiler/lang/depSourceUnit.hpp>
 #include <ray/compiler/lang/functionDefinition.hpp>
+#include <ray/compiler/lang/scope.hpp>
 #include <ray/compiler/lang/struct.hpp>
 #include <ray/compiler/lang/symbol.hpp>
 #include <ray/compiler/lang/type.hpp>
@@ -50,7 +52,7 @@ void TypeChecker::resolve(
 				     depCurrentSourceUnit.structDeclarations) {
 					if (structDeclaration.name == type.name) {
 						if (!getCurrentScope().declareStruct(
-						        type, structDeclaration.mangledName)) {
+						        structDeclaration.mangledName)) {
 							messageBag.error(
 							    stmt->getToken(),
 							    std::format("cannot redefine type '{}'",
@@ -61,8 +63,8 @@ void TypeChecker::resolve(
 				for (const auto &functionDeclaration :
 				     depCurrentSourceUnit.functionDeclarations) {
 					if (functionDeclaration.name == type.name) {
-						if (!getCurrentScope().defineFunction(
-						        functionDeclaration)) {
+						if (!currentSourceUnit.declareFunction(
+						        functionDeclaration, getCurrentScope())) {
 							messageBag.error(
 							    stmt->getToken(),
 							    std::format("cannot redefine type '{}'",
@@ -178,7 +180,7 @@ void TypeChecker::visitFunctionStatement(const ast::Function &function) {
 				    .type = lang::Symbol::SymbolType::Parameter,
 				    .internal = false,
 				};
-				getCurrentScope().defineLocalVariable(paramSymbol);
+				getCurrentScope().declareLocalVariable(paramSymbol);
 			}
 			const auto type =
 			    resolveType(function.body.value())
@@ -195,7 +197,8 @@ void TypeChecker::visitFunctionStatement(const ast::Function &function) {
 
 		auto functionType = currentDataModel.get().defineFunctionType(
 		    declaration.signature.returnType, paramTypes);
-		if (!getCurrentScope().defineFunction(declaration)) {
+		if (!currentSourceUnit.declareFunction(declaration,
+		                                       getCurrentScope())) {
 			messageBag.error(function.getToken(),
 			                 std::format("could not declare function for '{}'",
 			                             declaration.name));
@@ -298,7 +301,7 @@ void TypeChecker::visitVarDeclStatement(const ast::VarDecl &variable) {
 		    .type = lang::Symbol::SymbolType::Parameter,
 		    .internal = false,
 		};
-		getCurrentScope().defineLocalVariable(variableSymbol);
+		getCurrentScope().declareLocalVariable(variableSymbol);
 		// typeStack.push_back(variableType);
 		return;
 	}
@@ -509,9 +512,10 @@ void TypeChecker::visitCompDirectiveStatement(
 // Expression
 void TypeChecker::visitVariableExpression(const ast::Variable &variableExpr) {
 
-	if (getCurrentScope().variables.contains(variableExpr.name.lexeme)) {
-		auto type = getCurrentScope().variables.at(variableExpr.name.lexeme);
-		typeStack.push_back(type.innerType);
+	auto foundVariable =
+	    getCurrentScope().findVariable(variableExpr.name.lexeme);
+	if (foundVariable.has_value()) {
+		typeStack.push_back(foundVariable.value().getObject()->get().innerType);
 		return;
 	}
 
@@ -1040,8 +1044,8 @@ TypeChecker::resolveFunctionDeclaration(const ast::Function &functionAst) {
 		directivesStack.pop_back();
 	}
 	std::string mangledFunctionName =
-	    passes::mangling::NameMangler().mangleFunction(currentModule, functionAst,
-	                                                   linkageDirective);
+	    passes::mangling::NameMangler().mangleFunction(
+	        currentModule, functionAst, linkageDirective);
 
 	std::vector<lang::FunctionParameter> parameters;
 	bool failed = false;
@@ -1103,37 +1107,42 @@ TypeChecker::resolveFunctionDeclaration(const ast::Function &functionAst) {
 	return declaration;
 }
 
-lang::DepScope &TypeChecker::getCurrentScope() { return depCurrentScope.get(); }
-lang::DepScope &TypeChecker::makeChildScope() {
-	depCurrentScope.get().innerScopes.push_back({});
-	depCurrentScope = *depCurrentScope.get().innerScopes.back().get();
-	return depCurrentScope;
+lang::Scope &TypeChecker::getCurrentScope() { return currentScope.get(); }
+lang::Scope &TypeChecker::makeChildScope() {
+	currentScope = currentScope.get().makeChildScope();
+	return currentScope;
 }
-bool TypeChecker::popScope(lang::DepScope &targetScope) {
-	lang::DepScope *scope = &getCurrentScope();
+bool TypeChecker::popScope(lang::Scope &targetScope) {
+	lang::Scope *scope = &getCurrentScope();
 	while (scope != nullptr) {
 		if (scope == &targetScope) {
-			if (scope->parentScope.has_value()) {
-				depCurrentScope = *scope->parentScope.value();
+			if (scope->getParentScope().has_value()) {
+				currentScope = scope->getParentScope()->get();
 			} else {
-				depCurrentScope = *scope;
+				currentScope = *scope;
 				messageBag.bug(
 				    {},
 				    "found scope to pop but no parent scope, setting current scope to found scope");
 			}
 			return true;
 		}
-		scope = scope->parentScope.value_or(nullptr);
+		auto scopeRef = scope->getParentScope();
+		lang::Scope *parentScope =
+		    scopeRef
+		        .transform([](std::reference_wrapper<lang::Scope> &scopeRef)
+		                       -> lang::Scope * { return &scopeRef.get(); })
+		        .value_or(nullptr);
+		scope = parentScope;
 	}
 
 	messageBag.bug({},
 	               "could not pop current scope, pop to first parent scope");
-	if (depCurrentScope.get().parentScope.has_value()) {
-		depCurrentScope = *depCurrentScope.get().parentScope.value();
+	if (currentScope.get().getParentScope().has_value()) {
+		currentScope = currentScope.get().getParentScope().value();
 	} else {
 		messageBag.bug({},
 		               "parent scope not found, setting scope to root scope");
-		depCurrentScope = depCurrentSourceUnit.depRootScope;
+		currentScope = currentSourceUnit.rootScope;
 	}
 	return false;
 }

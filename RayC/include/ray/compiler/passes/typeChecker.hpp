@@ -30,7 +30,6 @@ class TypeChecker : public ast::StatementVisitor,
 	lang::SourceUnit currentSourceUnit;
 	lang::DepSourceUnit depCurrentSourceUnit;
 	std::reference_wrapper<lang::Scope> currentScope;
-	std::reference_wrapper<lang::DepScope> depCurrentScope;
 	std::reference_wrapper<const environment::DataModel> currentDataModel;
 	// lang::ModuleStore &moduleStore;
 
@@ -41,7 +40,6 @@ class TypeChecker : public ast::StatementVisitor,
 	    : messageBag("TYPE-CHECKER", filePath), typeStack(),
 	      currentSourceUnit(sourceUnit), depCurrentSourceUnit(),
 	      currentScope(currentSourceUnit.rootScope),
-	      depCurrentScope(depCurrentSourceUnit.depRootScope),
 	      currentDataModel(dataModel)
 	//,moduleStore(moduleStore)
 	{}
@@ -99,10 +97,10 @@ class TypeChecker : public ast::StatementVisitor,
 	resolveFunctionDeclaration(const ast::Function &functionExpr);
 
 	// gets the current scope
-	lang::DepScope &getCurrentScope();
+	lang::Scope &getCurrentScope();
 	// makes a new child scope and sets it as the root scope
-	lang::DepScope &makeChildScope();
+	lang::Scope &makeChildScope();
 	// pops until found the passed scope, if not found makes an error
-	bool popScope(lang::DepScope &scope);
+	bool popScope(lang::Scope &scope);
 };
 } // namespace ray::compiler::passes

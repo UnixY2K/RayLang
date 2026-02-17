@@ -38,6 +38,7 @@ struct FunctionSignature {
 };
 
 struct FunctionDeclaration {
+	size_t functionID;
 	std::string name;
 	std::string mangledName;
 	bool publicVisibility;

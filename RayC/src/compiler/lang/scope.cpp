@@ -1,3 +1,4 @@
+#include "ray/compiler/lang/functionDefinition.hpp"
 #include <cstddef>
 #include <optional>
 #include <string_view>
@@ -23,13 +24,58 @@ bool Scope::bindStruct(const std::string_view name,
 	return true;
 }
 
+bool Scope::bindFunctionDeclaration(
+	    std::string_view name,
+	    util::soft_reference<FunctionDeclaration> &functionDeclarationRef) {
+		auto functionDeclaration = functionDeclarationRef.getObject()->get();
+		if (!functions.contains(functionDeclaration.name)) {
+			functions[functionDeclaration.name] =
+			    std::vector<util::soft_reference<FunctionDeclaration>>{};
+		}
+
+		auto &declarations = functions.at(functionDeclaration.name);
+
+		if (!declarations.empty() &&
+		    declarations[0].getObject()->get().signature.returnType !=
+		        functionDeclaration.signature.returnType) {
+			// this should be probably an enum with an error code
+			return false;
+		}
+
+		// search for any declaration that might have our same declaration
+		// details
+		for (const auto &declarationRef : declarations) {
+			const auto &declaration = declarationRef.getObject()->get();
+			bool matching = false;
+			if (functionDeclaration.signature.parameters.size() ==
+			    declaration.signature.parameters.size()) {
+				for (size_t paramIndex = 0;
+				     paramIndex <
+				     functionDeclaration.signature.parameters.size();
+				     paramIndex++) {
+					if (functionDeclaration.signature.parameters[paramIndex] !=
+					    declaration.signature.parameters[paramIndex]) {
+						matching = false;
+						break;
+					}
+				}
+			}
+			if (matching) {
+				return false;
+			}
+		}
+
+		declarations.push_back(functionDeclarationRef);
+
+		return true;
+	}
+
 bool Scope::declareStruct(const std::string_view name) {
 	auto _ = structs.insert(
 	    std::make_pair(std::string(name), util::soft_reference<Struct>()));
 	return true;
 }
-bool Scope::defineFunction(FunctionDeclaration declaration) { return false; }
-bool Scope::defineLocalVariable(const Symbol symbol) { return false; }
+bool Scope::declareLocalVariable(const Symbol symbol) { return false; }
 
 const std::optional<const util::soft_reference<Symbol>>
 Scope::findVariable(const std::string_view name) const {
