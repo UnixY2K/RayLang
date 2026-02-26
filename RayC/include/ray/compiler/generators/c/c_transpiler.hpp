@@ -12,7 +12,7 @@
 #include <ray/compiler/directives/compilerDirective.hpp>
 #include <ray/compiler/environment/dataModel/dataModel.hpp>
 #include <ray/compiler/lang/functionDefinition.hpp>
-#include <ray/compiler/lang/depSourceUnit.hpp>
+#include <ray/compiler/lang/sourceUnit.hpp>
 #include <ray/compiler/lang/struct.hpp>
 #include <ray/compiler/lang/symbol.hpp>
 #include <ray/compiler/lang/type.hpp>
@@ -35,13 +35,14 @@ class CTranspilerGenerator : public ast::StatementVisitor,
 
 	passes::mangling::NameMangler nameMangler;
 
-	std::reference_wrapper<const lang::DepSourceUnit> currentSourceUnit;
-	std::reference_wrapper<const lang::DepScope> currentScope;
+	std::reference_wrapper<const lang::SourceUnit> currentSourceUnit;
+	std::reference_wrapper<const lang::Scope> currentScope;
+
 	std::reference_wrapper<const environment::DataModel> dataModel;
 
   public:
 	CTranspilerGenerator(std::string filePath,
-	                     const lang::DepSourceUnit &sourceUnit,
+	                     const lang::SourceUnit &sourceUnit,
 	                     const environment::DataModel &dataModel);
 
 	void resolve(const std::vector<std::unique_ptr<ast::Statement>> &statement);

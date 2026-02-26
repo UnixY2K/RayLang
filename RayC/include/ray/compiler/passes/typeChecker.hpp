@@ -46,8 +46,8 @@ class TypeChecker : public ast::StatementVisitor,
 
 	void resolve(const std::vector<std::unique_ptr<ast::Statement>> &statement);
 
-	const lang::DepSourceUnit &getCurrentSourceUnit() const {
-		return depCurrentSourceUnit;
+	const lang::SourceUnit &getCurrentSourceUnit() const {
+		return currentSourceUnit;
 	}
 
 	bool hasFailed() const;

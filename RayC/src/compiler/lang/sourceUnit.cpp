@@ -27,15 +27,16 @@ bool SourceUnit::declareFunction(const FunctionDeclaration &functionDeclaration,
 	assert(val.second);
 	auto &functionDeclarationRef = val.first->second;
 	functionDeclarationRef.functionID = nextId++;
-	auto functionDeclarationSoftRef = util::soft_reference<lang::FunctionDeclaration>{
-	    functionDeclarationRef.functionID, functionDeclarationRef};
+	auto functionDeclarationSoftRef =
+	    util::soft_reference<lang::FunctionDeclaration>{
+	        functionDeclarationRef.functionID, functionDeclarationRef};
 
-
-	return scope.bindFunctionDeclaration(functionDeclaration.name, functionDeclarationSoftRef);
+	return scope.bindFunctionDeclaration(functionDeclaration.name,
+	                                     functionDeclarationSoftRef);
 }
 
 std::optional<std::reference_wrapper<Struct>>
-SourceUnit::findStruct(std::string_view structName, Scope &currentScope) {
+SourceUnit::findStruct(const std::string_view structName, const Scope &currentScope) const {
 
 	return currentScope.findLocalStruct(structName)
 	    .transform([](auto structRef) { return structRef.getObject().value(); })

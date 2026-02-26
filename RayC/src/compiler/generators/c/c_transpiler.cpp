@@ -1,12 +1,11 @@
 #include <cstddef>
 #include <format>
-#include <iostream>
+#include <functional>
 #include <memory>
 #include <optional>
 #include <string>
 #include <string_view>
 
-#include <ray/cli/terminal.hpp>
 #include <ray/compiler/ast/expression.hpp>
 #include <ray/compiler/ast/intrinsic.hpp>
 #include <ray/compiler/ast/statement.hpp>
@@ -14,24 +13,25 @@
 #include <ray/compiler/directives/linkageDirective.hpp>
 #include <ray/compiler/generators/c/c_transpiler.hpp>
 #include <ray/compiler/lang/functionDefinition.hpp>
+#include <ray/compiler/lang/struct.hpp>
 #include <ray/compiler/lang/type.hpp>
 #include <ray/compiler/lexer/token.hpp>
 #include <ray/compiler/message_bag.hpp>
 #include <ray/compiler/passes/symbol_mangler.hpp>
+#include <ray/util/soft_reference.hpp>
+#include <unordered_map>
 
 namespace ray::compiler::generator::c {
-
-using namespace terminal::literals;
 
 std::string CTranspilerGenerator::currentIdent() const {
 	return std::string(ident, '\t');
 }
 
 CTranspilerGenerator::CTranspilerGenerator(
-    std::string filePath, const lang::DepSourceUnit &sourceUnit,
+    std::string filePath, const lang::SourceUnit &sourceUnit,
     const environment::DataModel &dataModel)
     : messageBag("C-BACKEND", filePath), currentSourceUnit(sourceUnit),
-      currentScope(sourceUnit.depRootScope), dataModel(dataModel) {}
+      currentScope(sourceUnit.rootScope), dataModel(dataModel) {}
 
 void CTranspilerGenerator::resolve(
     const std::vector<std::unique_ptr<ast::Statement>> &statement) {
@@ -45,22 +45,14 @@ void CTranspilerGenerator::resolve(
 	std::string currentModule;
 	// TODO: we currently iterate 2 times one for declaration
 	// while the other for definition
-	for (const auto &structDeclaration :
-	     currentSourceUnit.get().structDeclarations) {
+	for (auto const &[structId, structDeclaration] :
+	     currentSourceUnit.get().getStructs()) {
 		output << std::format("{}typedef struct {}", currentIdent(),
 		                      structDeclaration.mangledName);
 		output << std::format(" {};\n", structDeclaration.mangledName);
 	}
-	for (const auto &structDefinition :
-	     currentSourceUnit.get().structDefinitions) {
-		output << std::format("{}typedef struct {}", currentIdent(),
-		                      structDefinition.mangledName);
-		output << " {\n";
-		output << std::format("{}}}", currentIdent());
-		output << std::format(" {};\n", structDefinition.mangledName);
-	}
-	for (const lang::FunctionDeclaration &functionDeclaration :
-	     currentSourceUnit.get().functionDeclarations) {
+	for (const auto &[functionId, functionDeclaration] :
+	     currentSourceUnit.get().getFunctions()) {
 		if (!functionDeclaration.publicVisibility) {
 			output << "RAYLANG_MACRO_LINK_LOCAL ";
 			output << "static ";
@@ -91,9 +83,9 @@ void CTranspilerGenerator::resolve(
 
 	if (!this->directivesStack.empty()) {
 		for (auto &directive : directivesStack) {
-			std::cerr << std::format("{}: unused compiler directive {}\n",
-			                         "WARNING"_yellow,
-			                         directive->directiveName());
+			messageBag.warning(directive->getToken(),
+			                   std::format("unused compiler directive {}",
+			                               directive->directiveName()));
 		}
 	}
 }
@@ -139,9 +131,10 @@ void CTranspilerGenerator::visitFunctionStatement(
 		        dynamic_cast<directive::LinkageDirective *>(directive.get())) {
 			linkageDirective = *foundLinkDirective;
 		} else {
-			std::cout << std::format(
-			    "{}: unmatched compiler directive '{}' for function.\n",
-			    "WARNING"_yellow, directive->directiveName());
+			messageBag.warning(
+			    directive->getToken(),
+			    std::format("unmatched compiler directive '{}' for function.",
+			                directive->directiveName()));
 		}
 		directivesStack.pop_back();
 	}
@@ -170,7 +163,7 @@ void CTranspilerGenerator::visitFunctionStatement(
 		}
 		output << ")";
 		output << " {";
-		if (function.body->statements.size() > 1) {
+		if (function.body->statements.size() > 0) {
 			auto statement = dynamic_cast<ast::TerminalExpr *>(
 			    function.body->statements[0].get());
 			if (!statement || statement->expression.has_value()) {
@@ -282,9 +275,10 @@ void CTranspilerGenerator::visitStructStatement(const ast::Struct &value) {
 		        dynamic_cast<directive::LinkageDirective *>(directive.get())) {
 			linkageDirective = *foundLinkDirective;
 		} else {
-			std::cout << std::format(
-			    "{}: unmatched compiler directive '{}' for function.\n",
-			    "WARNING"_yellow, directive->directiveName());
+			messageBag.warning(
+			    directive->getToken(),
+			    std::format("unmatched compiler directive '{}' for function.",
+			                directive->directiveName()));
 		}
 		directivesStack.pop_back();
 	}
@@ -700,31 +694,45 @@ void CTranspilerGenerator::visitType(const lang::Type &type) {
 std::string
 CTranspilerGenerator::findCallableName(const ast::Call &callable,
                                        const std::string_view name) const {
-	// this should be done by the type checker
-	// but for now we do a dumb lookuo
+	// TODO: replace this to a resolved lookup done by the type checker
+	// once the type checker performs the binding
+
 	std::string key(name);
-	const auto functions =
-	    currentSourceUnit.get().depRootScope.findFunctionDeclaration(key);
-	if (functions.has_value()) {
-		for (const auto &function : functions.value()) {
-			if (function.signature.parameters.size() ==
-			    callable.arguments.size()) {
-				return function.mangledName;
-			}
-		}
-	}
-	return "";
+	const std::string functionName =
+	    currentScope.get()
+	        .findFunctionDeclaration(name)
+	        .transform(
+	            [&callable](
+	                const std::vector<
+	                    util::soft_reference<lang::FunctionDeclaration>>
+	                    &functionDeclarations) -> std::optional<std::string> {
+		            for (const auto &function : functionDeclarations) {
+			            const auto &functionObject = function.getObject();
+			            if (functionObject->get().signature.parameters.size() ==
+			                callable.arguments.size()) {
+				            return functionObject->get().mangledName;
+			            }
+		            }
+		            return std::nullopt;
+	            })
+	        ->value_or(std::string());
+
+	return functionName;
 }
 std::string
 CTranspilerGenerator::findStructName(const std::string_view name) const {
-	// perform a dumb lookup until type checker returns more information
-	std::string key(name);
-	if (currentSourceUnit.get().depRootScope.variables.contains(key)) {
-		const auto &symbol =
-		    currentSourceUnit.get().depRootScope.variables.at(key);
-		return symbol.mangledName;
+	auto queriedStruct =
+	    currentSourceUnit.get().findStruct(name, currentScope.get());
+	if (queriedStruct.has_value()) {
+		return queriedStruct
+		    .transform(
+		        [](const auto structValue) -> std::optional<std::string> {
+			        return structValue.get().mangledName;
+		        })
+		    ->value_or(std::string());
 	}
-	return "";
+
+	return std::string();
 }
 
 std::optional<lang::Type>
