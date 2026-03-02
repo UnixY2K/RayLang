@@ -410,8 +410,6 @@ void TypeChecker::visitStructStatement(const ast::Struct &structObj) {
 	    passes::mangling::NameMangler().mangleStruct(currentModule, structObj,
 	                                                 linkageDirective);
 
-	size_t structSize = 0;
-
 	if (!structObj.declaration) {
 		std::vector<lang::StructMember> members;
 		for (const auto &member : structObj.members) {
@@ -438,16 +436,16 @@ void TypeChecker::visitStructStatement(const ast::Struct &structObj) {
 		    .mangledName = mangledStructName,
 		    .members = members,
 		};
-		if (structSize != 0) {
-			// push it to the type stack the top evaluator is responsible to
-			// define
-			// it at its own level and potentially mangle its name again
-			depCurrentSourceUnit.structDefinitions.push_back(newStruct);
+
+		if (currentSourceUnit.bindStruct(newStruct, currentScope.get())) {
+			messageBag.error(structObj.getToken(),
+			                 std::format("could not bind struct with name {}",
+			                             structObj.name.getLexeme()));
 		}
 	}
 
 	auto depStructType =
-	    currentDataModel.get().defineStructType(0, structName, structSize);
+	    currentDataModel.get().defineStructType(0, structName, 1);
 	depCurrentSourceUnit.structDeclarations.push_back(lang::StructDeclaration{
 	    .name = structName,
 	    .mangledName = mangledStructName,

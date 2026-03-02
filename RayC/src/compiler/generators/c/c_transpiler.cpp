@@ -19,7 +19,6 @@
 #include <ray/compiler/message_bag.hpp>
 #include <ray/compiler/passes/symbol_mangler.hpp>
 #include <ray/util/soft_reference.hpp>
-#include <unordered_map>
 
 namespace ray::compiler::generator::c {
 
@@ -43,14 +42,25 @@ void CTranspilerGenerator::resolve(
 	output << "#endif\n";
 
 	std::string currentModule;
-	// TODO: we currently iterate 2 times one for declaration
-	// while the other for definition
+	output << "#pragma region struct_declarations\n";
 	for (auto const &[structId, structDeclaration] :
 	     currentSourceUnit.get().getStructs()) {
 		output << std::format("{}typedef struct {}", currentIdent(),
 		                      structDeclaration.mangledName);
 		output << std::format(" {};\n", structDeclaration.mangledName);
 	}
+	output << "#pragma endregion struct_definitions\n";
+
+	// struct cyclic dependency check is done at type check step
+	std::unordered_set<size_t> visitedStructs;
+	visitedStructs.reserve(currentSourceUnit.get().getStructs().size());
+	for (auto const &[structId, structDeclaration] :
+	     currentSourceUnit.get().getStructs()) {
+		defineStruct(visitedStructs, structDeclaration);
+	}
+	output << "#pragma endregion struct_definitions\n";
+
+	output << "#pragma region function_declarations\n";
 	for (const auto &[functionId, functionDeclaration] :
 	     currentSourceUnit.get().getFunctions()) {
 		if (!functionDeclaration.publicVisibility) {
@@ -72,6 +82,7 @@ void CTranspilerGenerator::resolve(
 		}
 		output << ");\n";
 	}
+	output << "#pragma endregion function_declarations\n";
 	// ident++;
 	for (const auto &stmt : statement) {
 		stmt->visit(*this);
@@ -265,6 +276,10 @@ void CTranspilerGenerator::visitWhileStatement(const ast::While &value) {
 	output << std::format("{}}}\n", identTab);
 }
 void CTranspilerGenerator::visitStructStatement(const ast::Struct &value) {
+	// TODO: remove this once the full logic of struct using type data is
+	// implemented
+	return;
+
 	std::string currentModule;
 
 	std::optional<directive::LinkageDirective> linkageDirective;
@@ -682,12 +697,37 @@ void CTranspilerGenerator::visitType(const lang::Type &type) {
 	if (!type.isMutable) {
 		output << "const ";
 	}
-	if (type.isPointer) {
+	switch (type.getKind()) {
+	case lang::TypeKind::pointer: {
 		visitType(*type.subtype.value());
 		output << "*";
-	} else {
-		// TODO: require a name mangled
+		break;
+	}
+	case lang::TypeKind::scalar:
 		output << type.name;
+		break;
+	case lang::TypeKind::aggregate:
+		// see if the type is a struct and get its mangled name
+		if (currentSourceUnit.get().getStructs().contains(type.typeId)) {
+			const lang::Struct &structObj =
+			    currentSourceUnit.get().getStructs().at(type.typeId);
+			output << structObj.mangledName;
+		} else if (currentSourceUnit.get().getFunctions().contains(
+		               type.typeId)) {
+			messageBag.bug(
+			    types::makeUnitTypeToken(0, 0),
+			    std::format("function name mangling not yet supported"));
+
+		} else {
+			messageBag.bug(
+			    types::makeUnitTypeToken(0, 0),
+			    std::format("could not identify aggregate name information"));
+		}
+		break;
+	case lang::TypeKind::abstract:
+		messageBag.bug(types::makeUnitTypeToken(0, 0),
+		               std::format("abstract tokens cannot be transpiled"));
+		break;
 	}
 }
 
@@ -753,6 +793,40 @@ CTranspilerGenerator::getTypeExpression(const ast::Expression *expression) {
 		return findTypeInfo(var->name.lexeme);
 	}
 	return {};
+}
+
+void CTranspilerGenerator::defineStruct(
+    std::unordered_set<size_t> &visitedStructs, const lang::Struct &structObj) {
+	if (visitedStructs.contains(structObj.structID)) {
+		return;
+	}
+	visitedStructs.insert(structObj.structID);
+
+	if (structObj.members.size() == 0) {
+		return;
+	}
+
+	for (auto const &structMember : structObj.members) {
+		auto typeId = structMember.type.typeId;
+		if (currentSourceUnit.get().getStructs().contains(typeId)) {
+			const lang::Struct structDeclaration =
+			    currentSourceUnit.get().getStructs().at(typeId);
+			defineStruct(visitedStructs, structDeclaration);
+		}
+	}
+
+	// TODO: read compiler directives from type checker
+
+	output << std::format("typedef struct {} {{\n", structObj.mangledName);
+	for (auto const &structMember : structObj.members) {
+		output << std::format("\t");
+		visitType(structMember.type);
+		output << std::format(" {}; {}\n", structMember.name,
+		                      structMember.publicVisibility ? "//#private"
+		                                                    : "//#public");
+	}
+
+	output << std::format("}} {};\n", structObj.mangledName);
 }
 
 } // namespace ray::compiler::generator::c

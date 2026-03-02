@@ -5,6 +5,7 @@
 #include <memory>
 #include <sstream>
 #include <string_view>
+#include <unordered_set>
 #include <vector>
 
 #include <ray/compiler/ast/expression.hpp>
@@ -93,6 +94,8 @@ class CTranspilerGenerator : public ast::StatementVisitor,
 	std::optional<lang::Type> findScalarTypeInfo(const std::string_view lexeme);
 	std::optional<lang::Type> findTypeInfo(const std::string_view lexeme);
 	std::optional<lang::Type> getTypeExpression(const ast::Expression *);
+
+	void defineStruct(std::unordered_set<size_t> &visitedStructs, const lang::Struct&);
 };
 
 } // namespace ray::compiler::generator::c
