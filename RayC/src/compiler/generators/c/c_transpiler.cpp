@@ -49,8 +49,9 @@ void CTranspilerGenerator::resolve(
 		                      structDeclaration.mangledName);
 		output << std::format(" {};\n", structDeclaration.mangledName);
 	}
-	output << "#pragma endregion struct_definitions\n";
-
+	output << "#pragma endregion struct_declarations\n";
+	
+	output << "#pragma region struct_definitions\n";
 	// struct cyclic dependency check is done at type check step
 	std::unordered_set<size_t> visitedStructs;
 	visitedStructs.reserve(currentSourceUnit.get().getStructs().size());
