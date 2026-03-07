@@ -145,19 +145,19 @@ void TypeChecker::visitExpressionStmtStatement(
 
 	typeStack.push_back(lang::Type::defineStmtType());
 }
-void TypeChecker::visitFunctionStatement(const ast::Function &function) {
+void TypeChecker::visitFunctionStatement(const ast::Function &functionExprAst) {
 
-	auto declarationResult = resolveFunctionDeclaration(function);
+	auto declarationResult = resolveFunctionDeclaration(functionExprAst);
 	if (!declarationResult.has_value()) {
 		messageBag.error(
-		    function.getToken(),
+		    functionExprAst.getToken(),
 		    std::format("could not resolve function declaration for '{}'",
-		                function.name.getLexeme()));
+		                functionExprAst.name.getLexeme()));
 	} else {
 		const auto declaration = declarationResult.value();
 		auto definition = lang::FunctionDefinition{
 		    .declaration = declaration,
-		    .function = function,
+		    .function = functionExprAst,
 		};
 		std::vector<util::copy_ptr<lang::Type>> paramTypes;
 		for (const auto &param : declaration.signature.parameters) {
@@ -167,7 +167,7 @@ void TypeChecker::visitFunctionStatement(const ast::Function &function) {
 
 		// declaration was already defined, so it does not require to be defined
 		// again, just the body
-		if (function.body.has_value()) {
+		if (functionExprAst.body.has_value()) {
 			depCurrentSourceUnit.functionDefinitions.push_back(definition);
 
 			// add functions to the current scope and validate that each
@@ -175,20 +175,26 @@ void TypeChecker::visitFunctionStatement(const ast::Function &function) {
 				// TODO: variable definitions should be done at an earlier stage
 				lang::Symbol paramSymbol{
 				    .name = param.name,
-				    .mangledName = "",
+				    .mangledName = param.name,
 				    .innerType = param.parameterType,
 				    .type = lang::Symbol::SymbolType::Parameter,
 				    .internal = false,
 				};
-				getCurrentScope().declareLocalVariable(paramSymbol);
+				if (!currentSourceUnit.declareLocalVariable(
+				        paramSymbol, getCurrentScope())) {
+					messageBag.bug(
+					    functionExprAst.token,
+					    std::format("parameter '{} 'could not be defined",
+					                paramSymbol.name));
+				}
 			}
 			const auto type =
-			    resolveType(function.body.value())
+			    resolveType(functionExprAst.body.value())
 			        .value_or(currentDataModel.get().getVoidType());
 
 			if (!type.coercercesInto(declaration.signature.returnType)) {
 				messageBag.error(
-				    function.body->getToken(),
+				    functionExprAst.body->getToken(),
 				    std::format(
 				        "inner body return type does not match with function return: '{}' vs '{}'",
 				        type.name, declaration.signature.returnType.name));
@@ -199,7 +205,7 @@ void TypeChecker::visitFunctionStatement(const ast::Function &function) {
 		    declaration.signature.returnType, paramTypes);
 		if (!currentSourceUnit.declareFunction(declaration,
 		                                       getCurrentScope())) {
-			messageBag.error(function.getToken(),
+			messageBag.error(functionExprAst.getToken(),
 			                 std::format("could not declare function for '{}'",
 			                             declaration.name));
 		}
@@ -253,24 +259,25 @@ void TypeChecker::visitJumpStatement(const ast::Jump &jumpStmt) {
 	}
 	typeStack.push_back(lang::Type::defineStmtType());
 }
-void TypeChecker::visitVarDeclStatement(const ast::VarDecl &variable) {
+void TypeChecker::visitVarDeclStatement(const ast::VarDecl &variableDeclAst) {
 	auto variableType = lang::Type{};
 
-	if (variable.type.token.type != Token::TokenType::TOKEN_UNINITIALIZED) {
-		const auto &explicitType = variable.type;
+	if (variableDeclAst.type.token.type !=
+	    Token::TokenType::TOKEN_UNINITIALIZED) {
+		const auto &explicitType = variableDeclAst.type;
 		std::string_view typeName = explicitType.name.lexeme;
 		auto foundType = resolveType(explicitType);
 		if (!foundType.has_value()) {
 			messageBag.error(
-			    variable.type.getToken(),
+			    variableDeclAst.type.getToken(),
 			    std::format("'{}' does not name an existing type", typeName));
 		} else {
 			variableType = foundType.value();
 		}
 	}
 
-	if (variable.initializer.has_value()) {
-		auto &initializer = *variable.initializer.value().get();
+	if (variableDeclAst.initializer.has_value()) {
+		auto &initializer = *variableDeclAst.initializer.value().get();
 		auto initType = resolveType(initializer);
 		if (!initType.has_value()) {
 			messageBag.error(
@@ -284,30 +291,36 @@ void TypeChecker::visitVarDeclStatement(const ast::VarDecl &variable) {
 				variableType = initializationType;
 			} else if (!initializationType.coercercesInto(variableType)) {
 				messageBag.error(
-				    variable.getToken(),
+				    variableDeclAst.getToken(),
 				    std::format(
 				        "variable initialization type does not match with explicit type for '{}': '{}' vs '{}'",
-				        variable.getToken().getLexeme(), variableType.name,
-				        initializationType.name));
+				        variableDeclAst.getToken().getLexeme(),
+				        variableType.name, initializationType.name));
 			}
 		}
 	}
 
 	if (variableType.isInitialized()) {
 		lang::Symbol variableSymbol{
-		    .name = variable.name.lexeme,
-		    .mangledName = "",
+		    .name = variableDeclAst.name.lexeme,
+		    .mangledName = variableDeclAst.name.lexeme,
 		    .innerType = variableType,
 		    .type = lang::Symbol::SymbolType::Parameter,
 		    .internal = false,
 		};
-		getCurrentScope().declareLocalVariable(variableSymbol);
+
+		if (!currentSourceUnit.declareLocalVariable(variableSymbol,
+		                                            getCurrentScope())) {
+			messageBag.bug(variableDeclAst.getToken(),
+			               std::format("variable '{} 'could not be defined",
+			                           variableSymbol.name));
+		}
 		// typeStack.push_back(variableType);
 		return;
 	}
 
 	messageBag.error(
-	    variable.getToken(),
+	    variableDeclAst.getToken(),
 	    "variable does not have a valid type assigned nor an valid initialization");
 }
 void TypeChecker::visitMemberStatement(const ast::Member &variable) {
@@ -992,11 +1005,10 @@ TypeChecker::resolveTypes(const ast::Expression &expression) {
 		returnTypes.push_back(returnType);
 	}
 	if (returnTypes.size() < 1) {
-		messageBag.bug(
-		    expression.getToken(),
-		    std::format("'{}' did not resolve a type, assuming statement",
-		                expression.variantName()));
-		typeStack.push_back(lang::Type::defineStmtType());
+		messageBag.bug(expression.getToken(),
+		               std::format("'{}' did not resolve a type",
+		                           expression.variantName()));
+		typeStack.push_back(lang::Type::defineUnknownType());
 	}
 	return returnTypes;
 }

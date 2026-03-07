@@ -37,7 +37,7 @@ class Scope {
 	    util::soft_reference<FunctionDeclaration> &functionDeclarationRef);
 
 	bool declareStruct(const std::string_view name);
-	bool declareLocalVariable(const Symbol symbol);
+	bool declareLocalVariable(const util::soft_reference<Symbol> symbolRef);
 
 	const std::optional<const util::soft_reference<Symbol>>
 	findVariable(const std::string_view name) const;

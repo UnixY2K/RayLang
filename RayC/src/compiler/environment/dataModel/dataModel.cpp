@@ -1,4 +1,3 @@
-#include "ray/compiler/lang/type.hpp"
 #include <charconv>
 #include <cstddef>
 #include <format>
@@ -7,6 +6,8 @@
 #include <unordered_map>
 
 #include <ray/compiler/environment/dataModel/dataModel.hpp>
+#include <ray/compiler/lang/type.hpp>
+
 
 namespace ray::compiler::environment {
 

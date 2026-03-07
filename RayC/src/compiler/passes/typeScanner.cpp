@@ -1,8 +1,8 @@
-#include "ray/util/soft_reference.hpp"
 #include <cassert>
 #include <format>
 #include <functional>
 #include <optional>
+#include <string_view>
 
 #include <ray/compiler/ast/statement.hpp>
 #include <ray/compiler/lang/scope.hpp>
@@ -10,7 +10,7 @@
 #include <ray/compiler/lang/type.hpp>
 #include <ray/compiler/passes/symbol_mangler.hpp>
 #include <ray/compiler/passes/typeScanner.hpp>
-#include <string_view>
+#include <ray/util/soft_reference.hpp>
 
 namespace ray::compiler::passes {
 
@@ -85,9 +85,13 @@ void TypeScanner::visitFunctionStatement(const ast::Function &functionAst) {
 		functionAst.body->visit(*this);
 	}
 }
-void TypeScanner::visitIfStatement(const ast::If &value) {
-	messageBag.error(value.getToken(),
-	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
+void TypeScanner::visitIfStatement(const ast::If &ifExprAst) {
+	// we do not care for the condition, only the inner body of the expression
+	// and the else body if applies
+	ifExprAst.thenBranch->visit(*this);
+	if (ifExprAst.elseBranch.has_value()) {
+		ifExprAst.elseBranch->get()->visit(*this);
+	}
 }
 void TypeScanner::visitJumpStatement(const ast::Jump &jumpAst) {
 	if (jumpAst.value.has_value()) {
@@ -224,9 +228,10 @@ void TypeScanner::visitCompDirectiveStatement(
 	}
 }
 // Expression
-void TypeScanner::visitVariableExpression(const ast::Variable &value) {
-	messageBag.error(value.getToken(),
-	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
+void TypeScanner::visitVariableExpression(const ast::Variable &varExprAst) {
+	// TODO: once we have modules support(and maybe a template system?)
+	// revisit this section so we can determine if abstract variables can hold
+	// values required to them
 }
 void TypeScanner::visitIntrinsicExpression(const ast::Intrinsic &value) {
 	messageBag.error(value.getToken(),
@@ -236,9 +241,8 @@ void TypeScanner::visitAssignExpression(const ast::Assign &value) {
 	messageBag.error(value.getToken(),
 	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
 }
-void TypeScanner::visitBinaryExpression(const ast::Binary &value) {
-	messageBag.error(value.getToken(),
-	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
+void TypeScanner::visitBinaryExpression(const ast::Binary &binaryExprAst) {
+	// we do not care about binary expressions as they cannot yield a new type
 }
 void TypeScanner::visitCallExpression(const ast::Call &value) {
 	messageBag.error(value.getToken(),

@@ -1,10 +1,11 @@
-#include "ray/compiler/lang/functionDefinition.hpp"
+#include "ray/compiler/lang/symbol.hpp"
 #include <cassert>
 #include <functional>
 #include <optional>
 #include <string_view>
 #include <utility>
 
+#include <ray/compiler/lang/functionDefinition.hpp>
 #include <ray/compiler/lang/sourceUnit.hpp>
 #include <ray/compiler/lang/struct.hpp>
 #include <ray/util/soft_reference.hpp>
@@ -34,9 +35,20 @@ bool SourceUnit::declareFunction(const FunctionDeclaration &functionDeclaration,
 	return scope.bindFunctionDeclaration(functionDeclaration.name,
 	                                     functionDeclarationSoftRef);
 }
+bool SourceUnit::declareLocalVariable(const Symbol symbol, Scope &scope) {
+	auto val = this->variables.insert(std::make_pair(nextId, symbol));
+	assert(val.second);
+	auto &variableRef = val.first->second;
+	variableRef.symbolId = nextId++;
+	auto variableSoftRef =
+	    util::soft_reference<lang::Symbol>{variableRef.symbolId, variableRef};
+
+	return scope.declareLocalVariable(variableSoftRef);
+}
 
 std::optional<std::reference_wrapper<Struct>>
-SourceUnit::findStruct(const std::string_view structName, const Scope &currentScope) const {
+SourceUnit::findStruct(const std::string_view structName,
+                       const Scope &currentScope) const {
 
 	return currentScope.findLocalStruct(structName)
 	    .transform([](auto structRef) { return structRef.getObject().value(); })
