@@ -160,15 +160,18 @@ void CTranspilerGenerator::visitFunctionStatement(
 	if (function.body.has_value()) {
 
 		output << identTabs;
+		// main has special rules to linking that we must follow
 		if (functionName == "main") {
 			output << "RAY_CPP_LINKAGE ";
-		}
-		if (function.publicVisibility) {
-			output << "RAYLANG_MACRO_LINK_EXPORT ";
 		} else {
-			output << "RAYLANG_MACRO_LINK_LOCAL ";
-			output << "static ";
+			if (function.publicVisibility) {
+				output << "RAYLANG_MACRO_LINK_EXPORT ";
+			} else {
+				output << "RAYLANG_MACRO_LINK_LOCAL ";
+				output << "static ";
+			}
 		}
+
 		function.returnType.visit(*this);
 
 		output << std::format("{}(", functionName);
