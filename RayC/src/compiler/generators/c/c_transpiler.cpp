@@ -38,7 +38,7 @@ void CTranspilerGenerator::resolve(
 
 	output << "#include <ray/ray_definitions.h>\n";
 	output << "#ifdef __cplusplus\n";
-	output << "extern \"C\" {\n";
+	output << "RAY_C_LINKAGE {\n";
 	output << "#endif\n";
 
 	std::string currentModule;
@@ -63,6 +63,10 @@ void CTranspilerGenerator::resolve(
 	output << "#pragma region function_declarations\n";
 	for (const auto &[functionId, functionDeclaration] :
 	     currentSourceUnit.get().getFunctions()) {
+		// main should be extern c++
+		if (functionDeclaration.mangledName == "main") {
+			output << "RAY_CPP_LINKAGE ";
+		}
 		if (!functionDeclaration.publicVisibility) {
 			output << "RAYLANG_MACRO_LINK_LOCAL ";
 			output << "static ";
@@ -156,6 +160,9 @@ void CTranspilerGenerator::visitFunctionStatement(
 	if (function.body.has_value()) {
 
 		output << identTabs;
+		if (functionName == "main") {
+			output << "RAY_CPP_LINKAGE ";
+		}
 		if (function.publicVisibility) {
 			output << "RAYLANG_MACRO_LINK_EXPORT ";
 		} else {
@@ -694,13 +701,16 @@ void CTranspilerGenerator::visitType(const lang::Type &type) {
 		output << "void";
 		return;
 	}
-	if (!type.isMutable) {
+	if (!type.isMutable && !type.isPointer) {
 		output << "const ";
 	}
 	switch (type.getKind()) {
 	case lang::TypeKind::pointer: {
 		visitType(*type.subtype.value());
 		output << "*";
+		if (!type.isMutable) {
+			output << "const";
+		}
 		break;
 	}
 	case lang::TypeKind::scalar:

@@ -2,8 +2,16 @@
 // such as type definitions, required headers
 // and expected macros
 #pragma once
+// this just make easier to separate the linkage if compiler under c++
 #ifdef __cplusplus
-extern "C" {
+#define RAY_C_LINKAGE extern "C"
+#define RAY_CPP_LINKAGE extern "C++"
+#else
+#define RAY_C_LINKAGE
+#define RAY_CPP_LINKAGE
+#endif
+#ifdef __cplusplus
+RAY_C_LINKAGE {
 #endif
 #include <stddef.h>
 #include <stdint.h>
