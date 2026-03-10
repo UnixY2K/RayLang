@@ -30,7 +30,6 @@ RAY_C_LINKAGE {
 #define c_char char
 #define c_int int
 #define c_size size_t
-#define c_voidptr void *
 #if defined(_WIN32) || defined(__CYGWIN__) || defined(_MSC_VER)
 // Microsoft
 #define RAYLANG_MACRO_LINK_IMPORT __declspec(dllimport)

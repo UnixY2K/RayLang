@@ -153,7 +153,6 @@ extern "C" {
 #define c_char char
 #define c_int int
 #define c_size size_t
-#define c_voidptr void *
 typedef struct String {
 	usize array_size;
 	usize element_count;
