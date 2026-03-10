@@ -30,13 +30,12 @@ class Scope {
 	    std::optional<std::reference_wrapper<Scope>> parentScope = std::nullopt)
 	    : parentScope(parentScope) {}
 
-	bool bindStruct(std::string_view name,
-	                util::soft_reference<Struct> &structRef);
+	bool bindStruct(Struct &&structRef);
 	bool bindFunctionDeclaration(
 	    std::string_view name,
 	    util::soft_reference<FunctionDeclaration> &functionDeclarationRef);
 
-	bool declareStruct(const std::string_view name);
+	bool declareStruct(const util::soft_reference<Struct> &structRef);
 	bool declareLocalVariable(const util::soft_reference<Symbol> symbolRef);
 
 	const std::optional<const util::soft_reference<Symbol>>
@@ -51,9 +50,6 @@ class Scope {
 
 	std::optional<util::soft_reference<Struct>>
 	findLocalStruct(const std::string_view name);
-
-	const std::optional<const util::soft_reference<Struct>>
-	findStruct(const std::string_view name) const;
 
 	Scope &makeChildScope();
 	std::optional<std::reference_wrapper<Scope>> getParentScope() const {

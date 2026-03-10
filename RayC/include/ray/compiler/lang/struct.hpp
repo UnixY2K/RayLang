@@ -21,6 +21,7 @@ class StructMember {
 };
 class Struct {
   public:
+	bool opaque;
 	size_t structID;
 	std::string name;
 	std::string mangledName;

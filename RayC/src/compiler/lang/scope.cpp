@@ -1,5 +1,6 @@
 #include <cassert>
 #include <cstddef>
+#include <functional>
 #include <optional>
 #include <string_view>
 #include <utility>
@@ -12,16 +13,17 @@
 
 namespace ray::compiler::lang {
 
-bool Scope::bindStruct(const std::string_view name,
-                       util::soft_reference<Struct> &structRef) {
-	auto val = structs.insert(std::make_pair(std::string(name), structRef));
-	if (!val.second) {
-		auto &sourceStructRef = val.first->second;
-		if (sourceStructRef.getObjectId() != 0) {
-			return false;
-		}
-		sourceStructRef = structRef;
+bool Scope::bindStruct(Struct &&structObj) {
+	assert(!structObj.opaque);
+	assert(structs.contains(structObj.name));
+	util::soft_reference<Struct> currentStructRef = structs.at(structObj.name);
+	assert(currentStructRef.getObjectId() != 0);
+	Struct &currentStructObj = currentStructRef.getObject().value().get();
+	if (!currentStructObj.opaque) {
+		return false;
 	}
+
+	currentStructObj = structObj;
 	return true;
 }
 
@@ -70,10 +72,12 @@ bool Scope::bindFunctionDeclaration(
 	return true;
 }
 
-bool Scope::declareStruct(const std::string_view name) {
-	auto _ = structs.insert(
-	    std::make_pair(std::string(name), util::soft_reference<Struct>()));
-	return true;
+bool Scope::declareStruct(const util::soft_reference<Struct> &structRef) {
+	assert(structRef.getObjectId() != 0);
+	assert(structRef.getObject().has_value());
+	auto structObj = structRef.getObject()->get();
+	auto result = structs.insert(std::make_pair(structObj.name, structRef));
+	return result.second;
 }
 bool Scope::declareLocalVariable(const util::soft_reference<Symbol> symbolRef) {
 	assert(symbolRef.getObject().has_value());
@@ -115,11 +119,6 @@ Scope::findLocalStruct(const std::string_view name) {
 	if (structs.contains(key)) {
 		return structs.at(key);
 	}
-	return std::nullopt;
-}
-
-const std::optional<const util::soft_reference<Struct>>
-Scope::findStruct(const std::string_view name) const {
 	return std::nullopt;
 }
 

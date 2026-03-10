@@ -23,8 +23,8 @@ class SourceUnit {
   public:
 	Scope rootScope;
 
-	[[nodiscard("must check struct binding result")]]
-	bool bindStruct(const Struct &structobj, Scope &scope);
+	[[nodiscard("must check struct declaration result")]]
+	bool declareStruct(const Struct &structobj, Scope &scope);
 	[[nodiscard("must check declaration result")]]
 	bool declareFunction(const FunctionDeclaration &functionDeclaration,
 	                     Scope &scope);

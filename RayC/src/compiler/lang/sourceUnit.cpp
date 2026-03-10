@@ -11,7 +11,12 @@
 #include <ray/util/soft_reference.hpp>
 
 namespace ray::compiler::lang {
-bool SourceUnit::bindStruct(const Struct &structObj, Scope &scope) {
+bool SourceUnit::declareStruct(const Struct &structObj, Scope &scope) {
+	assert(structObj.opaque);
+	if (scope.findLocalStruct(structObj.name)) {
+		return true;
+	}
+
 	auto val = this->structs.insert(std::make_pair(nextId, structObj));
 	assert(val.second);
 	auto &structRef = val.first->second;
@@ -19,8 +24,9 @@ bool SourceUnit::bindStruct(const Struct &structObj, Scope &scope) {
 	auto structSoftRef =
 	    util::soft_reference<Struct>{structRef.structID, structRef};
 
-	return scope.bindStruct(structObj.name, structSoftRef);
+	return scope.declareStruct(structSoftRef);
 }
+
 bool SourceUnit::declareFunction(const FunctionDeclaration &functionDeclaration,
                                  Scope &scope) {
 	auto val =
@@ -50,8 +56,13 @@ std::optional<std::reference_wrapper<Struct>>
 SourceUnit::findStruct(const std::string_view structName,
                        const Scope &currentScope) const {
 
-	return currentScope.findLocalStruct(structName)
-	    .transform([](auto structRef) { return structRef.getObject().value(); })
+	auto foundStruct = currentScope.findLocalStruct(structName);
+	return foundStruct
+	    .transform([](util::soft_reference<Struct> structRef) {
+		    std::reference_wrapper<const Struct> valueRef =
+		        structRef.getObject().value();
+		    return structRef.getObject().value();
+	    })
 	    .or_else([&] {
 		    return currentScope.getParentScope().and_then(
 		        [&](Scope &parentScope) {

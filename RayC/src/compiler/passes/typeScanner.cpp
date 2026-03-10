@@ -1,4 +1,5 @@
 #include <cassert>
+#include <cstddef>
 #include <format>
 #include <functional>
 #include <optional>
@@ -456,29 +457,38 @@ void TypeScanner::discoverStruct(const ast::Struct &structAst) {
 	                                                 linkageDirective);
 
 	auto &scope = currentScope.get();
-	// structs can be declared multiple times
-	// this is mostly required for C interop
+
+	// declare the struct first so we can bind the definition later
+	if (!currentSourceUnit.declareStruct(
+	        lang::Struct{
+	            .opaque = true,                   // unknown implementation
+	            .name = structName,               //
+	            .mangledName = mangledStructName, //
+	        },
+	        scope)) {
+		messageBag.error(structAst.getToken(), "could not declare struct");
+	}
+	// do not bother with declarations
 	if (structAst.declaration) {
-		auto type = currentDataModel.get().defineStructType(0, structName, 0);
-		if (!scope.declareStruct(structName)) {
-			messageBag.error(structAst.getToken(), "could not declare struct");
-		}
 		return;
 	}
 
-	if (scope.findStruct(structName)) {
-		messageBag.error(
-		    structAst.getToken(),
-		    std::format("{} is defined multiple times", structName));
+	auto foundStruct = scope.findLocalStruct(structName);
+	if (foundStruct) {
+		assert(foundStruct->getObjectId() != 0);
+		if (!foundStruct->getObject()->get().opaque) {
+			messageBag.error(
+			    structAst.getToken(),
+			    std::format("{} is defined multiple times", structName));
+		}
 	}
 
-	if (!currentSourceUnit.bindStruct(
-	        lang::Struct{
-	            .name = structName,               //
-	            .mangledName = mangledStructName, //
-	            .members = {}                     //
-	        },
-	        scope)) {
+	if (!scope.bindStruct(lang::Struct{
+	        .opaque = false,                  // known struct
+	        .name = structName,               //
+	        .mangledName = mangledStructName, //
+	        .members = {}                     //
+	    })) {
 		messageBag.error(structAst.getToken(),
 		                 std::format("could not bind struct '{}'", structName));
 		return;

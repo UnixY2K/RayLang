@@ -8,7 +8,6 @@
 #include <ray/compiler/environment/dataModel/dataModel.hpp>
 #include <ray/compiler/lang/type.hpp>
 
-
 namespace ray::compiler::environment {
 
 lang::Type DataModel::defineStructType(size_t structID, std::string name,
@@ -80,8 +79,8 @@ DataModel::defineOverloadedFunctionType(lang::Type returnType) const {
 	);
 }
 
-lang::Type DataModel::getVoidType() const {
-	return defineScalarType("void", 0, false);
+lang::Type DataModel::getUnitType() const {
+	return defineScalarType("()", 0, false);
 }
 
 std::optional<lang::Type>
@@ -151,10 +150,6 @@ DataModel::findScalarType(const std::string_view name) const {
 	        "c_size",
 	        defineScalarType("c_size", pointerSize, false),
 	    }, // c_size
-	    {
-	        "void",
-	        getVoidType(),
-	    }, // unit type
 	};
 	std::string key{name};
 	return map.contains(key) ? std::optional<lang::Type>(map.at(key))

@@ -50,7 +50,7 @@ void CTranspilerGenerator::resolve(
 		output << std::format(" {};\n", structDeclaration.mangledName);
 	}
 	output << "#pragma endregion struct_declarations\n";
-	
+
 	output << "#pragma region struct_definitions\n";
 	// struct cyclic dependency check is done at type check step
 	std::unordered_set<size_t> visitedStructs;
@@ -700,11 +700,6 @@ void CTranspilerGenerator::visitParameterExpression(
 }
 
 void CTranspilerGenerator::visitType(const lang::Type &type) {
-	// for unit type we just use void
-	if (type == dataModel.get().getVoidType()) {
-		output << "void";
-		return;
-	}
 	if (!type.isMutable && !type.isPointer) {
 		output << "const ";
 	}

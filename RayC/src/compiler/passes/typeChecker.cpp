@@ -48,30 +48,33 @@ void TypeChecker::resolve(
 			if (type.getKind() != lang::TypeKind::scalar) {
 				// TODO: optimize this search
 				// the types could have a reference to the specific struct
+				/*
 				for (const auto &structDeclaration :
 				     depCurrentSourceUnit.structDeclarations) {
-					if (structDeclaration.name == type.name) {
-						if (!getCurrentScope().declareStruct(
-						        structDeclaration.mangledName)) {
-							messageBag.error(
-							    stmt->getToken(),
-							    std::format("cannot redefine type '{}'",
-							                type.name));
-						}
-					}
+				    if (structDeclaration.name == type.name) {
+				        if (!getCurrentScope().declareStruct(
+				                structDeclaration.mangledName)) {
+				            messageBag.error(
+				                stmt->getToken(),
+				                std::format("cannot redefine type '{}'",
+				                            type.name));
+				        }
+				    }
 				}
 				for (const auto &functionDeclaration :
 				     depCurrentSourceUnit.functionDeclarations) {
-					if (functionDeclaration.name == type.name) {
-						if (!currentSourceUnit.declareFunction(
-						        functionDeclaration, getCurrentScope())) {
-							messageBag.error(
-							    stmt->getToken(),
-							    std::format("cannot redefine type '{}'",
-							                type.name));
-						}
-					}
+				    if (functionDeclaration.name == type.name) {
+				        if (!currentSourceUnit.declareFunction(
+				                functionDeclaration, getCurrentScope())) {
+				            messageBag.error(
+				                stmt->getToken(),
+				                std::format("cannot redefine type '{}'",
+				                            type.name));
+				        }
+				    }
 				}
+
+				*/
 			} else {
 				messageBag.bug(
 				    stmt->getToken(),
@@ -190,7 +193,7 @@ void TypeChecker::visitFunctionStatement(const ast::Function &functionExprAst) {
 			}
 			const auto type =
 			    resolveType(functionExprAst.body.value())
-			        .value_or(currentDataModel.get().getVoidType());
+			        .value_or(currentDataModel.get().getUnitType());
 
 			if (!type.coercercesInto(declaration.signature.returnType)) {
 				messageBag.error(
@@ -400,6 +403,8 @@ void TypeChecker::visitWhileStatement(const ast::While &whileStmt) {
 	typeStack.push_back(type);
 }
 void TypeChecker::visitStructStatement(const ast::Struct &structObj) {
+	// TODO: rework this section to just verify the existing struct
+	return;
 	std::string currentModule;
 
 	std::optional<directive::LinkageDirective> linkageDirective;
@@ -450,11 +455,12 @@ void TypeChecker::visitStructStatement(const ast::Struct &structObj) {
 		    .members = members,
 		};
 
-		if (currentSourceUnit.bindStruct(newStruct, currentScope.get())) {
-			messageBag.error(structObj.getToken(),
-			                 std::format("could not bind struct with name {}",
-			                             structObj.name.getLexeme()));
-		}
+		// TODO: remove declaration sections for type checker
+		// if (currentSourceUnit.bindStruct(newStruct, currentScope.get())) {
+		//	messageBag.error(structObj.getToken(),
+		//	                 std::format("could not bind struct with name {}",
+		//	                             structObj.name.getLexeme()));
+		//}
 	}
 
 	auto depStructType =
