@@ -185,8 +185,7 @@ std::unique_ptr<ast::Statement> Parser::forStatement() {
 	std::unique_ptr<ast::Statement> initializer;
 	if (!match({Token::TokenType::TOKEN_SEMICOLON})) {
 		if (match({Token::TokenType::TOKEN_LET})) {
-			initializer =
-			    std::make_unique<ast::VarDecl>(varDeclaration());
+			initializer = std::make_unique<ast::VarDecl>(varDeclaration());
 		} else {
 			initializer = expressionStatement();
 		}
@@ -643,6 +642,8 @@ std::unique_ptr<ast::Expression> Parser::unaryExpression() {
 }
 ast::Type Parser::typeExpression() {
 	bool is_mutable = match({Token::TokenType::TOKEN_MUT});
+	// TODO: make a new AST type for the following types: pointer, array, tuple
+	// anonymous structs may come later
 	if (match({Token::TokenType::TOKEN_LEFT_SQUARE_BRACE})) {
 		auto arrayStartToken = previous();
 		auto arrayType = typeExpression();
@@ -658,6 +659,32 @@ ast::Type Parser::typeExpression() {
 		    true,
 		    std::make_unique<ast::Type>(std::move(arrayType)),
 		    arrayStartToken,
+		};
+	}
+	// tuple Expression
+	if (match({Token::TokenType::TOKEN_LEFT_PAREN})) {
+		auto tupleStartToken = previous();
+		std::vector<ast::Type> types;
+		// parse the list of subtypes if we do not start with closing paren
+		if (!check(Token::TokenType::TOKEN_RIGHT_PAREN)) {
+			do {
+				ast::Type subType = typeExpression();
+				types.push_back(std::move(subType));
+			} while (match({Token::TokenType::TOKEN_COMMA}));
+		}
+
+		auto tupleEndToken = consume(Token::TokenType::TOKEN_RIGHT_PAREN,
+		                             "Expect ')' after tuple type expression");
+
+		auto tupleNameToken =
+		    Token{Token::TokenType::TOKEN_LEFT_SQUARE_BRACE, "%tuple%",
+		          tupleStartToken.line, tupleStartToken.column};
+		return ast::Type{
+		    tupleNameToken,  // hold all the name of the token
+		    is_mutable,      // a tuple might be const/mutable
+		    false,           // a tuple is a struct
+		    std::nullopt,    // no subtype
+		    tupleStartToken, // start at '('
 		};
 	}
 	auto typeToken =
