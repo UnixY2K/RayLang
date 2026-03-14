@@ -106,14 +106,14 @@ class Function : public Statement {
 	bool publicVisibility;
 	std::vector<Parameter> params;
 	std::optional<Block> body;
-	Type returnType;
+	NamedType returnType;
 	Token token;
 
 	Function(Token name,
 	        bool publicVisibility,
 	        std::vector<Parameter> params,
 	        std::optional<Block> body,
-	        Type returnType,
+	        NamedType returnType,
 	        Token token):
 		name(std::move(name)),
 		publicVisibility(std::move(publicVisibility)),
@@ -178,13 +178,13 @@ class Jump : public Statement {
 class VarDecl : public Statement {
   public:
 	Token name;
-	Type type;
+	NamedType type;
 	bool is_mutable;
 	std::optional<std::unique_ptr<Expression>> initializer;
 	Token token;
 
 	VarDecl(Token name,
-	        Type type,
+	        NamedType type,
 	        bool is_mutable,
 	        std::optional<std::unique_ptr<Expression>> initializer,
 	        Token token):
@@ -205,13 +205,13 @@ class VarDecl : public Statement {
 class Member : public Statement {
   public:
 	Token name;
-	Type type;
+	NamedType type;
 	bool is_mutable;
 	std::optional<std::unique_ptr<Expression>> initializer;
 	Token token;
 
 	Member(Token name,
-	        Type type,
+	        NamedType type,
 	        bool is_mutable,
 	        std::optional<std::unique_ptr<Expression>> initializer,
 	        Token token):

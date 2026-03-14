@@ -1,3 +1,4 @@
+#include "ray/compiler/ast/expression.hpp"
 #include <cassert>
 #include <cstddef>
 #include <format>
@@ -281,7 +282,12 @@ void TypeScanner::visitArrayAccessExpression(const ast::ArrayAccess &value) {
 	messageBag.error(value.getToken(),
 	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
 }
-void TypeScanner::visitTypeExpression(const ast::Type &typeAst) {
+void TypeScanner::visitPointerTypeExpression(
+    const ast::PointerType &pointerTypeAst) {
+	messageBag.error(pointerTypeAst.getToken(),
+	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
+}
+void TypeScanner::visitNamedTypeExpression(const ast::NamedType &typeAst) {
 	if (typeAst.isPointer) {
 		auto innerType = resolveType(*typeAst.subtype.value());
 		if (innerType.value_or(lang::Type::defineUnknownType()) ==

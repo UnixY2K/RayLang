@@ -641,7 +641,13 @@ void CTranspilerGenerator::visitArrayAccessExpression(
 	value.index->visit(*this);
 	output << "]";
 }
-void CTranspilerGenerator::visitTypeExpression(const ast::Type &type) {
+void CTranspilerGenerator::visitPointerTypeExpression(
+    const ast::PointerType &pointerTypeAst) {
+	messageBag.error(pointerTypeAst.getToken(),
+	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
+}
+void CTranspilerGenerator::visitNamedTypeExpression(
+    const ast::NamedType &type) {
 	if (!type.isMutable && type.name.lexeme != "void" && !type.isPointer) {
 		output << "const ";
 	}
@@ -695,7 +701,7 @@ void CTranspilerGenerator::visitCastExpression(const ast::Cast &value) {
 }
 void CTranspilerGenerator::visitParameterExpression(
     const ast::Parameter &param) {
-	param.type.visit(*this);
+	param.type->visit(*this);
 	output << std::format("{}", param.name.lexeme);
 }
 

@@ -320,7 +320,7 @@ ast::VarDecl Parser::varDeclaration() {
 	    name.line,
 	    name.column,
 	};
-	ast::Type type = ast::Type{
+	ast::NamedType type = ast::NamedType{
 	    typeToken, false, false, {}, typeToken,
 	};
 	if (match({Token::TokenType::TOKEN_COLON})) {
@@ -350,7 +350,7 @@ ast::Member Parser::memberDeclaration() {
 	    name.line,
 	    name.column,
 	};
-	ast::Type type = ast::Type{
+	ast::NamedType type = ast::NamedType{
 	    typeToken, false, false, {}, typeToken,
 	};
 	if (match({Token::TokenType::TOKEN_COLON})) {
@@ -393,10 +393,10 @@ ast::Function Parser::function(std::string kind, bool publicVisiblity) {
 			                              "Expect parameter name.");
 			consume(Token::TokenType::TOKEN_COLON,
 			        "Expect ':' after parameter name.");
-			ast::Type parameterType = typeExpression();
+			ast::NamedType parameterType = typeExpression();
 			auto parameter = ast::Parameter{
 			    attributeToken,
-			    std::move(parameterType),
+			    std::make_unique<ast::NamedType>(std::move(parameterType)),
 			    attributeToken,
 			};
 
@@ -410,7 +410,7 @@ ast::Function Parser::function(std::string kind, bool publicVisiblity) {
 
 	size_t newColumn = previous().column + previous().getLexeme().size();
 	auto returnToken = types::makeUnitTypeToken(previous().line, newColumn);
-	ast::Type returnType{
+	ast::NamedType returnType{
 	    returnToken, false, false, {}, returnToken,
 	};
 
@@ -640,7 +640,7 @@ std::unique_ptr<ast::Expression> Parser::unaryExpression() {
 	}
 	return expr;
 }
-ast::Type Parser::typeExpression() {
+ast::NamedType Parser::typeExpression() {
 	bool is_mutable = match({Token::TokenType::TOKEN_MUT});
 	// TODO: make a new AST type for the following types: pointer, array, tuple
 	// anonymous structs may come later
@@ -650,25 +650,25 @@ ast::Type Parser::typeExpression() {
 		consume(Token::TokenType::TOKEN_SEMICOLON, "Expect ';' after type.");
 		consume(Token::TokenType::TOKEN_RIGHT_SQUARE_BRACE,
 		        "Expect ']' after array type.");
-		return ast::Type{
+		return ast::NamedType{
 		    Token{Token::TokenType::TOKEN_LEFT_SQUARE_BRACE,
 		          std::format("[{}]",
 		                      arrayStartToken.lexeme + arrayType.name.lexeme),
 		          arrayStartToken.line, arrayStartToken.column},
 		    is_mutable,
 		    true,
-		    std::make_unique<ast::Type>(std::move(arrayType)),
+		    std::make_unique<ast::NamedType>(std::move(arrayType)),
 		    arrayStartToken,
 		};
 	}
 	// tuple Expression
 	if (match({Token::TokenType::TOKEN_LEFT_PAREN})) {
 		auto tupleStartToken = previous();
-		std::vector<ast::Type> types;
+		std::vector<ast::NamedType> types;
 		// parse the list of subtypes if we do not start with closing paren
 		if (!check(Token::TokenType::TOKEN_RIGHT_PAREN)) {
 			do {
-				ast::Type subType = typeExpression();
+				ast::NamedType subType = typeExpression();
 				types.push_back(std::move(subType));
 			} while (match({Token::TokenType::TOKEN_COMMA}));
 		}
@@ -679,7 +679,7 @@ ast::Type Parser::typeExpression() {
 		auto tupleNameToken =
 		    Token{Token::TokenType::TOKEN_LEFT_SQUARE_BRACE, "%tuple%",
 		          tupleStartToken.line, tupleStartToken.column};
-		return ast::Type{
+		return ast::NamedType{
 		    tupleNameToken,  // hold all the name of the token
 		    is_mutable,      // a tuple might be const/mutable
 		    false,           // a tuple is a struct
@@ -689,10 +689,10 @@ ast::Type Parser::typeExpression() {
 	}
 	auto typeToken =
 	    consume(Token::TokenType::TOKEN_IDENTIFIER, "Expect type signature");
-	std::optional<std::unique_ptr<ast::Type>> subType;
+	std::optional<std::unique_ptr<ast::NamedType>> subType;
 	bool isPointer = false;
 	while (match({Token::TokenType::TOKEN_STAR})) {
-		subType = std::make_unique<ast::Type>(ast::Type{
+		subType = std::make_unique<ast::NamedType>(ast::NamedType{
 		    typeToken,
 		    is_mutable,
 		    isPointer,
@@ -702,7 +702,7 @@ ast::Type Parser::typeExpression() {
 		isPointer = true;
 		typeToken.lexeme += previous().getGlyph();
 	}
-	return ast::Type{
+	return ast::NamedType{
 	    typeToken, is_mutable, isPointer, std::move(subType), typeToken,
 	};
 }

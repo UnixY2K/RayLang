@@ -898,7 +898,12 @@ void TypeChecker::visitArrayAccessExpression(
 
 	typeStack.push_back(*subType);
 }
-void TypeChecker::visitTypeExpression(const ast::Type &typeAst) {
+void TypeChecker::visitPointerTypeExpression(
+    const ast::PointerType &pointerTypeAst) {
+	messageBag.error(pointerTypeAst.getToken(),
+	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
+}
+void TypeChecker::visitNamedTypeExpression(const ast::NamedType &typeAst) {
 	if (typeAst.isPointer) {
 		auto innerType = resolveType(*typeAst.subtype.value());
 		if (innerType.value_or(lang::Type::defineUnknownType()) ==
@@ -943,7 +948,7 @@ void TypeChecker::visitCastExpression(const ast::Cast &castExpr) {
 	typeStack.push_back(type.value());
 }
 void TypeChecker::visitParameterExpression(const ast::Parameter &parameter) {
-	const auto type = resolveType(parameter.type);
+	const auto type = resolveType(*parameter.type.get());
 	if (!type.has_value()) {
 		messageBag.error(
 		    parameter.getToken(),
@@ -1068,16 +1073,17 @@ TypeChecker::resolveFunctionDeclaration(const ast::Function &functionAst) {
 	for (const auto &parameter : functionAst.params) {
 		auto paramType = resolveType(parameter);
 		if (!paramType.has_value()) {
-			messageBag.bug(parameter.getToken(),
-			               std::format("could not inspect type for {}",
-			                           parameter.type.name.lexeme));
+			messageBag.bug(
+			    parameter.getToken(),
+			    std::format("could not inspect type for {}",
+			                parameter.type.get()->getToken().lexeme));
 			failed = true;
 			continue;
 		}
 		auto parameterType = paramType.value();
 		if (parameterType.calculatedSize == 0) {
 			messageBag.error(
-			    parameter.type.getToken(),
+			    parameter.type->getToken(),
 			    std::format(
 			        "cannot pass parameter type with unknown size for '{}'",
 			        parameterType.name));

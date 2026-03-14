@@ -20,7 +20,8 @@ class Logical;
 class Set;
 class Unary;
 class ArrayAccess;
-class Type;
+class PointerType;
+class NamedType;
 class Cast;
 class Parameter;
 
@@ -39,7 +40,8 @@ class ExpressionVisitor {
 	virtual void visitSetExpression(const Set& value) = 0;
 	virtual void visitUnaryExpression(const Unary& value) = 0;
 	virtual void visitArrayAccessExpression(const ArrayAccess& value) = 0;
-	virtual void visitTypeExpression(const Type& value) = 0;
+	virtual void visitPointerTypeExpression(const PointerType& value) = 0;
+	virtual void visitNamedTypeExpression(const NamedType& value) = 0;
 	virtual void visitCastExpression(const Cast& value) = 0;
 	virtual void visitParameterExpression(const Parameter& value) = 0;
 	virtual ~ExpressionVisitor() = default;
@@ -344,18 +346,42 @@ class ArrayAccess : public Expression {
 
 	const Token& getToken() const override { return token; };
 };
-class Type : public Expression {
+class PointerType : public Expression {
+  public:
+	Token name;
+	bool isMutable;
+	std::unique_ptr<Expression> subtype;
+	Token token;
+
+	PointerType(Token name,
+	        bool isMutable,
+	        std::unique_ptr<Expression> subtype,
+	        Token token):
+		name(std::move(name)),
+		isMutable(std::move(isMutable)),
+		subtype(std::move(subtype)),
+		token(std::move(token)) {}
+
+	void visit(ExpressionVisitor& visitor) const override {
+		visitor.visitPointerTypeExpression(*this);
+	}
+
+	const std::string_view variantName() const override { return "PointerType"; }
+
+	const Token& getToken() const override { return token; };
+};
+class NamedType : public Expression {
   public:
 	Token name;
 	bool isMutable;
 	bool isPointer;
-	std::optional<std::unique_ptr<Type>> subtype;
+	std::optional<std::unique_ptr<NamedType>> subtype;
 	Token token;
 
-	Type(Token name,
+	NamedType(Token name,
 	        bool isMutable,
 	        bool isPointer,
-	        std::optional<std::unique_ptr<Type>> subtype,
+	        std::optional<std::unique_ptr<NamedType>> subtype,
 	        Token token):
 		name(std::move(name)),
 		isMutable(std::move(isMutable)),
@@ -364,21 +390,21 @@ class Type : public Expression {
 		token(std::move(token)) {}
 
 	void visit(ExpressionVisitor& visitor) const override {
-		visitor.visitTypeExpression(*this);
+		visitor.visitNamedTypeExpression(*this);
 	}
 
-	const std::string_view variantName() const override { return "Type"; }
+	const std::string_view variantName() const override { return "NamedType"; }
 
 	const Token& getToken() const override { return token; };
 };
 class Cast : public Expression {
   public:
 	std::unique_ptr<Expression> expression;
-	Type type;
+	NamedType type;
 	Token token;
 
 	Cast(std::unique_ptr<Expression> expression,
-	        Type type,
+	        NamedType type,
 	        Token token):
 		expression(std::move(expression)),
 		type(std::move(type)),
@@ -395,11 +421,11 @@ class Cast : public Expression {
 class Parameter : public Expression {
   public:
 	Token name;
-	Type type;
+	std::unique_ptr<Expression> type;
 	Token token;
 
 	Parameter(Token name,
-	        Type type,
+	        std::unique_ptr<Expression> type,
 	        Token token):
 		name(std::move(name)),
 		type(std::move(type)),
