@@ -320,12 +320,16 @@ ast::VarDecl Parser::varDeclaration() {
 	    name.line,
 	    name.column,
 	};
-	ast::NamedType type = ast::NamedType{
-	    typeToken, false, false, {}, typeToken,
-	};
+	std::unique_ptr<ast::Expression> type =
+	    std::make_unique<ast::NamedType>(ast::NamedType{
+	        typeToken,
+	        false,
+	        false,
+	        typeToken,
+	    });
 	if (match({Token::TokenType::TOKEN_COLON})) {
 		// array type
-		type = typeExpression();
+		type = namedTypeExpression();
 	}
 
 	std::optional<std::unique_ptr<ast::Expression>> initializer = std::nullopt;
@@ -350,12 +354,16 @@ ast::Member Parser::memberDeclaration() {
 	    name.line,
 	    name.column,
 	};
-	ast::NamedType type = ast::NamedType{
-	    typeToken, false, false, {}, typeToken,
-	};
+	std::unique_ptr<ast::Expression> type =
+	    std::make_unique<ast::NamedType>(ast::NamedType{
+	        typeToken,
+	        false,
+	        false,
+	        typeToken,
+	    });
 	if (match({Token::TokenType::TOKEN_COLON})) {
 		// array type
-		type = typeExpression();
+		type = namedTypeExpression();
 	}
 
 	std::optional<std::unique_ptr<ast::Expression>> initializer = std::nullopt;
@@ -393,10 +401,11 @@ ast::Function Parser::function(std::string kind, bool publicVisiblity) {
 			                              "Expect parameter name.");
 			consume(Token::TokenType::TOKEN_COLON,
 			        "Expect ':' after parameter name.");
-			ast::NamedType parameterType = typeExpression();
+			std::unique_ptr<ast::Expression> parameterType =
+			    namedTypeExpression();
 			auto parameter = ast::Parameter{
 			    attributeToken,
-			    std::make_unique<ast::NamedType>(std::move(parameterType)),
+			    std::move(parameterType),
 			    attributeToken,
 			};
 
@@ -410,12 +419,16 @@ ast::Function Parser::function(std::string kind, bool publicVisiblity) {
 
 	size_t newColumn = previous().column + previous().getLexeme().size();
 	auto returnToken = types::makeUnitTypeToken(previous().line, newColumn);
-	ast::NamedType returnType{
-	    returnToken, false, false, {}, returnToken,
-	};
+	std::unique_ptr<ast::Expression> returnType =
+	    std::make_unique<ast::NamedType>(ast::NamedType{
+	        returnToken,
+	        false,
+	        false,
+	        returnToken,
+	    });
 
 	if (match({Token::TokenType::TOKEN_ARROW})) {
-		returnType = typeExpression();
+		returnType = namedTypeExpression();
 	}
 
 	std::optional<ast::Block> body = std::nullopt;
@@ -428,12 +441,8 @@ ast::Function Parser::function(std::string kind, bool publicVisiblity) {
 		};
 	}
 	return {
-	    name,
-	    publicVisiblity,
-	    std::move(parameters),
-	    std::move(body),
-	    std::move(returnType),
-	    name,
+	    Token(name),     publicVisiblity,       std::move(parameters),
+	    std::move(body), std::move(returnType), Token(name),
 	};
 }
 std::vector<std::unique_ptr<ast::Statement>> Parser::block() {
@@ -631,44 +640,40 @@ std::unique_ptr<ast::Expression> Parser::unaryExpression() {
 	}
 	auto expr = call();
 	if (match({Token::TokenType::TOKEN_AS})) {
-		auto type = typeExpression();
+		auto type = namedTypeExpression();
 		expr = std::make_unique<ast::Cast>(ast::Cast{
 		    std::move(expr),
 		    std::move(type),
-		    type.getToken(),
+		    Token(type->getToken()),
 		});
 	}
 	return expr;
 }
-ast::NamedType Parser::typeExpression() {
+std::unique_ptr<ast::Expression> Parser::namedTypeExpression() {
 	bool is_mutable = match({Token::TokenType::TOKEN_MUT});
 	// TODO: make a new AST type for the following types: pointer, array, tuple
 	// anonymous structs may come later
 	if (match({Token::TokenType::TOKEN_LEFT_SQUARE_BRACE})) {
 		auto arrayStartToken = previous();
-		auto arrayType = typeExpression();
+		auto arrayType = namedTypeExpression();
 		consume(Token::TokenType::TOKEN_SEMICOLON, "Expect ';' after type.");
 		consume(Token::TokenType::TOKEN_RIGHT_SQUARE_BRACE,
 		        "Expect ']' after array type.");
-		return ast::NamedType{
-		    Token{Token::TokenType::TOKEN_LEFT_SQUARE_BRACE,
-		          std::format("[{}]",
-		                      arrayStartToken.lexeme + arrayType.name.lexeme),
-		          arrayStartToken.line, arrayStartToken.column},
+		return std::make_unique<ast::ArrayType>(ast::ArrayType{
+		    std::move(arrayType),
 		    is_mutable,
-		    true,
-		    std::make_unique<ast::NamedType>(std::move(arrayType)),
 		    arrayStartToken,
-		};
+		});
 	}
 	// tuple Expression
 	if (match({Token::TokenType::TOKEN_LEFT_PAREN})) {
 		auto tupleStartToken = previous();
-		std::vector<ast::NamedType> types;
+		std::vector<std::unique_ptr<ast::Expression>> types;
 		// parse the list of subtypes if we do not start with closing paren
 		if (!check(Token::TokenType::TOKEN_RIGHT_PAREN)) {
 			do {
-				ast::NamedType subType = typeExpression();
+				std::unique_ptr<ast::Expression> subType =
+				    namedTypeExpression();
 				types.push_back(std::move(subType));
 			} while (match({Token::TokenType::TOKEN_COMMA}));
 		}
@@ -679,32 +684,41 @@ ast::NamedType Parser::typeExpression() {
 		auto tupleNameToken =
 		    Token{Token::TokenType::TOKEN_LEFT_SQUARE_BRACE, "%tuple%",
 		          tupleStartToken.line, tupleStartToken.column};
-		return ast::NamedType{
+		return std::make_unique<ast::NamedType>(ast::NamedType{
 		    tupleNameToken,  // hold all the name of the token
 		    is_mutable,      // a tuple might be const/mutable
 		    false,           // a tuple is a struct
-		    std::nullopt,    // no subtype
 		    tupleStartToken, // start at '('
-		};
+		});
 	}
+	// if (match({Token::TokenType::TOKEN_STAR})) {
+	// TODO: move this section to pointer type
+	// std::optional<std::unique_ptr<ast::NamedType>> subType;
+	// bool isPointer = false;
+	// while (match({Token::TokenType::TOKEN_STAR})) {
+	//	subType = std::make_unique<ast::NamedType>(ast::NamedType{
+	//	    typeToken,
+	//	    is_mutable,
+	//	    isPointer,
+	//	    std::move(subType),
+	//	    typeToken,
+	//	});
+	//	isPointer = true;
+	//	typeToken.lexeme += previous().getGlyph();
+	// }
+	// }
+
 	auto typeToken =
 	    consume(Token::TokenType::TOKEN_IDENTIFIER, "Expect type signature");
-	std::optional<std::unique_ptr<ast::NamedType>> subType;
 	bool isPointer = false;
-	while (match({Token::TokenType::TOKEN_STAR})) {
-		subType = std::make_unique<ast::NamedType>(ast::NamedType{
-		    typeToken,
-		    is_mutable,
-		    isPointer,
-		    std::move(subType),
-		    typeToken,
-		});
-		isPointer = true;
-		typeToken.lexeme += previous().getGlyph();
-	}
-	return ast::NamedType{
-	    typeToken, is_mutable, isPointer, std::move(subType), typeToken,
-	};
+	// TODO: move this
+
+	return std::make_unique<ast::NamedType>(ast::NamedType{
+	    typeToken,
+	    is_mutable,
+	    isPointer,
+	    typeToken,
+	});
 }
 
 std::unique_ptr<ast::Expression>

@@ -173,7 +173,7 @@ void CTranspilerGenerator::visitFunctionStatement(
 			}
 		}
 
-		function.returnType.visit(*this);
+		function.returnType->visit(*this);
 
 		output << std::format("{}(", functionName);
 		for (size_t index = 0; index < function.params.size(); ++index) {
@@ -244,7 +244,7 @@ void CTranspilerGenerator::visitJumpStatement(const ast::Jump &jump) {
 void CTranspilerGenerator::visitVarDeclStatement(const ast::VarDecl &var) {
 	output << currentIdent();
 
-	var.type.visit(*this);
+	var.type->visit(*this);
 	output << std::format("{}", var.name.lexeme);
 
 	if (var.initializer.has_value()) {
@@ -260,7 +260,7 @@ void CTranspilerGenerator::visitVarDeclStatement(const ast::VarDecl &var) {
 void CTranspilerGenerator::visitMemberStatement(const ast::Member &var) {
 	output << currentIdent();
 
-	var.type.visit(*this);
+	var.type->visit(*this);
 	output << std::format("{}", var.name.lexeme);
 
 	if (var.initializer.has_value()) {
@@ -641,6 +641,11 @@ void CTranspilerGenerator::visitArrayAccessExpression(
 	value.index->visit(*this);
 	output << "]";
 }
+void CTranspilerGenerator::visitArrayTypeExpression(
+    const ast::ArrayType &value) {
+	messageBag.error(value.getToken(),
+	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
+}
 void CTranspilerGenerator::visitPointerTypeExpression(
     const ast::PointerType &pointerTypeAst) {
 	messageBag.error(pointerTypeAst.getToken(),
@@ -653,48 +658,27 @@ void CTranspilerGenerator::visitNamedTypeExpression(
 	}
 	if (type.name.lexeme == "void") {
 		output << "void ";
-	} else if (type.name.lexeme.starts_with("[")) {
-		if (type.subtype.has_value() && type.subtype.value()) {
-			type.subtype.value()->visit(*this);
-			output << "*";
-		} else {
-			messageBag.bug(type.name, "subtype null for array type");
-			output << std::format(
-			    " *",
-			    type.name.lexeme.substr(1,
-			                            type.name.lexeme.find_last_of("]") - 1),
-			    type.name.lexeme);
-		}
 	} else {
-		if (type.isPointer) {
-			if (type.subtype.has_value() && type.subtype.value()) {
-				type.subtype.value()->visit(*this);
+		// TODO: replace this to a typeID System
+		std::string typeName = findStructName(type.name.lexeme);
+		if (typeName.empty()) {
+			auto typeInfo = findTypeInfo(type.name.lexeme);
+			if (typeInfo.has_value()) {
+				typeName = typeInfo->name;
 			} else {
-				messageBag.bug(type.name, "subtype null");
+				messageBag.warning(
+				    type.getToken(),
+				    std::format("could not find mangled name for '{}'",
+				                type.name.lexeme));
 			}
-			output << "*";
-		} else {
-			// TODO: replace this to a typeID System
-			std::string typeName = findStructName(type.name.lexeme);
-			if (typeName.empty()) {
-				auto typeInfo = findTypeInfo(type.name.lexeme);
-				if (typeInfo.has_value()) {
-					typeName = typeInfo->name;
-				} else {
-					messageBag.warning(
-					    type.getToken(),
-					    std::format("could not find mangled name for '{}'",
-					                type.name.lexeme));
-				}
-			}
-			typeName = typeName.empty() ? type.name.lexeme : typeName;
-			output << std::format("{} ", typeName);
 		}
+		typeName = typeName.empty() ? type.name.lexeme : typeName;
+		output << std::format("{} ", typeName);
 	}
 }
 void CTranspilerGenerator::visitCastExpression(const ast::Cast &value) {
 	output << "(";
-	value.type.visit(*this);
+	value.type->visit(*this);
 	output << ")(";
 	value.expression->visit(*this);
 	output << ")";

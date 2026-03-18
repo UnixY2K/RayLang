@@ -82,7 +82,7 @@ void TypeScanner::visitFunctionStatement(const ast::Function &functionAst) {
 	    passes::mangling::NameMangler().mangleFunction(
 	        currentModule, functionAst, linkageDirective);
 
-	auto type = resolveType(functionAst.returnType);
+	auto type = resolveType(*functionAst.returnType);
 	if (functionAst.body.has_value()) {
 		functionAst.body->visit(*this);
 	}
@@ -108,7 +108,7 @@ void TypeScanner::visitMemberStatement(const ast::Member &memberAst) {
 	std::string memberName = memberAst.name.lexeme;
 
 	auto memberTypeObj =
-	    resolveType(memberAst.type).value_or(lang::Type::defineUnknownType());
+	    resolveType(*memberAst.type).value_or(lang::Type::defineUnknownType());
 	lang::StructMember structMember{
 	    // we do not care about this
 	    .publicVisibility = false,
@@ -282,6 +282,11 @@ void TypeScanner::visitArrayAccessExpression(const ast::ArrayAccess &value) {
 	messageBag.error(value.getToken(),
 	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
 }
+void TypeScanner::visitArrayTypeExpression(
+    const ast::ArrayType &value) {
+	messageBag.error(value.getToken(),
+	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
+}
 void TypeScanner::visitPointerTypeExpression(
     const ast::PointerType &pointerTypeAst) {
 	messageBag.error(pointerTypeAst.getToken(),
@@ -289,20 +294,21 @@ void TypeScanner::visitPointerTypeExpression(
 }
 void TypeScanner::visitNamedTypeExpression(const ast::NamedType &typeAst) {
 	if (typeAst.isPointer) {
-		auto innerType = resolveType(*typeAst.subtype.value());
-		if (innerType.value_or(lang::Type::defineUnknownType()) ==
-		    lang::Type::defineUnknownType()) {
-			messageBag.error(
-			    typeAst.getToken(),
-			    std::format("could not evaluate type expression for {}",
-			                typeAst.getToken().getLexeme()));
-			typeStack.push_back(lang::Type::defineUnknownType());
-			return;
-		}
-		lang::Type pointerType =
-		    currentDataModel.get().definePointerType(innerType.value());
-		pointerType.isMutable = typeAst.isMutable;
-		typeStack.push_back(pointerType);
+		// TODO: rework this section once the new types are ready
+		//auto innerType = resolveType(*typeAst.subtype.value());
+		//if (innerType.value_or(lang::Type::defineUnknownType()) ==
+		//    lang::Type::defineUnknownType()) {
+		//	messageBag.error(
+		//	    typeAst.getToken(),
+		//	    std::format("could not evaluate type expression for {}",
+		//	                typeAst.getToken().getLexeme()));
+		//	typeStack.push_back(lang::Type::defineUnknownType());
+		//	return;
+		//}
+		//lang::Type pointerType =
+		//    currentDataModel.get().definePointerType(innerType.value());
+		//pointerType.isMutable = typeAst.isMutable;
+		//typeStack.push_back(pointerType);
 	} else {
 		auto queriedType = findTypeInfo(typeAst.name.lexeme);
 		if (queriedType != lang::Type::defineUnknownType()) {

@@ -265,14 +265,14 @@ void TypeChecker::visitJumpStatement(const ast::Jump &jumpStmt) {
 void TypeChecker::visitVarDeclStatement(const ast::VarDecl &variableDeclAst) {
 	auto variableType = lang::Type{};
 
-	if (variableDeclAst.type.token.type !=
+	if (variableDeclAst.type->getToken().type !=
 	    Token::TokenType::TOKEN_UNINITIALIZED) {
 		const auto &explicitType = variableDeclAst.type;
-		std::string_view typeName = explicitType.name.lexeme;
-		auto foundType = resolveType(explicitType);
+		std::string_view typeName = explicitType->getToken().lexeme;
+		auto foundType = resolveType(*explicitType);
 		if (!foundType.has_value()) {
 			messageBag.error(
-			    variableDeclAst.type.getToken(),
+			    variableDeclAst.type->getToken(),
 			    std::format("'{}' does not name an existing type", typeName));
 		} else {
 			variableType = foundType.value();
@@ -329,13 +329,13 @@ void TypeChecker::visitVarDeclStatement(const ast::VarDecl &variableDeclAst) {
 void TypeChecker::visitMemberStatement(const ast::Member &variable) {
 	auto variableType = lang::Type{};
 
-	if (variable.type.token.type != Token::TokenType::TOKEN_UNINITIALIZED) {
+	if (variable.type->getToken().type != Token::TokenType::TOKEN_UNINITIALIZED) {
 		const auto &explicitType = variable.type;
-		std::string_view typeName = explicitType.name.lexeme;
-		auto foundType = resolveType(explicitType);
+		std::string_view typeName = explicitType->getToken().lexeme;
+		auto foundType = resolveType(*explicitType);
 		if (!foundType.has_value()) {
 			messageBag.error(
-			    variable.type.getToken(),
+			    variable.type->getToken(),
 			    std::format("'{}' does not name an existing type", typeName));
 		} else {
 			variableType = foundType.value();
@@ -898,6 +898,12 @@ void TypeChecker::visitArrayAccessExpression(
 
 	typeStack.push_back(*subType);
 }
+void TypeChecker::visitArrayTypeExpression(
+    const ast::ArrayType &value) {
+	messageBag.error(value.getToken(),
+	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
+}
+
 void TypeChecker::visitPointerTypeExpression(
     const ast::PointerType &pointerTypeAst) {
 	messageBag.error(pointerTypeAst.getToken(),
@@ -905,20 +911,21 @@ void TypeChecker::visitPointerTypeExpression(
 }
 void TypeChecker::visitNamedTypeExpression(const ast::NamedType &typeAst) {
 	if (typeAst.isPointer) {
-		auto innerType = resolveType(*typeAst.subtype.value());
-		if (innerType.value_or(lang::Type::defineUnknownType()) ==
-		    lang::Type::defineUnknownType()) {
-			messageBag.error(
-			    typeAst.getToken(),
-			    std::format("could not evaluate type expression for {}",
-			                typeAst.getToken().getLexeme()));
-			typeStack.push_back(lang::Type::defineUnknownType());
-			return;
-		}
-		lang::Type pointerType =
-		    currentDataModel.get().definePointerType(innerType.value());
-		pointerType.isMutable = typeAst.isMutable;
-		typeStack.push_back(pointerType);
+		// TODO: rework this section once the new types are ready
+		//auto innerType = resolveType(*typeAst.subtype.value());
+		//if (innerType.value_or(lang::Type::defineUnknownType()) ==
+		//    lang::Type::defineUnknownType()) {
+		//	messageBag.error(
+		//	    typeAst.getToken(),
+		//	    std::format("could not evaluate type expression for {}",
+		//	                typeAst.getToken().getLexeme()));
+		//	typeStack.push_back(lang::Type::defineUnknownType());
+		//	return;
+		//}
+		//lang::Type pointerType =
+		//    currentDataModel.get().definePointerType(innerType.value());
+		//pointerType.isMutable = typeAst.isMutable;
+		//typeStack.push_back(pointerType);
 	} else {
 		auto result = findTypeInfo(typeAst.name.lexeme);
 		if (result.has_value()) {
@@ -937,7 +944,7 @@ void TypeChecker::visitCastExpression(const ast::Cast &castExpr) {
 	// TODO: remove cast expression and make it a compiler intrinsic for scalars
 	// additionally make the propper checks, for now we just blindly cast the
 	// expression
-	auto type = resolveType(castExpr.type);
+	auto type = resolveType(*castExpr.type);
 	if (!type.has_value()) {
 		messageBag.error(
 		    castExpr.getToken(),
@@ -1097,7 +1104,7 @@ TypeChecker::resolveFunctionDeclaration(const ast::Function &functionAst) {
 		});
 	}
 
-	auto functionReturnType = resolveType(functionAst.returnType);
+	auto functionReturnType = resolveType(*functionAst.returnType);
 	if (!functionReturnType.has_value()) {
 		return std::nullopt;
 	}
@@ -1106,7 +1113,7 @@ TypeChecker::resolveFunctionDeclaration(const ast::Function &functionAst) {
 	if ((returnType.getKind() != lang::TypeKind::scalar) &&
 	    returnType.calculatedSize == 0) {
 		messageBag.error(
-		    functionAst.returnType.getToken(),
+		    functionAst.returnType->getToken(),
 		    std::format("cannot return a type with unknown size for '{}'",
 		                returnType.name));
 		failed = true;

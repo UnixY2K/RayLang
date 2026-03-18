@@ -55,7 +55,8 @@ class Parser {
 	std::unique_ptr<ast::Expression> terminalExpression();
 	std::unique_ptr<ast::Expression> factorExpression();
 	std::unique_ptr<ast::Expression> unaryExpression();
-	ast::NamedType typeExpression();
+	std::unique_ptr<ast::Expression> pointerTypeExpression();
+	std::unique_ptr<ast::Expression> namedTypeExpression();
 	std::unique_ptr<ast::Expression>
 	finishArrayAccess(std::unique_ptr<ast::Expression> callee);
 	std::unique_ptr<ast::Expression>
