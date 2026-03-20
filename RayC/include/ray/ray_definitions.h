@@ -6,9 +6,11 @@
 #ifdef __cplusplus
 #define RAY_C_LINKAGE extern "C"
 #define RAY_CPP_LINKAGE extern "C++"
+#define RAY_DEFAULT_LINKAGE RAY_CPP_LINKAGE
 #else
 #define RAY_C_LINKAGE
 #define RAY_CPP_LINKAGE
+#define RAY_DEFAULT_LINKAGE RAY_C_LINKAGE
 #endif
 #ifdef __cplusplus
 RAY_C_LINKAGE {

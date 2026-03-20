@@ -66,7 +66,7 @@ void CTranspilerGenerator::resolve(
 	     currentSourceUnit.get().getFunctions()) {
 		// main should be extern c++
 		if (functionDeclaration.mangledName == "main") {
-			output << "RAY_CPP_LINKAGE ";
+			output << "RAY_DEFAULT_LINKAGE ";
 		}
 		if (!functionDeclaration.publicVisibility) {
 			output << "RAYLANG_MACRO_LINK_LOCAL ";
@@ -163,7 +163,7 @@ void CTranspilerGenerator::visitFunctionStatement(
 		output << identTabs;
 		// main has special rules to linking that we must follow
 		if (functionName == "main") {
-			output << "RAY_CPP_LINKAGE ";
+			output << "RAY_DEFAULT_LINKAGE ";
 		} else {
 			if (function.publicVisibility) {
 				output << "RAYLANG_MACRO_LINK_EXPORT ";
