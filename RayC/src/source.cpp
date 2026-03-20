@@ -18,7 +18,6 @@
 
 #include <ray/compiler/generators/c/c_transpiler.hpp>
 
-#include <ray/compiler/lang/depSourceUnit.hpp>
 #include <ray/compiler/lang/moduleStore.hpp>
 #include <ray/compiler/lang/sourceUnit.hpp>
 

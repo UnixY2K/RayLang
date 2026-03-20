@@ -8,7 +8,6 @@
 #include <ray/compiler/directives/compilerDirective.hpp>
 #include <ray/compiler/directives/linkageDirective.hpp>
 #include <ray/compiler/environment/dataModel/dataModel.hpp>
-#include <ray/compiler/lang/depSourceUnit.hpp>
 #include <ray/compiler/lang/functionDefinition.hpp>
 #include <ray/compiler/lang/moduleStore.hpp>
 #include <ray/compiler/lang/sourceUnit.hpp>
@@ -28,7 +27,6 @@ class TypeChecker : public ast::StatementVisitor,
 	std::vector<lang::Type> typeStack;
 
 	lang::SourceUnit currentSourceUnit;
-	lang::DepSourceUnit depCurrentSourceUnit;
 	std::reference_wrapper<lang::Scope> currentScope;
 	std::reference_wrapper<const environment::DataModel> currentDataModel;
 	// lang::ModuleStore &moduleStore;
@@ -38,7 +36,7 @@ class TypeChecker : public ast::StatementVisitor,
 	            const environment::DataModel &dataModel,
 	            const lang::SourceUnit &sourceUnit)
 	    : messageBag("TYPE-CHECKER", filePath), typeStack(),
-	      currentSourceUnit(sourceUnit), depCurrentSourceUnit(),
+	      currentSourceUnit(sourceUnit),
 	      currentScope(currentSourceUnit.rootScope), currentDataModel(dataModel)
 	//,moduleStore(moduleStore)
 	{}

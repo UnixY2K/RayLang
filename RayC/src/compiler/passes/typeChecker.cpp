@@ -8,7 +8,6 @@
 
 #include <ray/compiler/ast/expression.hpp>
 #include <ray/compiler/ast/statement.hpp>
-#include <ray/compiler/lang/depSourceUnit.hpp>
 #include <ray/compiler/lang/functionDefinition.hpp>
 #include <ray/compiler/lang/scope.hpp>
 #include <ray/compiler/lang/struct.hpp>
@@ -24,20 +23,6 @@ namespace ray::compiler::passes {
 
 void TypeChecker::resolve(
     const std::vector<std::unique_ptr<ast::Statement>> &statements) {
-
-	for (const auto &stmt : statements) {
-		if (const auto functionExpr =
-		        dynamic_cast<const ast::Function *>(stmt.get())) {
-
-			auto parameters = std::vector<lang::FunctionParameter>{};
-
-			auto declaration = resolveFunctionDeclaration(*functionExpr);
-			if (declaration.has_value()) {
-				depCurrentSourceUnit.functionDeclarations.push_back(
-				    declaration.value());
-			}
-		}
-	}
 
 	for (const auto &stmt : statements) {
 		auto stmtType = resolveType(*stmt);
@@ -171,7 +156,6 @@ void TypeChecker::visitFunctionStatement(const ast::Function &functionExprAst) {
 		// declaration was already defined, so it does not require to be defined
 		// again, just the body
 		if (functionExprAst.body.has_value()) {
-			depCurrentSourceUnit.functionDefinitions.push_back(definition);
 
 			// add functions to the current scope and validate that each
 			for (const auto &param : declaration.signature.parameters) {
@@ -464,13 +448,14 @@ void TypeChecker::visitStructStatement(const ast::Struct &structObj) {
 		//}
 	}
 
-	auto depStructType =
-	    currentDataModel.get().defineStructType(0, structName, 1);
-	depCurrentSourceUnit.structDeclarations.push_back(lang::StructDeclaration{
-	    .name = structName,
-	    .mangledName = mangledStructName,
-	});
-	typeStack.push_back(depStructType);
+	size_t structId = 0;
+	auto foundStruct = currentSourceUnit.findStruct(structName, currentScope);
+	if (foundStruct.has_value()) {
+		structId = foundStruct.value().get().structID;
+	}
+	auto structType =
+	    currentDataModel.get().defineStructType(structId, structName, 1);
+	typeStack.push_back(structType);
 }
 void TypeChecker::visitCompDirectiveStatement(
     const ast::CompDirective &compDirectiveAst) {
@@ -540,8 +525,8 @@ void TypeChecker::visitVariableExpression(const ast::Variable &variableExpr) {
 	// we just keep a cound of at most 2 to see if we return its type pointer or
 	// an overloadedFunction Type
 	lang::Type functionType;
-	for (const auto &functionDeclaration :
-	     depCurrentSourceUnit.functionDeclarations) {
+	for (const auto &[functionId, functionDeclaration] :
+	     currentSourceUnit.getFunctions()) {
 		if (functionDeclaration.name == variableExpr.name.lexeme) {
 			if (!functionType.isInitialized()) {
 				functionType = functionDeclaration.signature.getFunctionType(
@@ -1041,7 +1026,8 @@ TypeChecker::findTypeInfo(const std::string_view typeName) {
 		    foundStruct.value().get().structID, foundStruct.value().get().name,
 		    0);
 	}
-	return depCurrentSourceUnit.findStructType(std::string(typeName));
+
+	return std::nullopt;
 }
 
 std::optional<lang::FunctionDeclaration>

@@ -100,9 +100,10 @@ void TypeScanner::visitJumpStatement(const ast::Jump &jumpAst) {
 		jumpAst.value->get()->visit(*this);
 	}
 }
-void TypeScanner::visitVarDeclStatement(const ast::VarDecl &value) {
-	messageBag.error(value.getToken(),
-	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
+void TypeScanner::visitVarDeclStatement(const ast::VarDecl &varDeclAst) {
+	// TODO: revisit this section once we implement abstract values such as
+	// modules
+	// TODO: review wether we should discover variables here before type checker
 }
 void TypeScanner::visitMemberStatement(const ast::Member &memberAst) {
 	std::string memberName = memberAst.name.lexeme;
