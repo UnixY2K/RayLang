@@ -324,12 +324,11 @@ ast::VarDecl Parser::varDeclaration() {
 	    std::make_unique<ast::NamedType>(ast::NamedType{
 	        typeToken,
 	        false,
-	        false,
 	        typeToken,
 	    });
 	if (match({Token::TokenType::TOKEN_COLON})) {
 		// array type
-		type = namedTypeExpression();
+		type = pointerTypeExpression();
 	}
 
 	std::optional<std::unique_ptr<ast::Expression>> initializer = std::nullopt;
@@ -358,12 +357,11 @@ ast::Member Parser::memberDeclaration() {
 	    std::make_unique<ast::NamedType>(ast::NamedType{
 	        typeToken,
 	        false,
-	        false,
 	        typeToken,
 	    });
 	if (match({Token::TokenType::TOKEN_COLON})) {
 		// array type
-		type = namedTypeExpression();
+		type = pointerTypeExpression();
 	}
 
 	std::optional<std::unique_ptr<ast::Expression>> initializer = std::nullopt;
@@ -402,7 +400,7 @@ ast::Function Parser::function(std::string kind, bool publicVisiblity) {
 			consume(Token::TokenType::TOKEN_COLON,
 			        "Expect ':' after parameter name.");
 			std::unique_ptr<ast::Expression> parameterType =
-			    namedTypeExpression();
+			    pointerTypeExpression();
 			auto parameter = ast::Parameter{
 			    attributeToken,
 			    std::move(parameterType),
@@ -423,12 +421,11 @@ ast::Function Parser::function(std::string kind, bool publicVisiblity) {
 	    std::make_unique<ast::NamedType>(ast::NamedType{
 	        returnToken,
 	        false,
-	        false,
 	        returnToken,
 	    });
 
 	if (match({Token::TokenType::TOKEN_ARROW})) {
-		returnType = namedTypeExpression();
+		returnType = pointerTypeExpression();
 	}
 
 	std::optional<ast::Block> body = std::nullopt;
@@ -640,7 +637,7 @@ std::unique_ptr<ast::Expression> Parser::unaryExpression() {
 	}
 	auto expr = call();
 	if (match({Token::TokenType::TOKEN_AS})) {
-		auto type = namedTypeExpression();
+		auto type = pointerTypeExpression();
 		expr = std::make_unique<ast::Cast>(ast::Cast{
 		    std::move(expr),
 		    std::move(type),
@@ -649,23 +646,33 @@ std::unique_ptr<ast::Expression> Parser::unaryExpression() {
 	}
 	return expr;
 }
-std::unique_ptr<ast::Expression> Parser::namedTypeExpression() {
-	bool is_mutable = match({Token::TokenType::TOKEN_MUT});
-	// TODO: make a new AST type for the following types: pointer, array, tuple
-	// anonymous structs may come later
+std::unique_ptr<ast::Expression> Parser::arrayTypeExpression() {
+	bool isMutable =
+	    peek().type == Token::TokenType::TOKEN_MUT &&
+	    peekNext().type == Token::TokenType::TOKEN_LEFT_SQUARE_BRACE;
+	if (isMutable) {
+		advance();
+	}
+
 	if (match({Token::TokenType::TOKEN_LEFT_SQUARE_BRACE})) {
 		auto arrayStartToken = previous();
-		auto arrayType = namedTypeExpression();
+		auto arrayType = pointerTypeExpression();
 		consume(Token::TokenType::TOKEN_SEMICOLON, "Expect ';' after type.");
 		consume(Token::TokenType::TOKEN_RIGHT_SQUARE_BRACE,
 		        "Expect ']' after array type.");
-		return std::make_unique<ast::ArrayType>(ast::ArrayType{
-		    std::move(arrayType),
-		    is_mutable,
-		    arrayStartToken,
-		});
+		return std::make_unique<ast::ArrayType>(
+		    ast::ArrayType{isMutable, std::move(arrayType), arrayStartToken});
 	}
-	// tuple Expression
+
+	return namedTypeExpression();
+}
+std::unique_ptr<ast::Expression> Parser::tupleTypeExpression() {
+	bool isMutable = peek().type == Token::TokenType::TOKEN_MUT &&
+	                 peekNext().type == Token::TokenType::TOKEN_LEFT_PAREN;
+	if (isMutable) {
+		advance();
+	}
+
 	if (match({Token::TokenType::TOKEN_LEFT_PAREN})) {
 		auto tupleStartToken = previous();
 		std::vector<std::unique_ptr<ast::Expression>> types;
@@ -673,7 +680,7 @@ std::unique_ptr<ast::Expression> Parser::namedTypeExpression() {
 		if (!check(Token::TokenType::TOKEN_RIGHT_PAREN)) {
 			do {
 				std::unique_ptr<ast::Expression> subType =
-				    namedTypeExpression();
+				    pointerTypeExpression();
 				types.push_back(std::move(subType));
 			} while (match({Token::TokenType::TOKEN_COMMA}));
 		}
@@ -684,39 +691,38 @@ std::unique_ptr<ast::Expression> Parser::namedTypeExpression() {
 		auto tupleNameToken =
 		    Token{Token::TokenType::TOKEN_LEFT_SQUARE_BRACE, "%tuple%",
 		          tupleStartToken.line, tupleStartToken.column};
-		return std::make_unique<ast::NamedType>(ast::NamedType{
-		    tupleNameToken,  // hold all the name of the token
-		    is_mutable,      // a tuple might be const/mutable
-		    false,           // a tuple is a struct
-		    tupleStartToken, // start at '('
-		});
+		return std::make_unique<ast::TupleType>(
+		    ast::TupleType{isMutable, std::move(types), tupleStartToken});
 	}
-	// if (match({Token::TokenType::TOKEN_STAR})) {
-	// TODO: move this section to pointer type
-	// std::optional<std::unique_ptr<ast::NamedType>> subType;
-	// bool isPointer = false;
-	// while (match({Token::TokenType::TOKEN_STAR})) {
-	//	subType = std::make_unique<ast::NamedType>(ast::NamedType{
-	//	    typeToken,
-	//	    is_mutable,
-	//	    isPointer,
-	//	    std::move(subType),
-	//	    typeToken,
-	//	});
-	//	isPointer = true;
-	//	typeToken.lexeme += previous().getGlyph();
-	// }
-	// }
+
+	return arrayTypeExpression();
+}
+std::unique_ptr<ast::Expression> Parser::pointerTypeExpression() {
+	bool isMutable = peek().type == Token::TokenType::TOKEN_MUT &&
+	                 peekNext().type == Token::TokenType::TOKEN_STAR;
+	if (isMutable) {
+		advance();
+	}
+
+	if (match({Token::TokenType::TOKEN_STAR})) {
+		auto token = previous();
+		auto subType = pointerTypeExpression();
+		return std::make_unique<ast::PointerType>(
+		    ast::PointerType{isMutable, std::move(subType), token});
+	}
+
+	return tupleTypeExpression();
+}
+
+std::unique_ptr<ast::Expression> Parser::namedTypeExpression() {
+	bool is_mutable = match({Token::TokenType::TOKEN_MUT});
 
 	auto typeToken =
 	    consume(Token::TokenType::TOKEN_IDENTIFIER, "Expect type signature");
-	bool isPointer = false;
-	// TODO: move this
 
 	return std::make_unique<ast::NamedType>(ast::NamedType{
 	    typeToken,
 	    is_mutable,
-	    isPointer,
 	    typeToken,
 	});
 }
@@ -884,6 +890,12 @@ Token Parser::peek() const {
 	return current < tokens.size() ? tokens[current]
 	                               : Token{Token::TokenType::TOKEN_EOF};
 }
+// required to lookahead of expressions like "mut *(mut T)"
+Token Parser::peekNext() const {
+	return current + 1 < tokens.size() ? tokens[current + 1]
+	                                   : Token{Token::TokenType::TOKEN_EOF};
+}
+
 Token Parser::previous() {
 	return tokens.size() < 1 ? Token{} : tokens[current - 1];
 }

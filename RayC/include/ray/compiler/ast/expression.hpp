@@ -21,6 +21,7 @@ class Set;
 class Unary;
 class ArrayAccess;
 class ArrayType;
+class TupleType;
 class PointerType;
 class NamedType;
 class Cast;
@@ -42,6 +43,7 @@ class ExpressionVisitor {
 	virtual void visitUnaryExpression(const Unary& value) = 0;
 	virtual void visitArrayAccessExpression(const ArrayAccess& value) = 0;
 	virtual void visitArrayTypeExpression(const ArrayType& value) = 0;
+	virtual void visitTupleTypeExpression(const TupleType& value) = 0;
 	virtual void visitPointerTypeExpression(const PointerType& value) = 0;
 	virtual void visitNamedTypeExpression(const NamedType& value) = 0;
 	virtual void visitCastExpression(const Cast& value) = 0;
@@ -350,15 +352,15 @@ class ArrayAccess : public Expression {
 };
 class ArrayType : public Expression {
   public:
-	std::unique_ptr<Expression> subType;
 	bool isMutable;
+	std::unique_ptr<Expression> subType;
 	Token token;
 
-	ArrayType(std::unique_ptr<Expression> subType,
-	        bool isMutable,
+	ArrayType(bool isMutable,
+	        std::unique_ptr<Expression> subType,
 	        Token token):
-		subType(std::move(subType)),
 		isMutable(std::move(isMutable)),
+		subType(std::move(subType)),
 		token(std::move(token)) {}
 
 	void visit(ExpressionVisitor& visitor) const override {
@@ -366,6 +368,27 @@ class ArrayType : public Expression {
 	}
 
 	const std::string_view variantName() const override { return "ArrayType"; }
+
+	const Token& getToken() const override { return token; };
+};
+class TupleType : public Expression {
+  public:
+	bool isMutable;
+	std::vector<std::unique_ptr<Expression>> expressions;
+	Token token;
+
+	TupleType(bool isMutable,
+	        std::vector<std::unique_ptr<Expression>> expressions,
+	        Token token):
+		isMutable(std::move(isMutable)),
+		expressions(std::move(expressions)),
+		token(std::move(token)) {}
+
+	void visit(ExpressionVisitor& visitor) const override {
+		visitor.visitTupleTypeExpression(*this);
+	}
+
+	const std::string_view variantName() const override { return "TupleType"; }
 
 	const Token& getToken() const override { return token; };
 };
@@ -394,16 +417,13 @@ class NamedType : public Expression {
   public:
 	Token name;
 	bool isMutable;
-	bool isPointer;
 	Token token;
 
 	NamedType(Token name,
 	        bool isMutable,
-	        bool isPointer,
 	        Token token):
 		name(std::move(name)),
 		isMutable(std::move(isMutable)),
-		isPointer(std::move(isPointer)),
 		token(std::move(token)) {}
 
 	void visit(ExpressionVisitor& visitor) const override {

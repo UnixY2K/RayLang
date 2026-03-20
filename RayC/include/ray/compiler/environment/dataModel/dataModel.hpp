@@ -24,9 +24,9 @@ class DataModel {
 	std::optional<lang::Type> findScalarType(const std::string_view name) const;
 
 	lang::Type defineScalarType(std::string name, size_t calculatedSize,
-	                            bool signedType) const;
+	                            bool signedType, bool isMutable) const;
 
-	lang::Type definePointerType(lang::Type returnType) const;
+	lang::Type definePointerType(lang::Type returnType, bool isMutable) const;
 
 	// converts a number expression into the smallest number type
 	// available by the compiler

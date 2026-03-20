@@ -146,9 +146,10 @@ def main():
              "Set			= std::unique_ptr<Expression> object, Token name, Token assignmentOp, std::unique_ptr<Expression> value",
              "Unary			= Token op, bool isPrefix, std::unique_ptr<Expression> expr",
              "ArrayAccess	= std::unique_ptr<Expression> array, std::unique_ptr<Expression> index",
-			 "ArrayType		= std::unique_ptr<Expression> subType, bool isMutable",
+			 "ArrayType		= bool isMutable, std::unique_ptr<Expression> subType",
+			 "TupleType		= bool isMutable, std::vector<std::unique_ptr<Expression>> expressions",
 			 "PointerType	= bool isMutable, std::unique_ptr<Expression> subtype",
-             "NamedType		= Token name, bool isMutable, bool isPointer",
+             "NamedType		= Token name, bool isMutable",
              "Cast			= std::unique_ptr<Expression> expression, std::unique_ptr<Expression> type",
              "Parameter		= Token name, std::unique_ptr<Expression> type",
             ])

@@ -329,7 +329,8 @@ void TypeChecker::visitVarDeclStatement(const ast::VarDecl &variableDeclAst) {
 void TypeChecker::visitMemberStatement(const ast::Member &variable) {
 	auto variableType = lang::Type{};
 
-	if (variable.type->getToken().type != Token::TokenType::TOKEN_UNINITIALIZED) {
+	if (variable.type->getToken().type !=
+	    Token::TokenType::TOKEN_UNINITIALIZED) {
 		const auto &explicitType = variable.type;
 		std::string_view typeName = explicitType->getToken().lexeme;
 		auto foundType = resolveType(*explicitType);
@@ -785,8 +786,9 @@ void TypeChecker::visitLiteralExpression(const ast::Literal &literalExpr) {
 	case Token::TokenType::TOKEN_STRING: {
 		const auto baseType =
 		    currentDataModel.get().findScalarType("u8").value();
+		// literal strings are not mutable
 		const auto arrayType =
-		    currentDataModel.get().definePointerType(baseType);
+		    currentDataModel.get().definePointerType(baseType, false);
 		typeStack.push_back(arrayType);
 		break;
 	}
@@ -898,46 +900,37 @@ void TypeChecker::visitArrayAccessExpression(
 
 	typeStack.push_back(*subType);
 }
-void TypeChecker::visitArrayTypeExpression(
-    const ast::ArrayType &value) {
-	messageBag.error(value.getToken(),
-	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
+void TypeChecker::visitArrayTypeExpression(const ast::ArrayType &value) {
+	messageBag.bug(value.getToken(),
+	               std::format("{} not implemented", __PRETTY_FUNCTION__));
+}
+void TypeChecker::visitTupleTypeExpression(const ast::TupleType &value) {
+	messageBag.bug(value.getToken(),
+	               std::format("{} not implemented", __PRETTY_FUNCTION__));
 }
 
 void TypeChecker::visitPointerTypeExpression(
     const ast::PointerType &pointerTypeAst) {
-	messageBag.error(pointerTypeAst.getToken(),
-	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
+	auto subTypeResult = resolveType(*pointerTypeAst.subtype);
+	if (!subTypeResult.has_value()) {
+		messageBag.error(pointerTypeAst.token, "pointer subtype is unknown");
+		return;
+	}
+
+	typeStack.push_back(currentDataModel.get().definePointerType(
+	    subTypeResult.value(), pointerTypeAst.isMutable));
 }
 void TypeChecker::visitNamedTypeExpression(const ast::NamedType &typeAst) {
-	if (typeAst.isPointer) {
-		// TODO: rework this section once the new types are ready
-		//auto innerType = resolveType(*typeAst.subtype.value());
-		//if (innerType.value_or(lang::Type::defineUnknownType()) ==
-		//    lang::Type::defineUnknownType()) {
-		//	messageBag.error(
-		//	    typeAst.getToken(),
-		//	    std::format("could not evaluate type expression for {}",
-		//	                typeAst.getToken().getLexeme()));
-		//	typeStack.push_back(lang::Type::defineUnknownType());
-		//	return;
-		//}
-		//lang::Type pointerType =
-		//    currentDataModel.get().definePointerType(innerType.value());
-		//pointerType.isMutable = typeAst.isMutable;
-		//typeStack.push_back(pointerType);
+	auto result = findTypeInfo(typeAst.name.lexeme);
+	if (result.has_value()) {
+		lang::Type obtainedType = result.value();
+		obtainedType.isMutable = typeAst.isMutable;
+		typeStack.push_back(obtainedType);
 	} else {
-		auto result = findTypeInfo(typeAst.name.lexeme);
-		if (result.has_value()) {
-			lang::Type obtainedType = result.value();
-			obtainedType.isMutable = typeAst.isMutable;
-			typeStack.push_back(obtainedType);
-		} else {
-			messageBag.error(
-			    typeAst.getToken(),
-			    std::format("type not found for {}", typeAst.name.lexeme));
-			typeStack.push_back(lang::Type::defineUnknownType());
-		}
+		messageBag.error(
+		    typeAst.getToken(),
+		    std::format("type not found for {}", typeAst.name.lexeme));
+		typeStack.push_back(lang::Type::defineUnknownType());
 	}
 }
 void TypeChecker::visitCastExpression(const ast::Cast &castExpr) {

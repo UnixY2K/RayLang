@@ -70,6 +70,7 @@ class TypeScanner : public ast::StatementVisitor,
 	void visitUnaryExpression(const ast::Unary &value) override;
 	void visitArrayAccessExpression(const ast::ArrayAccess &value) override;
 	void visitArrayTypeExpression(const ast::ArrayType &value) override;
+	void visitTupleTypeExpression(const ast::TupleType &value) override;
 	void visitPointerTypeExpression(const ast::PointerType &value) override;
 	void visitNamedTypeExpression(const ast::NamedType &value) override;
 	void visitCastExpression(const ast::Cast &value) override;

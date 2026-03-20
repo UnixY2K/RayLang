@@ -23,7 +23,6 @@ class Type {
 	std::string name;
 	size_t calculatedSize = 0;
 	bool isMutable = false;
-	bool isPointer = false;
 	bool signedType = false;
 	bool overloaded = false;
 	std::optional<util::copy_ptr<Type>> subtype = std::nullopt;
@@ -31,13 +30,13 @@ class Type {
 
 	Type() = default;
 	Type(size_t typeId, bool initialized, TypeKind kind, std::string name,
-	     size_t calculatedSize, bool isMutable, bool isPointer, bool signedType,
+	     size_t calculatedSize, bool isMutable, bool signedType,
 	     bool overloaded, std::optional<util::copy_ptr<Type>> subType,
 	     std::optional<std::vector<util::copy_ptr<Type>>> signature)
 	    : initialized{initialized}, kind{kind}, typeId(typeId), name{name},
 	      calculatedSize{calculatedSize}, isMutable{isMutable},
-	      isPointer{isPointer}, signedType{signedType}, overloaded{overloaded},
-	      subtype{subType}, signature{signature} {};
+	      signedType{signedType}, overloaded{overloaded}, subtype{subType},
+	      signature{signature} {};
 
 	void initialize() { initialized = true; }
 	bool isInitialized() const { return initialized; }
@@ -63,7 +62,6 @@ class Type {
 		    // size is 0 so it cannot be passed
 		    0,
 		    false, // non mutable
-		    false, // non pointer
 		    false, // non signed
 		    false, // non overloaded
 		    {},    // no subtype data
@@ -85,7 +83,6 @@ class Type {
 		    // size is 0 so it cannot be passed
 		    0,
 		    false, // non mutable
-		    false, // non pointer
 		    false, // non signed
 		    false, // non overloaded
 		    {},    // no subtype data
@@ -106,7 +103,6 @@ class Type {
 		    // size is 0 so it cannot be passed
 		    0,
 		    false, // non mutable
-		    false, // non pointer
 		    false, // non signed
 		    false, // non overloaded
 		    {},    // no subtype data

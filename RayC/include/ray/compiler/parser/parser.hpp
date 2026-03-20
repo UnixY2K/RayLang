@@ -55,6 +55,8 @@ class Parser {
 	std::unique_ptr<ast::Expression> terminalExpression();
 	std::unique_ptr<ast::Expression> factorExpression();
 	std::unique_ptr<ast::Expression> unaryExpression();
+	std::unique_ptr<ast::Expression> arrayTypeExpression();
+	std::unique_ptr<ast::Expression> tupleTypeExpression();
 	std::unique_ptr<ast::Expression> pointerTypeExpression();
 	std::unique_ptr<ast::Expression> namedTypeExpression();
 	std::unique_ptr<ast::Expression>
@@ -71,6 +73,7 @@ class Parser {
 
 	bool isAtEnd() const;
 	Token peek() const;
+	Token peekNext() const;
 	Token previous();
 	Token consume(Token::TokenType type, std::string message);
 

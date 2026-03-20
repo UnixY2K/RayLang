@@ -282,45 +282,31 @@ void TypeScanner::visitArrayAccessExpression(const ast::ArrayAccess &value) {
 	messageBag.error(value.getToken(),
 	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
 }
-void TypeScanner::visitArrayTypeExpression(
-    const ast::ArrayType &value) {
+void TypeScanner::visitArrayTypeExpression(const ast::ArrayType &value) {
+	messageBag.error(value.getToken(),
+	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
+}
+void TypeScanner::visitTupleTypeExpression(const ast::TupleType &value) {
 	messageBag.error(value.getToken(),
 	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
 }
 void TypeScanner::visitPointerTypeExpression(
     const ast::PointerType &pointerTypeAst) {
-	messageBag.error(pointerTypeAst.getToken(),
-	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
+	auto innerType = resolveType(*pointerTypeAst.subtype)
+	                     .value_or(lang::Type::defineUnknownType());
+	typeStack.push_back(currentDataModel.get().definePointerType(innerType, pointerTypeAst.isMutable));
 }
 void TypeScanner::visitNamedTypeExpression(const ast::NamedType &typeAst) {
-	if (typeAst.isPointer) {
-		// TODO: rework this section once the new types are ready
-		//auto innerType = resolveType(*typeAst.subtype.value());
-		//if (innerType.value_or(lang::Type::defineUnknownType()) ==
-		//    lang::Type::defineUnknownType()) {
-		//	messageBag.error(
-		//	    typeAst.getToken(),
-		//	    std::format("could not evaluate type expression for {}",
-		//	                typeAst.getToken().getLexeme()));
-		//	typeStack.push_back(lang::Type::defineUnknownType());
-		//	return;
-		//}
-		//lang::Type pointerType =
-		//    currentDataModel.get().definePointerType(innerType.value());
-		//pointerType.isMutable = typeAst.isMutable;
-		//typeStack.push_back(pointerType);
+	auto queriedType = findTypeInfo(typeAst.name.lexeme);
+	if (queriedType != lang::Type::defineUnknownType()) {
+		lang::Type obtainedType = queriedType;
+		obtainedType.isMutable = typeAst.isMutable;
+		typeStack.push_back(obtainedType);
 	} else {
-		auto queriedType = findTypeInfo(typeAst.name.lexeme);
-		if (queriedType != lang::Type::defineUnknownType()) {
-			lang::Type obtainedType = queriedType;
-			obtainedType.isMutable = typeAst.isMutable;
-			typeStack.push_back(obtainedType);
-		} else {
-			messageBag.error(
-			    typeAst.getToken(),
-			    std::format("type not found for {}", typeAst.name.lexeme));
-			typeStack.push_back(lang::Type::defineUnknownType());
-		}
+		messageBag.error(
+		    typeAst.getToken(),
+		    std::format("type not found for {}", typeAst.name.lexeme));
+		typeStack.push_back(lang::Type::defineUnknownType());
 	}
 }
 void TypeScanner::visitCastExpression(const ast::Cast &value) {

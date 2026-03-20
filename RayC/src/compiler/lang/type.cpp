@@ -77,7 +77,6 @@ bool Type::baseMatches(const Type &other) const {
 	       kind == other.kind &&                     // |
 	       name == other.name &&                     // |
 	       calculatedSize == other.calculatedSize && // same size
-	       isPointer == other.isPointer &&           // |
 	       signedType == other.signedType;           // same signess
 }
 

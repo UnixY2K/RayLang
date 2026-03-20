@@ -646,14 +646,27 @@ void CTranspilerGenerator::visitArrayTypeExpression(
 	messageBag.error(value.getToken(),
 	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
 }
+void CTranspilerGenerator::visitTupleTypeExpression(
+    const ast::TupleType &value) {
+	messageBag.error(value.getToken(),
+	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
+}
 void CTranspilerGenerator::visitPointerTypeExpression(
     const ast::PointerType &pointerTypeAst) {
-	messageBag.error(pointerTypeAst.getToken(),
-	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
+
+	pointerTypeAst.subtype->visit(*this);
+
+	output << "*";
+	if (!pointerTypeAst.isMutable) {
+		output << " const ";
+	}
 }
 void CTranspilerGenerator::visitNamedTypeExpression(
     const ast::NamedType &type) {
-	if (!type.isMutable && type.name.lexeme != "void" && !type.isPointer) {
+	if (!type.isMutable && type.name.lexeme != "void"
+	    // && !type.isPointer // TODO: make this section use the type checker
+	    // instead
+	) {
 		output << "const ";
 	}
 	if (type.name.lexeme == "void") {
@@ -690,7 +703,8 @@ void CTranspilerGenerator::visitParameterExpression(
 }
 
 void CTranspilerGenerator::visitType(const lang::Type &type) {
-	if (!type.isMutable && !type.isPointer) {
+	// all types except pointer have const before its type
+	if (!type.isMutable && type.getKind() != lang::TypeKind::pointer) {
 		output << "const ";
 	}
 	switch (type.getKind()) {
