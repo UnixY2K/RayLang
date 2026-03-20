@@ -161,7 +161,7 @@ void TypeScanner::visitStructStatement(const ast::Struct &structAst) {
 		                           structName));
 		return;
 	}
-	auto structObj = structObjRes.value().get();
+	auto &structObj = structObjRes.value().get();
 	std::vector<lang::StructMember> members;
 	for (const auto &member : structAst.members) {
 		member.visit(*this);
@@ -294,7 +294,8 @@ void TypeScanner::visitPointerTypeExpression(
     const ast::PointerType &pointerTypeAst) {
 	auto innerType = resolveType(*pointerTypeAst.subtype)
 	                     .value_or(lang::Type::defineUnknownType());
-	typeStack.push_back(currentDataModel.get().definePointerType(innerType, pointerTypeAst.isMutable));
+	typeStack.push_back(currentDataModel.get().definePointerType(
+	    innerType, pointerTypeAst.isMutable));
 }
 void TypeScanner::visitNamedTypeExpression(const ast::NamedType &typeAst) {
 	auto queriedType = findTypeInfo(typeAst.name.lexeme);
@@ -472,7 +473,9 @@ void TypeScanner::discoverStruct(const ast::Struct &structAst) {
 	}
 
 	auto foundStruct = scope.findLocalStruct(structName);
+	size_t structID = 0;
 	if (foundStruct) {
+		structID = foundStruct->getObjectId();
 		assert(foundStruct->getObjectId() != 0);
 		if (!foundStruct->getObject()->get().opaque) {
 			messageBag.error(
@@ -482,7 +485,9 @@ void TypeScanner::discoverStruct(const ast::Struct &structAst) {
 	}
 
 	if (!scope.bindStruct(lang::Struct{
-	        .opaque = false,                  // known struct
+	        .opaque = false, // known struct
+	        .structID =
+	            structID, // make sure to pass the struct ID to avoid loosing it
 	        .name = structName,               //
 	        .mangledName = mangledStructName, //
 	        .members = {}                     //

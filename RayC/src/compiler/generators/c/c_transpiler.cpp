@@ -1,3 +1,4 @@
+#include <cassert>
 #include <cstddef>
 #include <format>
 #include <functional>
@@ -815,9 +816,13 @@ void CTranspilerGenerator::defineStruct(
 	}
 	visitedStructs.insert(structObj.structID);
 
-	if (structObj.members.size() == 0) {
+	// opaque types are not defined
+	if (structObj.opaque) {
 		return;
 	}
+	// an non opaque struct must have at least one member to avoid undefined
+	// behavior between C and C++
+	assert(!structObj.members.empty());
 
 	for (auto const &structMember : structObj.members) {
 		auto typeId = structMember.type.typeId;
