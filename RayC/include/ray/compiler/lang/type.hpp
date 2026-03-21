@@ -25,6 +25,9 @@ class Type {
 	bool isMutable = false;
 	bool signedType = false;
 	bool overloaded = false;
+	// TODO: make both the subtype and signature hold a soft_reference instead
+	// this would help to avoid duplicates of the same type while
+	// allowing for recursive types such as function pointers
 	std::optional<util::copy_ptr<Type>> subtype = std::nullopt;
 	std::optional<std::vector<util::copy_ptr<Type>>> signature = std::nullopt;
 

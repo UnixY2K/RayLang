@@ -35,30 +35,7 @@ void TypeChecker::resolve(
 				// TODO: optimize this search
 				// the types could have a reference to the specific struct
 				/*
-				for (const auto &structDeclaration :
-				     depCurrentSourceUnit.structDeclarations) {
-				    if (structDeclaration.name == type.name) {
-				        if (!getCurrentScope().declareStruct(
-				                structDeclaration.mangledName)) {
-				            messageBag.error(
-				                stmt->getToken(),
-				                std::format("cannot redefine type '{}'",
-				                            type.name));
-				        }
-				    }
-				}
-				for (const auto &functionDeclaration :
-				     depCurrentSourceUnit.functionDeclarations) {
-				    if (functionDeclaration.name == type.name) {
-				        if (!currentSourceUnit.declareFunction(
-				                functionDeclaration, getCurrentScope())) {
-				            messageBag.error(
-				                stmt->getToken(),
-				                std::format("cannot redefine type '{}'",
-				                            type.name));
-				        }
-				    }
-				}
+
 
 				*/
 			} else {
@@ -143,13 +120,19 @@ void TypeChecker::visitFunctionStatement(const ast::Function &functionExprAst) {
 		    std::format("could not resolve function declaration for '{}'",
 		                functionExprAst.name.getLexeme()));
 	} else {
-		const auto declaration = declarationResult.value();
+		const auto functionDeclaration = declarationResult.value();
+		if (!currentSourceUnit.declareFunction(functionDeclaration,
+		                                       currentScope)) {
+			messageBag.error(functionExprAst.getToken(),
+			                 "could not declare function");
+		}
+
 		auto definition = lang::FunctionDefinition{
-		    .declaration = declaration,
+		    .declaration = functionDeclaration,
 		    .function = functionExprAst,
 		};
 		std::vector<util::copy_ptr<lang::Type>> paramTypes;
-		for (const auto &param : declaration.signature.parameters) {
+		for (const auto &param : functionDeclaration.signature.parameters) {
 			paramTypes.push_back(
 			    util::copy_ptr<lang::Type>(param.parameterType));
 		}
@@ -159,7 +142,7 @@ void TypeChecker::visitFunctionStatement(const ast::Function &functionExprAst) {
 		if (functionExprAst.body.has_value()) {
 
 			// add functions to the current scope and validate that each
-			for (const auto &param : declaration.signature.parameters) {
+			for (const auto &param : functionDeclaration.signature.parameters) {
 				// TODO: variable definitions should be done at an earlier stage
 				lang::Symbol paramSymbol{
 				    .name = param.name,
@@ -180,22 +163,24 @@ void TypeChecker::visitFunctionStatement(const ast::Function &functionExprAst) {
 			    resolveType(functionExprAst.body.value())
 			        .value_or(currentDataModel.get().getUnitType());
 
-			if (!type.coercercesInto(declaration.signature.returnType)) {
+			if (!type.coercercesInto(
+			        functionDeclaration.signature.returnType)) {
 				messageBag.error(
 				    functionExprAst.body->getToken(),
 				    std::format(
 				        "inner body return type does not match with function return: '{}' vs '{}'",
-				        type.name, declaration.signature.returnType.name));
+				        type.name,
+				        functionDeclaration.signature.returnType.name));
 			}
 		}
 
 		auto functionType = currentDataModel.get().defineFunctionType(
-		    declaration.signature.returnType, paramTypes);
-		if (!currentSourceUnit.declareFunction(declaration,
+		    functionDeclaration.signature.returnType, paramTypes);
+		if (!currentSourceUnit.declareFunction(functionDeclaration,
 		                                       getCurrentScope())) {
 			messageBag.error(functionExprAst.getToken(),
 			                 std::format("could not declare function for '{}'",
-			                             declaration.name));
+			                             functionDeclaration.name));
 		}
 		typeStack.push_back(functionType);
 	}
@@ -662,19 +647,19 @@ void TypeChecker::visitCallExpression(const ast::Call &callExpr) {
 		return;
 	}
 	auto calleeType = calleeTypeResult.value();
-	if (calleeType.overloaded) {
-		messageBag.bug(callExpr.getToken(),
-		               std::format("overloaded functions not supported yet"));
-		return;
-	}
-	if (!calleeType.signature.has_value()) {
-		messageBag.error(
-		    callExpr.getToken(),
-		    std::format("expression does not have a valid signature for '{}'",
-		                callExpr.getToken().getLexeme()));
-		return;
-	} else {
-		// non overloaded, so we need to validate the parameters
+
+	switch (calleeType.getKind()) {
+
+	case lang::TypeKind::pointer: {
+		if (!calleeType.signature.has_value()) {
+			messageBag.error(
+			    callExpr.getToken(),
+			    std::format(
+			        "expression does not have a valid signature for '{}'",
+			        callExpr.getToken().getLexeme()));
+			break;
+		}
+		// valid signature
 		if (callExpr.arguments.size() != calleeType.signature->size()) {
 			messageBag.error(
 			    callExpr.getToken(),
@@ -706,13 +691,34 @@ void TypeChecker::visitCallExpression(const ast::Call &callExpr) {
 				continue;
 			}
 		}
-	}
 
+		break;
+	}
+	case lang::TypeKind::scalar:
+	case lang::TypeKind::aggregate: {
+		messageBag.error(callExpr.getToken(), "not valid call expression");
+		break;
+	}
+	case lang::TypeKind::abstract: {
+		if (calleeType.overloaded) {
+			messageBag.bug(
+			    callExpr.getToken(),
+			    std::format("overloaded functions not supported yet"));
+			return;
+		}
+		break;
+	}
+	default: {
+		messageBag.bug(callExpr.getToken(), "unsupported type call");
+		break;
+	}
+	}
 	if (!calleeType.subtype.has_value()) {
 		messageBag.bug(
 		    callExpr.getToken(),
 		    std::format("expression does not have a return type for '{}'",
 		                callExpr.getToken().getLexeme()));
+		return;
 	}
 	typeStack.push_back(*calleeType.subtype.value());
 }

@@ -32,28 +32,10 @@ lang::Type DataModel::defineStructType(size_t structID, std::string name,
 lang::Type DataModel::defineFunctionType(
     lang::Type returnType,
     std::vector<util::copy_ptr<lang::Type>> signature) const {
-	auto fn = definePointerType(
-	    lang::Type(
-	        // pointer do not have a known typeID
-	        0,
-	        // known initializable value
-	        true,
-	        // a pointer is not a scalar as it is an address memory
-	        // that references an object so it is its own (pointer type)
-	        lang::TypeKind::pointer,
-	        "//fn", // define the name as pointer
-	        0, // a function is itself a pointer, so no size of its underlying
-	           // type
-	        false,      // if the pointer type is const or not is decided later
-	        false,      // non signed, is a pointer
-	        false,      // we hold a function pointer so it is not overloaded
-	        returnType, // contains the return value of the caller
-	        signature   // signature data is always provided so the caller can
-	                    // know it is valid to call it
-	        ),
-	    false);
+	auto fn = definePointerType(returnType, false);
 	// TODO: remove this ugly hack once the new type scanner is set in place
 	fn.name = "//fn";
+	fn.signature = signature;
 	return fn;
 }
 

@@ -84,6 +84,9 @@ class TypeScanner : public ast::StatementVisitor,
 	std::optional<lang::Type> findScalarTypeInfo(const std::string_view lexeme);
 	lang::Type findTypeInfo(const std::string_view lexeme);
 
+	std::optional<lang::FunctionDeclaration>
+	resolveFunctionDeclaration(const ast::Function &functionExpr);
+
 	// gets the current scope
 	lang::Scope &getCurrentScope();
 	// makes a new child scope and sets it as the root scope

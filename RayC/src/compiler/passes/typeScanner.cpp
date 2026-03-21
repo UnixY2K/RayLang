@@ -1,4 +1,5 @@
 #include "ray/compiler/ast/expression.hpp"
+#include "ray/compiler/lang/functionDefinition.hpp"
 #include <cassert>
 #include <cstddef>
 #include <format>
