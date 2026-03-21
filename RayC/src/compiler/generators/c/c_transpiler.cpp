@@ -125,8 +125,9 @@ void CTranspilerGenerator::visitBlockStatement(const ast::Block &block) {
 void CTranspilerGenerator::visitTerminalExprStatement(
     const ast::TerminalExpr &terminalExpr) {
 	if (terminalExpr.expression.has_value()) {
+		output << std::format("{}return ", currentIdent());
 		terminalExpr.expression->get()->visit(*this);
-		output << std::format("{}return;\n", currentIdent());
+		output << std::format(";\n");
 	}
 }
 void CTranspilerGenerator::visitExpressionStmtStatement(
