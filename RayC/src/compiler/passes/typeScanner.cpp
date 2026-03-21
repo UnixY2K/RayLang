@@ -96,8 +96,8 @@ void TypeScanner::visitIfStatement(const ast::If &ifExprAst) {
 	}
 }
 void TypeScanner::visitJumpStatement(const ast::Jump &jumpAst) {
-	if (jumpAst.value.has_value()) {
-		jumpAst.value->get()->visit(*this);
+	if (jumpAst.returnValue.has_value()) {
+		jumpAst.returnValue->get()->visit(*this);
 	}
 }
 void TypeScanner::visitVarDeclStatement(const ast::VarDecl &varDeclAst) {

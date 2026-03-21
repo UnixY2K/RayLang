@@ -157,14 +157,14 @@ class If : public Statement {
 class Jump : public Statement {
   public:
 	Token keyword;
-	std::optional<std::unique_ptr<Expression>> value;
+	std::optional<std::unique_ptr<Expression>> returnValue;
 	Token token;
 
 	Jump(Token keyword,
-	        std::optional<std::unique_ptr<Expression>> value,
+	        std::optional<std::unique_ptr<Expression>> returnValue,
 	        Token token):
 		keyword(std::move(keyword)),
-		value(std::move(value)),
+		returnValue(std::move(returnValue)),
 		token(std::move(token)) {}
 
 	void visit(StatementVisitor& visitor) const override {

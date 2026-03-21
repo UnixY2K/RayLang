@@ -23,14 +23,17 @@ class SourceUnit {
   public:
 	Scope rootScope;
 
-	[[nodiscard("must check struct declaration result")]]
-	bool declareStruct(const Struct &structobj, Scope &scope);
+	[[nodiscard("must check declaration result")]]
+	bool declareLocalVariable(const Symbol symbol, Scope &scope);
 	[[nodiscard("must check declaration result")]]
 	bool declareFunction(const FunctionDeclaration &functionDeclaration,
 	                     Scope &scope);
-	[[nodiscard("must check declaration result")]]
-	bool declareLocalVariable(const Symbol symbol, Scope &scope);
+	[[nodiscard("must check struct declaration result")]]
+	bool declareStruct(const Struct &structobj, Scope &scope);
 
+	std::vector<util::soft_reference<FunctionDeclaration>>
+	findFunctionDeclarations(const std::string_view functionName,
+	                         const Scope &currentScope) const;
 	std::optional<std::reference_wrapper<Struct>>
 	findStruct(const std::string_view structName,
 	           const Scope &currentScope) const;

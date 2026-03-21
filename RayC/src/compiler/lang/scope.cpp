@@ -100,7 +100,11 @@ Scope::findVariable(const std::string_view name) const {
 
 const std::optional<
     const std::vector<util::soft_reference<FunctionDeclaration>>>
-Scope::findFunctionDeclaration(const std::string_view name) const {
+Scope::findLocalFunctionDeclaration(const std::string_view functionName) const {
+	const std::string key(functionName);
+	if (functions.contains(key)) {
+		return functions.at(key);
+	}
 	return std::nullopt;
 }
 

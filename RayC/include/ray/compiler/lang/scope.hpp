@@ -43,7 +43,7 @@ class Scope {
 
 	const std::optional<
 	    const std::vector<util::soft_reference<FunctionDeclaration>>>
-	findFunctionDeclaration(const std::string_view name) const;
+	findLocalFunctionDeclaration(const std::string_view name) const;
 
 	const std::optional<const util::soft_reference<Struct>>
 	findLocalStruct(const std::string_view name) const;

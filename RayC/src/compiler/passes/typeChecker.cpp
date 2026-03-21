@@ -1,3 +1,4 @@
+#include <cassert>
 #include <cstddef>
 #include <cstdio>
 #include <format>
@@ -236,8 +237,8 @@ void TypeChecker::visitJumpStatement(const ast::Jump &jumpStmt) {
 	// if our expression is a return we need to return its optional value
 	// for anything else we do not care about its type
 	if (jumpStmt.token.type == Token::TokenType::TOKEN_RETURN) {
-		if (jumpStmt.value.has_value()) {
-			auto type = resolveType(*jumpStmt.value.value());
+		if (jumpStmt.returnValue.has_value()) {
+			auto type = resolveType(*jumpStmt.returnValue.value());
 			if (type.has_value()) {
 				typeStack.push_back(type.value());
 				return;
@@ -525,18 +526,20 @@ void TypeChecker::visitVariableExpression(const ast::Variable &variableExpr) {
 	// we just keep a cound of at most 2 to see if we return its type pointer or
 	// an overloadedFunction Type
 	lang::Type functionType;
-	for (const auto &[functionId, functionDeclaration] :
-	     currentSourceUnit.getFunctions()) {
-		if (functionDeclaration.name == variableExpr.name.lexeme) {
-			if (!functionType.isInitialized()) {
-				functionType = functionDeclaration.signature.getFunctionType(
-				    currentDataModel);
-			} else {
-				functionType =
-				    functionDeclaration.signature.getOverloadedFunctionType(
-				        currentDataModel);
-				break;
-			}
+	for (const auto &functionDeclarationRef :
+	     currentSourceUnit.findFunctionDeclarations(variableExpr.name.lexeme,
+	                                                getCurrentScope())) {
+		assert(functionDeclarationRef.getObject().has_value());
+		const auto &functionDeclaration =
+		    functionDeclarationRef.getObject()->get();
+		if (!functionType.isInitialized()) {
+			functionType =
+			    functionDeclaration.signature.getFunctionType(currentDataModel);
+		} else {
+			functionType =
+			    functionDeclaration.signature.getOverloadedFunctionType(
+			        currentDataModel);
+			break;
 		}
 	}
 

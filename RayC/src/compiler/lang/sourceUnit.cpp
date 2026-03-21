@@ -9,8 +9,34 @@
 #include <ray/compiler/lang/sourceUnit.hpp>
 #include <ray/compiler/lang/struct.hpp>
 #include <ray/util/soft_reference.hpp>
+#include <vector>
 
 namespace ray::compiler::lang {
+
+bool SourceUnit::declareLocalVariable(const Symbol symbol, Scope &scope) {
+	auto val = this->variables.insert(std::make_pair(nextId, symbol));
+	assert(val.second);
+	auto &variableRef = val.first->second;
+	variableRef.symbolId = nextId++;
+	auto variableSoftRef =
+	    util::soft_reference<lang::Symbol>{variableRef.symbolId, variableRef};
+
+	return scope.declareLocalVariable(variableSoftRef);
+}
+bool SourceUnit::declareFunction(const FunctionDeclaration &functionDeclaration,
+                                 Scope &scope) {
+	auto val =
+	    this->functions.insert(std::make_pair(nextId, functionDeclaration));
+	assert(val.second);
+	auto &functionDeclarationRef = val.first->second;
+	functionDeclarationRef.functionID = nextId++;
+	auto functionDeclarationSoftRef =
+	    util::soft_reference<lang::FunctionDeclaration>{
+	        functionDeclarationRef.functionID, functionDeclarationRef};
+
+	return scope.bindFunctionDeclaration(functionDeclaration.name,
+	                                     functionDeclarationSoftRef);
+}
 bool SourceUnit::declareStruct(const Struct &structObj, Scope &scope) {
 	assert(structObj.opaque);
 	if (scope.findLocalStruct(structObj.name)) {
@@ -27,31 +53,31 @@ bool SourceUnit::declareStruct(const Struct &structObj, Scope &scope) {
 	return scope.declareStruct(structSoftRef);
 }
 
-bool SourceUnit::declareFunction(const FunctionDeclaration &functionDeclaration,
-                                 Scope &scope) {
-	auto val =
-	    this->functions.insert(std::make_pair(nextId, functionDeclaration));
-	assert(val.second);
-	auto &functionDeclarationRef = val.first->second;
-	functionDeclarationRef.functionID = nextId++;
-	auto functionDeclarationSoftRef =
-	    util::soft_reference<lang::FunctionDeclaration>{
-	        functionDeclarationRef.functionID, functionDeclarationRef};
+std::vector<util::soft_reference<FunctionDeclaration>>
+SourceUnit::findFunctionDeclarations(const std::string_view functionName,
+                                     const Scope &scope) const {
+	std::vector<util::soft_reference<FunctionDeclaration>> functionDeclarations;
 
-	return scope.bindFunctionDeclaration(functionDeclaration.name,
-	                                     functionDeclarationSoftRef);
+	for (auto *currentScope = &scope; currentScope;
+	     currentScope =
+	         currentScope->getParentScope()
+	             .transform([](const std::reference_wrapper<Scope> &parentScope)
+	                            -> const Scope * { return &parentScope.get(); })
+	             .value_or(nullptr)) {
+
+		auto localDeclarations =
+		    currentScope->findLocalFunctionDeclaration(functionName)
+		        .value_or(
+		            std::vector<util::soft_reference<FunctionDeclaration>>());
+		functionDeclarations.reserve(functionDeclarations.size() +
+		                             localDeclarations.size());
+		functionDeclarations.insert(functionDeclarations.end(),
+		                            localDeclarations.begin(),
+		                            localDeclarations.end());
+	}
+
+	return functionDeclarations;
 }
-bool SourceUnit::declareLocalVariable(const Symbol symbol, Scope &scope) {
-	auto val = this->variables.insert(std::make_pair(nextId, symbol));
-	assert(val.second);
-	auto &variableRef = val.first->second;
-	variableRef.symbolId = nextId++;
-	auto variableSoftRef =
-	    util::soft_reference<lang::Symbol>{variableRef.symbolId, variableRef};
-
-	return scope.declareLocalVariable(variableSoftRef);
-}
-
 std::optional<std::reference_wrapper<Struct>>
 SourceUnit::findStruct(const std::string_view structName,
                        const Scope &currentScope) const {

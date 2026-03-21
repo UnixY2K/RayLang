@@ -226,11 +226,11 @@ void CTranspilerGenerator::visitJumpStatement(const ast::Jump &jump) {
 		break;
 	case Token::TokenType::TOKEN_RETURN:
 		output << std::format("{}return", identTab);
-		if (jump.value.has_value()) {
+		if (jump.returnValue.has_value()) {
 			output << " ";
 			auto currentIdent = ident;
 			ident = 0;
-			jump.value.value()->visit(*this);
+			jump.returnValue.value()->visit(*this);
 			ident = currentIdent;
 		}
 		output << ";\n";
@@ -754,7 +754,7 @@ CTranspilerGenerator::findCallableName(const ast::Call &callable,
 	std::string key(name);
 	const std::string functionName =
 	    currentScope.get()
-	        .findFunctionDeclaration(name)
+	        .findLocalFunctionDeclaration(name)
 	        .transform(
 	            [&callable](
 	                const std::vector<
