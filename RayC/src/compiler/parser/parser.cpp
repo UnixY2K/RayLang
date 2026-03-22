@@ -634,10 +634,11 @@ std::unique_ptr<ast::Expression> Parser::unaryExpression() {
 	auto expr = call();
 	if (match({Token::TokenType::TOKEN_AS})) {
 		auto type = pointerTypeExpression();
+		auto typeToken = type->getToken();
 		expr = std::make_unique<ast::Cast>(ast::Cast{
 		    std::move(expr),
 		    std::move(type),
-		    Token(type->getToken()),
+		    typeToken,
 		});
 	}
 	return expr;

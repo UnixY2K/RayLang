@@ -4,7 +4,7 @@ let cstdlib = @import("cstd:std.ray");
 let cstring = @import("cstd:string.ray");
 
 fn print(buffer: [u8;]){
-	cstdio.fwrite(buffer as mut c_voidptr, @sizeOf(c_char), cstring.strlen(buffer as c_char*), cstdio.get_stdout());
+	cstdio.fwrite(buffer as mut c_voidptr, @sizeOf(c_char), cstring.strlen(buffer as *c_char), cstdio.get_stdout());
 }
 
 fn s32toString(num: s32) -> [mut u8;]{
@@ -31,7 +31,7 @@ fn fib(n: s32) -> s32{
 
 
 #[Linkage(mangling="c", resolution="external")]
-pub fn main(argc: s32, argv: c_char**) -> mut s32 {
+pub fn main(argc: mut s32, argv: mut *mut *c_char) -> mut s32 {
 	if(argc != 2){
 		print("usage: ");
 		print(argv[0] as [u8;]);
