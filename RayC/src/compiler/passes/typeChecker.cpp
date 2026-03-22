@@ -889,9 +889,23 @@ void TypeChecker::visitArrayAccessExpression(
 
 	typeStack.push_back(*subType);
 }
-void TypeChecker::visitArrayTypeExpression(const ast::ArrayType &value) {
-	messageBag.bug(value.getToken(),
-	               std::format("{} not implemented", __PRETTY_FUNCTION__));
+void TypeChecker::visitArrayTypeExpression(const ast::ArrayType &arrayTypeAst) {
+	auto innerType = resolveType(*arrayTypeAst.subType)
+	                     .value_or(lang::Type::defineUnknownType());
+	if (innerType == lang::Type::defineUnknownType()) {
+		messageBag.bug(arrayTypeAst.subType->getToken(),
+		               std::format("inner array type is unknown for '{}'",
+		                           arrayTypeAst.subType->getToken().lexeme));
+		return;
+	}
+	if (innerType.getKind() == lang::TypeKind::abstract) {
+		messageBag.error(arrayTypeAst.subType->getToken(),
+		                 "arrays cannot hold abstract types");
+		return;
+	}
+	lang::Type arrayType = currentDataModel.get().definePointerType(
+	    innerType, arrayTypeAst.isMutable);
+	typeStack.push_back(arrayType);
 }
 void TypeChecker::visitTupleTypeExpression(const ast::TupleType &tupleAst) {
 	if (tupleAst.expressions.empty()) {
@@ -1098,14 +1112,48 @@ TypeChecker::resolveFunctionDeclaration(const ast::Function &functionAst) {
 		return std::nullopt;
 	}
 	auto returnType = functionReturnType.value();
-	// TODO: make this use the type kind instead for checks of the size
-	if ((returnType.getKind() != lang::TypeKind::scalar) &&
-	    returnType.calculatedSize == 0) {
-		messageBag.error(
-		    functionAst.returnType->getToken(),
-		    std::format("cannot return a type with unknown size for '{}'",
-		                returnType.name));
+	switch (returnType.getKind()) {
+
+	case lang::TypeKind::abstract: {
+		if (returnType != currentDataModel.get().getUnitType()) {
+			failed = true;
+			// TODO: review this in the future if we ever decide to return
+			// abstract types at compile/evaluation time
+			messageBag.error(
+			    functionAst.returnType->getToken(),
+			    "abstract types cannot be returned from a function");
+		}
+		break;
+	}
+	case lang::TypeKind::scalar: {
+		// scalar types do not need any type of checks
+		// as they are fundamental types
+		break;
+	}
+	case lang::TypeKind::aggregate: {
+		// TODO: replace this for a known type checker
+		if (returnType.calculatedSize == 0) {
+			messageBag.error(
+			    functionAst.returnType->getToken(),
+			    std::format("cannot return a type with unknown size for '{}'",
+			                returnType.name));
+			failed = true;
+		}
+		break;
+	}
+	case lang::TypeKind::pointer: {
+		// pointer type was already evaluated and thus should be already a known
+		// type
+		break;
+	}
+	default: {
 		failed = true;
+		messageBag.bug(
+		    functionAst.returnType->getToken(),
+		    std::format("unsupported return type for function with name '{}'",
+		                returnType.name));
+		break;
+	}
 	}
 
 	if (failed) {

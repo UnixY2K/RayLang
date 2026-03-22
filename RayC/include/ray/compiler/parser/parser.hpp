@@ -77,6 +77,14 @@ class Parser {
 	Token previous();
 	Token consume(Token::TokenType type, std::string message);
 
+	static constexpr std::unique_ptr<ast::Expression>
+	makeUnitExpression(size_t line, size_t column) {
+		auto tupleNameToken = Token{Token::TokenType::TOKEN_LEFT_SQUARE_BRACE,
+		                            "%<tuple>%", line, column};
+		return std::make_unique<ast::TupleType>(
+		    ast::TupleType{false, {}, tupleNameToken});
+	}
+
 	ParseException error(Token token, std::string message);
 
 	void synchronize();

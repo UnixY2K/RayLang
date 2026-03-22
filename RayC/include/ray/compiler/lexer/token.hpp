@@ -68,22 +68,22 @@ struct Token {
 		TOKEN_CHAR,       // ex: 'a', 'b', 'c'
 		TOKEN_INTRINSIC,  // ex: @sizeOf
 		// Keywords.
-		TOKEN_IF,        // if
-		TOKEN_ELSE,      // else
-		TOKEN_TRUE,      // true
-		TOKEN_FALSE,     // false
-		TOKEN_FOR,       // for
-		TOKEN_WHILE,     // while
-		TOKEN_FN,        // fn
-		TOKEN_LET,       // let
-		TOKEN_RETURN,    // return
-		TOKEN_CONTINUE,  // continue
-		TOKEN_BREAK,     // break
-		TOKEN_PUB,       // pub
-		TOKEN_MUT,       // mut
-		TOKEN_STRUCT,    // struct
-		TOKEN_AS,        // as, ex: 2 as isize
-		TOKEN_IMPORT,    // import ex: import "hello.ray"
+		TOKEN_IF,       // if
+		TOKEN_ELSE,     // else
+		TOKEN_TRUE,     // true
+		TOKEN_FALSE,    // false
+		TOKEN_FOR,      // for
+		TOKEN_WHILE,    // while
+		TOKEN_FN,       // fn
+		TOKEN_LET,      // let
+		TOKEN_RETURN,   // return
+		TOKEN_CONTINUE, // continue
+		TOKEN_BREAK,    // break
+		TOKEN_PUB,      // pub
+		TOKEN_MUT,      // mut
+		TOKEN_STRUCT,   // struct
+		TOKEN_AS,       // as, ex: 2 as isize
+		TOKEN_IMPORT,   // import ex: import "hello.ray"
 		// other
 		TOKEN_ERROR, // when a token failed to parse
 		TOKEN_EOF    // EOF
@@ -104,10 +104,9 @@ struct Token {
 	static TokenType fromString(std::string_view str);
 	static std::string_view toString(TokenType token);
 	static std::string_view glyph(TokenType token);
+	static constexpr Token makeEOFToken() {
+		return {Token::TokenType::TOKEN_EOF, "%<eof>%", 0, 0};
+	}
 };
-
-namespace types {
-Token makeUnitTypeToken(size_t line, size_t column);
-}
 
 } // namespace ray::compiler

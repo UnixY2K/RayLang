@@ -39,7 +39,7 @@ class CTranspilerGenerator : public ast::StatementVisitor,
 	std::reference_wrapper<const lang::SourceUnit> currentSourceUnit;
 	std::reference_wrapper<const lang::Scope> currentScope;
 
-	std::reference_wrapper<const environment::DataModel> dataModel;
+	std::reference_wrapper<const environment::DataModel> currentDataModel;
 
   public:
 	CTranspilerGenerator(std::string filePath,

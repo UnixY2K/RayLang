@@ -416,13 +416,9 @@ ast::Function Parser::function(std::string kind, bool publicVisiblity) {
 	auto previousToken = previous();
 
 	size_t newColumn = previous().column + previous().getLexeme().size();
-	auto returnToken = types::makeUnitTypeToken(previous().line, newColumn);
+
 	std::unique_ptr<ast::Expression> returnType =
-	    std::make_unique<ast::NamedType>(ast::NamedType{
-	        returnToken,
-	        false,
-	        returnToken,
-	    });
+	    makeUnitExpression(previous().line, newColumn);
 
 	if (match({Token::TokenType::TOKEN_ARROW})) {
 		returnType = pointerTypeExpression();
@@ -689,7 +685,7 @@ std::unique_ptr<ast::Expression> Parser::tupleTypeExpression() {
 		                             "Expect ')' after tuple type expression");
 
 		auto tupleNameToken =
-		    Token{Token::TokenType::TOKEN_LEFT_SQUARE_BRACE, "%tuple%",
+		    Token{Token::TokenType::TOKEN_LEFT_SQUARE_BRACE, "%<tuple>%",
 		          tupleStartToken.line, tupleStartToken.column};
 		return std::make_unique<ast::TupleType>(
 		    ast::TupleType{isMutable, std::move(types), tupleStartToken});

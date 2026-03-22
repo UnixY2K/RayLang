@@ -306,9 +306,14 @@ void TypeScanner::visitArrayTypeExpression(const ast::ArrayType &value) {
 	messageBag.error(value.getToken(),
 	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
 }
-void TypeScanner::visitTupleTypeExpression(const ast::TupleType &value) {
-	messageBag.error(value.getToken(),
-	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
+void TypeScanner::visitTupleTypeExpression(const ast::TupleType &tupleAst) {
+	if (tupleAst.expressions.empty()) {
+		typeStack.push_back(currentDataModel.get().getUnitType());
+		return;
+	}
+	messageBag.error(
+	    tupleAst.getToken(),
+	    std::format("{} not implemented for tuples", __PRETTY_FUNCTION__));
 }
 void TypeScanner::visitPointerTypeExpression(
     const ast::PointerType &pointerTypeAst) {

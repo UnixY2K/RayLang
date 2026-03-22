@@ -1,7 +1,7 @@
 
 #[Linkage(mangling="c", resolution="external")]
-pub fn malloc(size: c_size) -> mut c_voidptr;
+pub fn malloc(size: c_size) -> mut *();
 #[Linkage(mangling="c", resolution="external")]
-pub fn free(size: mut c_voidptr);
+pub fn free(size: mut *());
 #[Linkage(mangling="c", resolution="external")]
 pub fn atoi(buffer: [c_char;]) -> mut c_int;

@@ -411,11 +411,6 @@ std::string_view Token::glyph(TokenType token) {
 	return "<{???}>";
 }
 
-namespace types {
-Token makeUnitTypeToken(size_t line, size_t column) {
-	auto val = Token::fromString("void");
-	return Token{val, "void", line, column};
-}
-} // namespace types
+
 
 } // namespace ray::compiler

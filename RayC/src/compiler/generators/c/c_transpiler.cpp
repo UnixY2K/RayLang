@@ -31,7 +31,7 @@ CTranspilerGenerator::CTranspilerGenerator(
     std::string filePath, const lang::SourceUnit &sourceUnit,
     const environment::DataModel &dataModel)
     : messageBag("C-BACKEND", filePath), currentSourceUnit(sourceUnit),
-      currentScope(sourceUnit.rootScope), dataModel(dataModel) {}
+      currentScope(sourceUnit.rootScope), currentDataModel(dataModel) {}
 
 void CTranspilerGenerator::resolve(
     const std::vector<std::unique_ptr<ast::Statement>> &statement) {
@@ -729,24 +729,25 @@ void CTranspilerGenerator::visitType(const lang::Type &type) {
 			output << structObj.mangledName;
 		} else if (currentSourceUnit.get().getFunctions().contains(
 		               type.typeId)) {
+
 			messageBag.bug(
-			    types::makeUnitTypeToken(0, 0),
+			    Token::makeEOFToken(),
 			    std::format("function name mangling not yet supported"));
 
 		} else {
 			messageBag.bug(
-			    types::makeUnitTypeToken(0, 0),
+			    Token::makeEOFToken(),
 			    std::format("could not identify aggregate name information"));
 		}
 		break;
 	}
 	case lang::TypeKind::abstract:
 		// unit types are abstract and its "equivalent" in C is void
-		if (type == lang::Type::defineUnitType()) {
+		if (type == currentDataModel.get().getUnitType()) {
 			output << "void";
 			break;
 		}
-		messageBag.bug(types::makeUnitTypeToken(0, 0),
+		messageBag.bug(Token::makeEOFToken(),
 		               std::format("abstract tokens cannot be transpiled"));
 		break;
 	}
@@ -798,7 +799,7 @@ CTranspilerGenerator::findStructName(const std::string_view name) const {
 
 std::optional<lang::Type>
 CTranspilerGenerator::findScalarTypeInfo(const std::string_view lexeme) {
-	return dataModel.get().findScalarType(lexeme);
+	return currentDataModel.get().findScalarType(lexeme);
 }
 std::optional<lang::Type>
 CTranspilerGenerator::findTypeInfo(const std::string_view lexeme) {

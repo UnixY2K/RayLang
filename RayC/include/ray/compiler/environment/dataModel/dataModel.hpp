@@ -23,7 +23,7 @@ class DataModel {
 	// defines a type that specifies that it is an overloaded function type
 	lang::Type defineOverloadedFunctionType(lang::Type returnType) const;
 
-	// a shorcut for defineScalarType("void")
+	// defines an abstract empty tuple
 	lang::Type getUnitType() const;
 
 	std::optional<lang::Type> findScalarType(const std::string_view name) const;
