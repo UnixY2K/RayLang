@@ -219,14 +219,13 @@ DataModel::getNumberLiteralType(const std::string_view lexeme) const {
 		const char digit = lexeme[pos];
 		const int dVal = digit - '0';
 		if (dVal >= 0 && dVal <= 9) {
+			numEnd = pos;
 			continue;
 		}
 		if (digit == '.') {
 			floatingPoint = true;
 			break;
 		}
-		// break anyways and set this as postfix
-		numEnd = pos;
 		break;
 	}
 

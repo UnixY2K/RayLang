@@ -769,8 +769,8 @@ void TypeChecker::visitGroupingExpression(const ast::Grouping &groupingExpr) {
 		typeStack.push_back(innerType.value());
 	}
 }
-void TypeChecker::visitLiteralExpression(const ast::Literal &literalExpr) {
-	switch (literalExpr.kind.type) {
+void TypeChecker::visitLiteralExpression(const ast::Literal &literalAst) {
+	switch (literalAst.kind.type) {
 
 	case Token::TokenType::TOKEN_STRING: {
 		const auto baseType =
@@ -783,12 +783,12 @@ void TypeChecker::visitLiteralExpression(const ast::Literal &literalExpr) {
 	}
 	case Token::TokenType::TOKEN_NUMBER: {
 		auto type = currentDataModel.get().getNumberLiteralType(
-		    literalExpr.token.lexeme);
+		    literalAst.token.lexeme);
 		if (!type.has_value()) {
 			messageBag.error(
-			    literalExpr.getToken(),
+			    literalAst.getToken(),
 			    std::format("'{}' cannot be hold in any scalar number type",
-			                literalExpr.getToken().getLexeme()));
+			                literalAst.getToken().getLexeme()));
 			return;
 		}
 		typeStack.push_back(type.value());
@@ -797,12 +797,12 @@ void TypeChecker::visitLiteralExpression(const ast::Literal &literalExpr) {
 	case Token::TokenType::TOKEN_CHAR: {
 		// any char token is a u8 character, not a unicode encode character
 		// so only ASCII characters allowed
-		const std::string_view character = literalExpr.value;
+		const std::string_view character = literalAst.value;
 		if (character.size() > 1) {
 			messageBag.error(
-			    literalExpr.getToken(),
+			    literalAst.getToken(),
 			    std::format("'{}' is not a valid char literal type",
-			                literalExpr.getToken().getLexeme()));
+			                literalAst.getToken().getLexeme()));
 			break;
 		}
 		typeStack.push_back(
@@ -810,9 +810,9 @@ void TypeChecker::visitLiteralExpression(const ast::Literal &literalExpr) {
 		break;
 	}
 	default:
-		messageBag.error(literalExpr.getToken(),
+		messageBag.error(literalAst.getToken(),
 		                 std::format("'{}' is not a valid literal type",
-		                             literalExpr.getToken().getLexeme()));
+		                             literalAst.getToken().getLexeme()));
 		break;
 	}
 }

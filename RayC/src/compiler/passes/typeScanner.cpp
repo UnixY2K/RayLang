@@ -1,3 +1,5 @@
+#include "ray/compiler/lang/symbol.hpp"
+#include "ray/util/copy_ptr.hpp"
 #include <cassert>
 #include <cstddef>
 #include <format>
@@ -58,9 +60,8 @@ void TypeScanner::visitTerminalExprStatement(
 	}
 }
 void TypeScanner::visitExpressionStmtStatement(
-    const ast::ExpressionStmt &value) {
-	messageBag.error(value.getToken(),
-	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
+    const ast::ExpressionStmt &expressionStmtAst) {
+	expressionStmtAst.expression->visit(*this);
 }
 void TypeScanner::visitFunctionStatement(const ast::Function &functionAst) {
 	std::string currentModule;
@@ -87,8 +88,9 @@ void TypeScanner::visitFunctionStatement(const ast::Function &functionAst) {
 
 	auto type = resolveType(*functionAst.returnType);
 	if (functionAst.body.has_value()) {
-		functionAst.body->visit(*this);
+		resolveTypes(*functionAst.body);
 	}
+	typeStack.push_back(type);
 }
 void TypeScanner::visitIfStatement(const ast::If &ifExprAst) {
 	// we do not care for the condition, only the inner body of the expression
@@ -111,8 +113,7 @@ void TypeScanner::visitVarDeclStatement(const ast::VarDecl &varDeclAst) {
 void TypeScanner::visitMemberStatement(const ast::Member &memberAst) {
 	std::string memberName = memberAst.name.lexeme;
 
-	auto memberTypeObj =
-	    resolveType(*memberAst.type).value_or(lang::Type::defineUnknownType());
+	auto memberTypeObj = resolveType(*memberAst.type);
 	lang::StructMember structMember{
 	    // we do not care about this
 	    .publicVisibility = false,
@@ -124,9 +125,9 @@ void TypeScanner::visitMemberStatement(const ast::Member &memberAst) {
 
 	structMemberStack.push_back(structMember);
 }
-void TypeScanner::visitWhileStatement(const ast::While &value) {
-	messageBag.error(value.getToken(),
-	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
+void TypeScanner::visitWhileStatement(const ast::While &whileAst) {
+	resolveType(*whileAst.body);
+	typeStack.push_back(lang::Type::defineStmtType());
 }
 void TypeScanner::visitStructStatement(const ast::Struct &structAst) {
 	// process all the linkage directives to ensure they are not dangling after
@@ -222,9 +223,8 @@ void TypeScanner::visitCompDirectiveStatement(
 				directivesStack.push_back(
 				    std::make_unique<directive::LinkageDirective>(directive));
 				auto directiveType = resolveType(*compDirectiveAst.child);
-				if (directiveType.has_value()) {
-					typeStack.push_back(directiveType.value());
-				}
+				typeStack.push_back(directiveType);
+
 				if (directivesStack.size() != startDirectives) {
 					messageBag.bug(childValue->getToken(),
 					               "unprocessed compiler directives");
@@ -254,26 +254,46 @@ void TypeScanner::visitVariableExpression(const ast::Variable &varExprAst) {
 	// TODO: once we have modules support(and maybe a template system?)
 	// revisit this section so we can determine if abstract variables can hold
 	// values required to them
+	auto foundVariable =
+	    currentScope.get()
+	        .findVariable(varExprAst.name.lexeme)
+	        .transform([](const util::soft_reference<lang::Symbol> &symbolRef)
+	                       -> lang::Symbol {
+		        lang::Symbol returnSymbol =
+		            symbolRef.getObject()
+		                .transform(
+		                    [](const std::reference_wrapper<const lang::Symbol>
+		                           &symbolRef) -> lang::Symbol {
+			                    return symbolRef.get();
+		                    })
+		                .value_or(lang::Symbol::defineUnknownSymbol());
+		        return returnSymbol;
+	        })
+	        .value_or(lang::Symbol::defineUnknownSymbol());
+	typeStack.push_back(foundVariable.innerType);
 }
 void TypeScanner::visitIntrinsicExpression(const ast::Intrinsic &value) {
 	messageBag.error(value.getToken(),
 	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
 }
-void TypeScanner::visitAssignExpression(const ast::Assign &value) {
-	messageBag.error(value.getToken(),
-	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
+void TypeScanner::visitAssignExpression(const ast::Assign &assignAst) {
+	assignAst.rhs->visit(*this);
 }
 void TypeScanner::visitBinaryExpression(const ast::Binary &binaryExprAst) {
 	// we do not care about binary expressions as they cannot yield a new type
 }
-void TypeScanner::visitCallExpression(const ast::Call &value) {
-	messageBag.error(value.getToken(),
-	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
+void TypeScanner::visitCallExpression(const ast::Call &callAst) {
+	// the type checker is responsible for verifying the types
+	for (const auto &argument : callAst.arguments) {
+		argument->visit(*this);
+	}
 }
 void TypeScanner::visitIntrinsicCallExpression(
-    const ast::IntrinsicCall &value) {
-	messageBag.error(value.getToken(),
-	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
+    const ast::IntrinsicCall &intrinsicCallAst) {
+	// TODO: review this section later for a module system
+	for (auto &argument : intrinsicCallAst.arguments) {
+		argument->visit(*this);
+	}
 }
 void TypeScanner::visitGetExpression(const ast::Get &value) {
 	messageBag.error(value.getToken(),
@@ -283,8 +303,52 @@ void TypeScanner::visitGroupingExpression(const ast::Grouping &value) {
 	messageBag.error(value.getToken(),
 	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
 }
-void TypeScanner::visitLiteralExpression(const ast::Literal &literalExpr) {
-	// we do not care about literal expression in the early scan phase
+void TypeScanner::visitLiteralExpression(const ast::Literal &literalAst) {
+	switch (literalAst.kind.type) {
+
+	case Token::TokenType::TOKEN_STRING: {
+		const auto baseType =
+		    currentDataModel.get().findScalarType("u8").value();
+		// literal strings are not mutable
+		const auto arrayType =
+		    currentDataModel.get().definePointerType(baseType, false);
+		typeStack.push_back(arrayType);
+		break;
+	}
+	case Token::TokenType::TOKEN_NUMBER: {
+		auto type = currentDataModel.get().getNumberLiteralType(
+		    literalAst.token.lexeme);
+		if (!type.has_value()) {
+			messageBag.error(
+			    literalAst.getToken(),
+			    std::format("'{}' cannot be hold in any scalar number type",
+			                literalAst.getToken().getLexeme()));
+			return;
+		}
+		typeStack.push_back(type.value());
+		break;
+	}
+	case Token::TokenType::TOKEN_CHAR: {
+		// any char token is a u8 character, not a unicode encode character
+		// so only ASCII characters allowed
+		const std::string_view character = literalAst.value;
+		if (character.size() > 1) {
+			messageBag.error(
+			    literalAst.getToken(),
+			    std::format("'{}' is not a valid char literal type",
+			                literalAst.getToken().getLexeme()));
+			break;
+		}
+		typeStack.push_back(
+		    currentDataModel.get().findScalarType("u8").value());
+		break;
+	}
+	default:
+		messageBag.error(literalAst.getToken(),
+		                 std::format("'{}' is not a valid literal type",
+		                             literalAst.getToken().getLexeme()));
+		break;
+	}
 }
 void TypeScanner::visitLogicalExpression(const ast::Logical &value) {
 	messageBag.error(value.getToken(),
@@ -294,17 +358,31 @@ void TypeScanner::visitSetExpression(const ast::Set &value) {
 	messageBag.error(value.getToken(),
 	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
 }
-void TypeScanner::visitUnaryExpression(const ast::Unary &value) {
-	messageBag.error(value.getToken(),
-	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
+void TypeScanner::visitUnaryExpression(const ast::Unary &unaryAst) {
+	// TODO: rework this section once operator overload is implemented
+	// for now we assume the same type is returned
+	auto innerType = resolveType(*unaryAst.expr);
+	return typeStack.push_back(innerType);
 }
-void TypeScanner::visitArrayAccessExpression(const ast::ArrayAccess &value) {
-	messageBag.error(value.getToken(),
-	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
+void TypeScanner::visitArrayAccessExpression(
+    const ast::ArrayAccess &arrayAccessAst) {
+	// TODO: remove this hack in the future once we convert to an cleaner AST
+	auto arrayType = resolveType(*arrayAccessAst.array);
+	auto indexType = resolveType(*arrayAccessAst.index);
+	lang::Type innerType =
+	    arrayType.subtype
+	        .transform([](util::copy_ptr<lang::Type> &typePtr) -> lang::Type {
+		        assert(typePtr.get() != nullptr);
+		        return *typePtr.get();
+	        })
+	        .value_or(lang::Type::defineUnknownType());
+	typeStack.push_back(innerType);
 }
-void TypeScanner::visitArrayTypeExpression(const ast::ArrayType &value) {
-	messageBag.error(value.getToken(),
-	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
+void TypeScanner::visitArrayTypeExpression(const ast::ArrayType &arrayTypeAst) {
+	auto innerType = resolveType(*arrayTypeAst.subType);
+
+	typeStack.push_back(currentDataModel.get().definePointerType(
+	    innerType, arrayTypeAst.isMutable));
 }
 void TypeScanner::visitTupleTypeExpression(const ast::TupleType &tupleAst) {
 	if (tupleAst.expressions.empty()) {
@@ -317,8 +395,7 @@ void TypeScanner::visitTupleTypeExpression(const ast::TupleType &tupleAst) {
 }
 void TypeScanner::visitPointerTypeExpression(
     const ast::PointerType &pointerTypeAst) {
-	auto innerType = resolveType(*pointerTypeAst.subtype)
-	                     .value_or(lang::Type::defineUnknownType());
+	auto innerType = resolveType(*pointerTypeAst.subtype);
 	typeStack.push_back(currentDataModel.get().definePointerType(
 	    innerType, pointerTypeAst.isMutable));
 }
@@ -335,17 +412,16 @@ void TypeScanner::visitNamedTypeExpression(const ast::NamedType &typeAst) {
 		typeStack.push_back(lang::Type::defineUnknownType());
 	}
 }
-void TypeScanner::visitCastExpression(const ast::Cast &value) {
-	messageBag.error(value.getToken(),
-	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
+void TypeScanner::visitCastExpression(const ast::Cast &castAst) {
+	castAst.expression->visit(*this);
+	typeStack.push_back(resolveType(*castAst.type));
 }
 void TypeScanner::visitParameterExpression(const ast::Parameter &value) {
 	messageBag.error(value.getToken(),
 	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
 }
 
-std::optional<lang::Type>
-TypeScanner::resolveType(const ast::Statement &statement) {
+lang::Type TypeScanner::resolveType(const ast::Statement &statement) {
 	auto types = resolveTypes(statement);
 
 	if (types.size() > 1) {
@@ -361,11 +437,9 @@ TypeScanner::resolveType(const ast::Statement &statement) {
 		}
 	}
 
-	return types.size() > 0 ? std::optional<lang::Type>(types[0])
-	                        : std::nullopt;
+	return types.size() > 0 ? types[0] : lang::Type::defineUnknownType();
 }
-std::optional<lang::Type>
-TypeScanner::resolveType(const ast::Expression &expression) {
+lang::Type TypeScanner::resolveType(const ast::Expression &expression) {
 	auto types = resolveTypes(expression);
 
 	if (types.size() > 1) {
@@ -374,8 +448,7 @@ TypeScanner::resolveType(const ast::Expression &expression) {
 		                           expression.variantName()));
 	}
 
-	return types.size() > 0 ? std::optional<lang::Type>(types[0])
-	                        : std::nullopt;
+	return types.size() > 0 ? types[0] : lang::Type::defineUnknownType();
 }
 std::vector<lang::Type>
 TypeScanner::resolveTypes(const ast::Statement &statement) {

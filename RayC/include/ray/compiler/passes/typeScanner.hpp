@@ -76,8 +76,8 @@ class TypeScanner : public ast::StatementVisitor,
 	void visitCastExpression(const ast::Cast &value) override;
 	void visitParameterExpression(const ast::Parameter &value) override;
 
-	std::optional<lang::Type> resolveType(const ast::Statement &statement);
-	std::optional<lang::Type> resolveType(const ast::Expression &expression);
+	lang::Type resolveType(const ast::Statement &statement);
+	lang::Type resolveType(const ast::Expression &expression);
 	std::vector<lang::Type> resolveTypes(const ast::Statement &statement);
 	std::vector<lang::Type> resolveTypes(const ast::Expression &expression);
 
