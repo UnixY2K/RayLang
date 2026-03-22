@@ -1,5 +1,3 @@
-#include "ray/compiler/ast/expression.hpp"
-#include "ray/compiler/lang/functionDefinition.hpp"
 #include <cassert>
 #include <cstddef>
 #include <format>
@@ -7,7 +5,9 @@
 #include <optional>
 #include <string_view>
 
+#include <ray/compiler/ast/expression.hpp>
 #include <ray/compiler/ast/statement.hpp>
+#include <ray/compiler/lang/functionDefinition.hpp>
 #include <ray/compiler/lang/scope.hpp>
 #include <ray/compiler/lang/struct.hpp>
 #include <ray/compiler/lang/type.hpp>
@@ -21,6 +21,8 @@ void TypeScanner::resolve(
     const std::vector<std::unique_ptr<ast::Statement>> &statements) {
 	// search first for structs, then go throught the statements
 	for (const auto &statement : statements) {
+		// TODO: refactor the compiler directives so they can be attached to
+		// the related AST instead
 		if (const auto *structAst =
 		        dynamic_cast<const ast::Struct *>(statement.get())) {
 			discoverStruct(*structAst);
@@ -127,10 +129,7 @@ void TypeScanner::visitWhileStatement(const ast::While &value) {
 	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
 }
 void TypeScanner::visitStructStatement(const ast::Struct &structAst) {
-	if (structAst.declaration) {
-		return;
-	}
-
+	// process all the linkage directives to ensure they are not dangling after
 	std::optional<directive::LinkageDirective> linkageDirective;
 
 	for (size_t i = directivesStack.size(); i > directivesStackTop; i--) {
@@ -157,6 +156,25 @@ void TypeScanner::visitStructStatement(const ast::Struct &structAst) {
 	auto structObjRes = scope.findLocalStruct(structName)
 	                        .value_or(util::soft_reference<lang::Struct>())
 	                        .getObject();
+
+	// TODO: change how compiler directives work
+	// this is an ugly workarround to declare structs that have compiler
+	// directives and were not discovered due to it
+
+	if (!currentSourceUnit.declareStruct(
+	        lang::Struct{
+	            .opaque = true,                   // unknown implementation
+	            .name = std::string(structName),  //
+	            .mangledName = mangledStructName, //
+	        },
+	        scope)) {
+		messageBag.error(structAst.getToken(), "could not declare struct");
+	}
+
+	if (structAst.declaration) {
+		return;
+	}
+
 	if (!structObjRes.has_value()) {
 		messageBag.bug(structAst.getToken(),
 		               std::format("could not find internal reference for {}",

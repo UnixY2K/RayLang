@@ -1,4 +1,3 @@
-#include "ray/compiler/lang/symbol.hpp"
 #include <cassert>
 #include <functional>
 #include <optional>
@@ -8,6 +7,7 @@
 #include <ray/compiler/lang/functionDefinition.hpp>
 #include <ray/compiler/lang/sourceUnit.hpp>
 #include <ray/compiler/lang/struct.hpp>
+#include <ray/compiler/lang/symbol.hpp>
 #include <ray/util/soft_reference.hpp>
 #include <vector>
 

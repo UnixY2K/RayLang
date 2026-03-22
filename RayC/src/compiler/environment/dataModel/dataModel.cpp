@@ -10,6 +10,27 @@
 
 namespace ray::compiler::environment {
 
+lang::Type
+DataModel::defineTupleType(size_t tupleID,
+                           std::vector<util::copy_ptr<lang::Type>> signature,
+                           size_t aproximatedSize) const {
+	return {
+	    // its type is the same as structID
+	    tupleID,
+	    // initialized
+	    true,
+	    lang::TypeKind::aggregate,
+	    "%<tuple>%",
+	    aproximatedSize,
+	    false,     // non mutable
+	    false,     // non signed
+	    false,     // cannot be overloaded
+	    {},        // no subtype
+	    signature, // no signature? depending on layout and underlying
+	               // architecture cannot be guaranteed
+	};
+}
+
 lang::Type DataModel::defineStructType(size_t structID, std::string name,
                                        size_t aproximatedSize) const {
 	return {
@@ -62,7 +83,7 @@ DataModel::defineOverloadedFunctionType(lang::Type returnType) const {
 }
 
 lang::Type DataModel::getUnitType() const {
-	return defineScalarType("()", 0, false, false);
+	return lang::Type::defineUnitType();
 }
 
 std::optional<lang::Type>

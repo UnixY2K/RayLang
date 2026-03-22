@@ -176,12 +176,6 @@ void TypeChecker::visitFunctionStatement(const ast::Function &functionExprAst) {
 
 		auto functionType = currentDataModel.get().defineFunctionType(
 		    functionDeclaration.signature.returnType, paramTypes);
-		if (!currentSourceUnit.declareFunction(functionDeclaration,
-		                                       getCurrentScope())) {
-			messageBag.error(functionExprAst.getToken(),
-			                 std::format("could not declare function for '{}'",
-			                             functionDeclaration.name));
-		}
 		typeStack.push_back(functionType);
 	}
 }
@@ -374,8 +368,7 @@ void TypeChecker::visitWhileStatement(const ast::While &whileStmt) {
 	typeStack.push_back(type);
 }
 void TypeChecker::visitStructStatement(const ast::Struct &structObj) {
-	// TODO: rework this section to just verify the existing struct
-	return;
+
 	std::string currentModule;
 
 	std::optional<directive::LinkageDirective> linkageDirective;
@@ -399,6 +392,8 @@ void TypeChecker::visitStructStatement(const ast::Struct &structObj) {
 	    passes::mangling::NameMangler().mangleStruct(currentModule, structObj,
 	                                                 linkageDirective);
 
+	// TODO: rework this section to just verify the existing struct
+	return;
 	if (!structObj.declaration) {
 		std::vector<lang::StructMember> members;
 		for (const auto &member : structObj.members) {
@@ -898,9 +893,15 @@ void TypeChecker::visitArrayTypeExpression(const ast::ArrayType &value) {
 	messageBag.bug(value.getToken(),
 	               std::format("{} not implemented", __PRETTY_FUNCTION__));
 }
-void TypeChecker::visitTupleTypeExpression(const ast::TupleType &value) {
-	messageBag.bug(value.getToken(),
-	               std::format("{} not implemented", __PRETTY_FUNCTION__));
+void TypeChecker::visitTupleTypeExpression(const ast::TupleType &tupleAst) {
+	if (tupleAst.expressions.empty()) {
+		typeStack.push_back(currentDataModel.get().getUnitType());
+		return;
+	}
+
+	messageBag.bug(tupleAst.getToken(),
+	               std::format("{} not implemented for non empty tuples",
+	                           __PRETTY_FUNCTION__));
 }
 
 void TypeChecker::visitPointerTypeExpression(

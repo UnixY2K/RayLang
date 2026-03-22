@@ -289,12 +289,7 @@ void CTranspilerGenerator::visitWhileStatement(const ast::While &value) {
 	output << std::format("{}}}\n", identTab);
 }
 void CTranspilerGenerator::visitStructStatement(const ast::Struct &value) {
-	// TODO: remove this once the full logic of struct using type data is
-	// implemented
-	return;
-
 	std::string currentModule;
-
 	std::optional<directive::LinkageDirective> linkageDirective;
 
 	for (size_t i = directivesStack.size(); i > top; i--) {
@@ -310,6 +305,10 @@ void CTranspilerGenerator::visitStructStatement(const ast::Struct &value) {
 		}
 		directivesStack.pop_back();
 	}
+
+	// TODO: remove this once the full logic of struct using type data is
+	// implemented
+	return;
 	const std::string mangledStructName =
 	    nameMangler.mangleStruct(currentModule, value, linkageDirective);
 
@@ -718,10 +717,11 @@ void CTranspilerGenerator::visitType(const lang::Type &type) {
 		}
 		break;
 	}
-	case lang::TypeKind::scalar:
+	case lang::TypeKind::scalar: {
 		output << type.name;
 		break;
-	case lang::TypeKind::aggregate:
+	}
+	case lang::TypeKind::aggregate: {
 		// see if the type is a struct and get its mangled name
 		if (currentSourceUnit.get().getStructs().contains(type.typeId)) {
 			const lang::Struct &structObj =
@@ -739,7 +739,13 @@ void CTranspilerGenerator::visitType(const lang::Type &type) {
 			    std::format("could not identify aggregate name information"));
 		}
 		break;
+	}
 	case lang::TypeKind::abstract:
+		// unit types are abstract and its "equivalent" in C is void
+		if (type == lang::Type::defineUnitType()) {
+			output << "void";
+			break;
+		}
 		messageBag.bug(types::makeUnitTypeToken(0, 0),
 		               std::format("abstract tokens cannot be transpiled"));
 		break;

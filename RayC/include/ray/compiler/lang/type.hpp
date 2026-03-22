@@ -113,6 +113,25 @@ class Type {
 		};
 	}
 
+	// defines an empty tuple type, which holds different rules than a
+	// conventional tuple (abstract vs aggregate)
+	static constexpr Type defineUnitType() {
+		return {
+		    // its type is unknown and can be changed later
+		    0,
+		    // initialized
+		    true,
+		    lang::TypeKind::abstract,
+		    "%<tuple>%",
+		    0,     // its size is 0
+		    false, // non mutable
+		    false, // non signed
+		    false, // cannot be overloaded
+		    {},    // no subtype
+		    {},    // no signature
+		};
+	}
+
   private:
 	bool baseMatches(const Type &other) const;
 };

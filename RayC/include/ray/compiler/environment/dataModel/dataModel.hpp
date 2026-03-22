@@ -7,6 +7,11 @@
 namespace ray::compiler::environment {
 class DataModel {
   public:
+	// allows to define a tuple type, its signature holds
+	lang::Type
+	defineTupleType(size_t tupleID,
+	                std::vector<util::copy_ptr<lang::Type>> signature,
+	                size_t aproximatedSize) const;
 	// allows to define a struct type, if definition is external/unknown then
 	// the size is 0 and can only be referenced as a pointer
 	lang::Type defineStructType(size_t structID, std::string name,
