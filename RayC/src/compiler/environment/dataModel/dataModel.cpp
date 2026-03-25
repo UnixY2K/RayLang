@@ -82,8 +82,8 @@ DataModel::defineOverloadedFunctionType(lang::Type returnType) const {
 	);
 }
 
-lang::Type DataModel::getUnitType() const {
-	return lang::Type::defineUnitType();
+lang::Type DataModel::getUnitType(bool isMutable) const {
+	return lang::Type::defineUnitType(isMutable);
 }
 
 std::optional<lang::Type>

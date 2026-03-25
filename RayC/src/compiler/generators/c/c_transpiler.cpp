@@ -247,7 +247,7 @@ void CTranspilerGenerator::visitVarDeclStatement(const ast::VarDecl &var) {
 	output << currentIdent();
 
 	var.type->visit(*this);
-	output << std::format("{}", var.name.lexeme);
+	output << std::format(" {}", var.name.lexeme);
 
 	if (var.initializer.has_value()) {
 		output << " = ";
@@ -648,8 +648,15 @@ void CTranspilerGenerator::visitArrayTypeExpression(
 	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
 }
 void CTranspilerGenerator::visitTupleTypeExpression(
-    const ast::TupleType &value) {
-	messageBag.error(value.getToken(),
+    const ast::TupleType &tupleAst) {
+	if (!tupleAst.isMutable) {
+		output << "const ";
+	}
+	if (tupleAst.expressions.empty()) {
+		output << "void";
+		return;
+	}
+	messageBag.error(tupleAst.getToken(),
 	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
 }
 void CTranspilerGenerator::visitPointerTypeExpression(
@@ -743,7 +750,7 @@ void CTranspilerGenerator::visitType(const lang::Type &type) {
 	}
 	case lang::TypeKind::abstract:
 		// unit types are abstract and its "equivalent" in C is void
-		if (type == currentDataModel.get().getUnitType()) {
+		if (type == currentDataModel.get().getUnitType(type.isMutable)) {
 			output << "void";
 			break;
 		}

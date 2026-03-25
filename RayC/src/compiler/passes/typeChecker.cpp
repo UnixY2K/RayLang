@@ -909,7 +909,9 @@ void TypeChecker::visitArrayTypeExpression(const ast::ArrayType &arrayTypeAst) {
 }
 void TypeChecker::visitTupleTypeExpression(const ast::TupleType &tupleAst) {
 	if (tupleAst.expressions.empty()) {
-		typeStack.push_back(currentDataModel.get().getUnitType());
+		auto unitType = currentDataModel.get().getUnitType();
+		unitType.isMutable = tupleAst.isMutable;
+		typeStack.push_back(unitType);
 		return;
 	}
 
