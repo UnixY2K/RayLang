@@ -164,7 +164,9 @@ void TypeChecker::visitFunctionStatement(const ast::Function &functionExprAst) {
 			        .value_or(currentDataModel.get().getUnitType());
 
 			if (!type.coercercesInto(
-			        functionDeclaration.signature.returnType)) {
+			        functionDeclaration.signature.returnType) &&
+			    // main is the only function allowed to not return anything
+			    functionDeclaration.mangledName != "main") {
 				messageBag.error(
 				    functionExprAst.body->getToken(),
 				    std::format(
