@@ -1117,7 +1117,7 @@ TypeChecker::resolveFunctionDeclaration(const ast::Function &functionAst) {
 	switch (returnType.getKind()) {
 
 	case lang::TypeKind::abstract: {
-		if (returnType != currentDataModel.get().getUnitType()) {
+		if (!returnType.coercercesInto(currentDataModel.get().getUnitType())) {
 			failed = true;
 			// TODO: review this in the future if we ever decide to return
 			// abstract types at compile/evaluation time

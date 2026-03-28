@@ -8,7 +8,7 @@ fn print(buffer: [u8;]){
 }
 
 fn s32toString(num: s32) -> [mut u8;]{
-	let floorResult: usize = cmath.floor(log10(num));
+	let floorResult: usize = cmath.floor(log10(num)) as usize;
 	let mut size: usize = floorResult + 1;
 	let mut n: s32 = num;
 	let array: [mut u8;] = cstdlib.malloc(size + 1) as [mut u8;];
@@ -22,11 +22,9 @@ fn s32toString(num: s32) -> [mut u8;]{
 }
 
 
-fn fib(n: s32) -> s32{
-	if(n <= 2){
-		return 1;
-	}
-	return fib(n-1) + fib(n-2);
+fn fib(n: s32) -> s32 {
+	if n <= 2 1
+	fib(n-1) + fib(n-2)
 }
 
 

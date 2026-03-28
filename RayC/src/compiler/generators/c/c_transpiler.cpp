@@ -177,7 +177,7 @@ void CTranspilerGenerator::visitFunctionStatement(
 
 		function.returnType->visit(*this);
 
-		output << std::format("{}(", functionName);
+		output << std::format(" {}(", functionName);
 		for (size_t index = 0; index < function.params.size(); ++index) {
 			const auto &parameter = function.params[index];
 			parameter.visit(*this);
@@ -643,9 +643,15 @@ void CTranspilerGenerator::visitArrayAccessExpression(
 	output << "]";
 }
 void CTranspilerGenerator::visitArrayTypeExpression(
-    const ast::ArrayType &value) {
-	messageBag.error(value.getToken(),
-	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
+    const ast::ArrayType &arrayTypeAst) {
+	// TODO: once array type holds its size in the AST provide 
+	// a check to transpile it to C
+	arrayTypeAst.subType->visit(*this);
+
+	output << "*";
+	if (!arrayTypeAst.isMutable) {
+		output << " const ";
+	}
 }
 void CTranspilerGenerator::visitTupleTypeExpression(
     const ast::TupleType &tupleAst) {
