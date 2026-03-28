@@ -1,0 +1,3 @@
+Struct<T, A: > {
+	array: Array<T, A>
+}

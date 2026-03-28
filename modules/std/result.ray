@@ -1,0 +1,5 @@
+
+pub variant Result<T, E>{
+	Ok(T),
+	Error(E)
+}
