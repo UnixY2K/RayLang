@@ -4,15 +4,15 @@ let cstdlib = @import("cstd:std.ray");
 let cstring = @import("cstd:string.ray");
 
 fn print(buffer: [u8;]){
-	cstdio.fwrite(buffer as mut *(), @sizeOf(c_char), cstring.strlen(buffer as *c_char), cstdio.get_stdout());
+	cstdio.fwrite(buffer as mut *mut(), @sizeOf(c_char) as c_size, cstring.strlen(buffer as mut* mut c_char), cstdio.get_stdout());
 }
 
-fn s32toString(num: s32) -> [mut u8;]{
-	let floorResult: usize = cmath.floor(log10(num)) as usize;
-	let mut size: usize = floorResult + 1;
-	let mut n: s32 = num;
-	let array: [mut u8;] = cstdlib.malloc(size + 1) as [mut u8;];
-	let mut i: usize = (size - 1);
+fn s32toString(num: s32) -> mut [mut u8;]{
+	let floorResult: usize = cmath.floor(cmath.log10(num)) as usize;
+	let size: mut usize = floorResult + 1;
+	let n: mut s32 = num;
+	let array: mut [mut u8;] = cstdlib.malloc(size + 1) as mut [mut u8;];
+	let i: mut usize = (size - 1);
 	array[size] = '\0';
 	while n != 0 {
 		array[i--] = (n % 10) + '0';
@@ -21,10 +21,9 @@ fn s32toString(num: s32) -> [mut u8;]{
 	return array;
 }
 
-
-fn fib(n: s32) -> s32 {
-	if n <= 2 1
-	fib(n-1) + fib(n-2)
+fn fib(fibn: s32) -> s32 {
+	if fibn <= 2 1
+	fib(fibn-1) + fib(fibn-2)
 }
 
 
@@ -36,10 +35,10 @@ pub fn main(argc: mut s32, argv: mut *mut *c_char) -> mut s32 {
 		print(" number\n");
 		return -1;
 	}
-	let result: s32 = fib(cstdlib.atoi(argv[1]));
-	let resultStr = s32toString((result));
+	let result: s32 = fib(cstdlib.atoi(argv[1]) as s32);
+	let resultStr: mut [mut u8;] = s32toString((result));
 	print(resultStr);
-	free(resultStr as [mut u8;]);
+	cstdlib.free(resultStr as mut *mut());
 	print("\n");
 	return 0;
 }
