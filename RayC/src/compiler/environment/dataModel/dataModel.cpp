@@ -3,6 +3,7 @@
 #include <format>
 #include <optional>
 #include <string_view>
+#include <system_error>
 #include <unordered_map>
 
 #include <ray/compiler/environment/dataModel/dataModel.hpp>
@@ -233,12 +234,23 @@ DataModel::getNumberLiteralType(const std::string_view lexeme) const {
 		return findScalarType(std::string_view(lexeme).substr(numEnd));
 	}
 
+	const char *parse_start_ptr = lexeme.data();
+	const char *parse_end_ptr = lexeme.data() + numEnd + 1;
 	if (floatingPoint) {
-		// TODO: add floating point parse code
-		minimalBits = 64;
+		minimalBits = 32;
+		double sParsedVal;
+		auto [ptr, ec] =
+		    std::from_chars(parse_start_ptr, parse_end_ptr, sParsedVal);
+		if (ec == std::errc::invalid_argument ||
+		    ec == std::errc::result_out_of_range) {
+			return std::nullopt;
+		}
+
+		// if our number is greater than the limit of 32 bits upgrade to 64
+		if (sParsedVal < std::numeric_limits<float>::min()) {
+			minimalBits = 64;
+		}
 	} else {
-		const char *parse_start_ptr = lexeme.data();
-		const char *parse_end_ptr = lexeme.data() + numEnd + 1;
 		if (signedNumber) {
 			int64_t sParsedVal;
 			auto [ptr, ec] =
