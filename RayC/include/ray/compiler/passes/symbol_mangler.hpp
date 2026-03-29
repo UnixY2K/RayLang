@@ -15,9 +15,12 @@ class NameMangler {
 	    std::string_view module, const ast::Function &function,
 	    std::optional<directive::LinkageDirective> &linkageDirective);
 	std::string
-	mangleStruct(std::string_view module, const ast::Struct &structDefinition,
+	mangleMethod(std::string_view module, const ast::Method &method,
 	             std::optional<directive::LinkageDirective> &linkageDirective);
 	std::string
-	mangleTrait(std::string_view module, const ast::Trait &traitDefinition);
+	mangleStruct(std::string_view module, const ast::Struct &structDefinition,
+	             std::optional<directive::LinkageDirective> &linkageDirective);
+	std::string mangleTrait(std::string_view module,
+	                        const ast::Trait &traitDefinition);
 };
 } // namespace ray::compiler::passes::mangling

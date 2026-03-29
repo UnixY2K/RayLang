@@ -100,9 +100,51 @@ void TypeScanner::visitFunctionStatement(const ast::Function &functionAst) {
 	}
 	typeStack.push_back(type);
 }
-void TypeScanner::visitMethodStatement(const ast::Method &value) {
-	messageBag.error(value.getToken(),
-	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
+void TypeScanner::visitMethodStatement(const ast::Method &methodAst) {
+	std::string currentModule;
+
+	std::optional<directive::LinkageDirective> linkageDirective;
+
+	for (size_t i = directivesStack.size(); i > directivesStackTop; i--) {
+		auto &directive = directivesStack[i - i];
+		if (auto foundLinkDirective =
+		        dynamic_cast<directive::LinkageDirective *>(directive.get())) {
+			linkageDirective = *foundLinkDirective;
+		} else {
+			messageBag.warning(
+			    directive->getToken(),
+			    std::format("unmatched compiler directive '{}' for method '{}'",
+			                directive->directiveName(),
+			                methodAst.name.getLexeme()));
+		}
+		directivesStack.pop_back();
+	}
+	std::string mangledMethodName =
+	    passes::mangling::NameMangler().mangleMethod(currentModule, methodAst,
+	                                                 linkageDirective);
+
+	std::string methodName = methodAst.name.lexeme;
+
+	lang::Type returnType = resolveType(*methodAst.returnType.get());
+	std::vector<lang::MethodParameter> parameters;
+	for (const auto &parameter : methodAst.params) {
+		lang::Type parameterType = resolveType(parameter);
+		parameters.push_back(lang::MethodParameter{
+		    .name = std::string(parameter.name.getLexeme()),
+		    .parameterType = parameterType});
+	}
+
+	lang::MethodSignature methodSignature = {returnType, parameters};
+
+	auto traitMethod = lang::Method{
+	    .methodID = 0,
+	    .name = methodName,
+	    .mangledName = mangledMethodName,
+	    .publicVisibility = methodAst.publicVisibility,
+	    .signature = methodSignature,
+	};
+
+	traitMethodStack.push_back(traitMethod);
 }
 void TypeScanner::visitIfStatement(const ast::If &ifExprAst) {
 	// we do not care for the condition, only the inner body of the expression
@@ -513,9 +555,9 @@ void TypeScanner::visitCastExpression(const ast::Cast &castAst) {
 	castAst.expression->visit(*this);
 	typeStack.push_back(resolveType(*castAst.type));
 }
-void TypeScanner::visitParameterExpression(const ast::Parameter &value) {
-	messageBag.error(value.getToken(),
-	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
+void TypeScanner::visitParameterExpression(const ast::Parameter &parameterAst) {
+	lang::Type parameterType = resolveType(*parameterAst.type.get());
+	typeStack.push_back(parameterType);
 }
 
 lang::Type TypeScanner::resolveType(const ast::Statement &statement) {

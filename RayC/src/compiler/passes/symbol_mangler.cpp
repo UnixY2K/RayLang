@@ -36,6 +36,34 @@ std::string NameMangler::mangleFunction(
 	                   module.size(), module, function.name.lexeme.size(),
 	                   function.name.lexeme);
 }
+std::string NameMangler::mangleMethod(
+    std::string_view module, const ast::Method &method,
+    std::optional<directive::LinkageDirective> &linkageDirective) {
+	if (linkageDirective) {
+		if (!linkageDirective->overrideName.empty()) {
+			return linkageDirective->overrideName;
+		}
+		switch (linkageDirective->mangling) {
+		case directive::LinkageDirective::ManglingType::Default: {
+			break;
+		}
+		case directive::LinkageDirective::ManglingType::C: {
+			return method.name.lexeme;
+		}
+		case directive::LinkageDirective::ManglingType::Unknown: {
+			// the ideal would be to return an optional
+			// and make the compilation to fail
+			std::cerr << std::format(
+			    "{}: unknown linkage directive, using Default",
+			    "WARNING"_yellow);
+			break;
+		}
+		}
+	}
+	return std::format("_rayMv{}_T{}_M{}_{}_N{}_{}", manglerVersion, "F",
+	                   module.size(), module, method.name.lexeme.size(),
+	                   method.name.lexeme);
+}
 std::string NameMangler::mangleStruct(
     std::string_view module, const ast::Struct &structDefinition,
     std::optional<directive::LinkageDirective> &linkageDirective) {
