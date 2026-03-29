@@ -1,3 +1,4 @@
+#include "ray/compiler/environment/dataModel/dataModel.hpp"
 #include "ray/compiler/lang/symbol.hpp"
 #include "ray/util/copy_ptr.hpp"
 #include <cassert>
@@ -21,7 +22,7 @@ namespace ray::compiler::passes {
 
 void TypeScanner::resolve(
     const std::vector<std::unique_ptr<ast::Statement>> &statements) {
-	// search first for structs, then go throught the statements
+	// search for structs, then go throught the statements
 	for (const auto &statement : statements) {
 		// TODO: refactor the compiler directives so they can be attached to
 		// the related AST instead
@@ -106,9 +107,9 @@ void TypeScanner::visitJumpStatement(const ast::Jump &jumpAst) {
 	}
 }
 void TypeScanner::visitVarDeclStatement(const ast::VarDecl &varDeclAst) {
-	// TODO: revisit this section once we implement abstract values such as
-	// modules
-	// TODO: review wether we should discover variables here before type checker
+	if (varDeclAst.initializer.has_value()) {
+		auto initializerType = resolveType(*varDeclAst.initializer->get());
+	}
 }
 void TypeScanner::visitMemberStatement(const ast::Member &memberAst) {
 	std::string memberName = memberAst.name.lexeme;
@@ -272,9 +273,23 @@ void TypeScanner::visitVariableExpression(const ast::Variable &varExprAst) {
 	        .value_or(lang::Symbol::defineUnknownSymbol());
 	typeStack.push_back(foundVariable.innerType);
 }
-void TypeScanner::visitIntrinsicExpression(const ast::Intrinsic &value) {
-	messageBag.error(value.getToken(),
-	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
+void TypeScanner::visitIntrinsicExpression(const ast::Intrinsic &intrinsicAst) {
+	switch (intrinsicAst.intrinsic) {
+	case ast::IntrinsicType::INTR_SIZEOF: {
+		typeStack.push_back(currentDataModel.get().getScalarType(
+		    environment::DataModel::ScalarTypeKind::ssizeScalar));
+		break;
+	}
+	case ast::IntrinsicType::INTR_IMPORT: {
+		// TODO: return modulequery type so the module can be scanned
+		messageBag.error(
+		    intrinsicAst.getToken(),
+		    std::format("{} not implemented", __PRETTY_FUNCTION__));
+		break;
+	}
+	case ast::IntrinsicType::INTR_UNKNOWN:
+		break;
+	}
 }
 void TypeScanner::visitAssignExpression(const ast::Assign &assignAst) {
 	assignAst.rhs->visit(*this);
@@ -291,6 +306,8 @@ void TypeScanner::visitCallExpression(const ast::Call &callAst) {
 void TypeScanner::visitIntrinsicCallExpression(
     const ast::IntrinsicCall &intrinsicCallAst) {
 	// TODO: review this section later for a module system
+	auto type = resolveType(*intrinsicCallAst.callee);
+
 	for (auto &argument : intrinsicCallAst.arguments) {
 		argument->visit(*this);
 	}

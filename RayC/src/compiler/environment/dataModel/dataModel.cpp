@@ -11,6 +11,79 @@
 
 namespace ray::compiler::environment {
 
+const std::optional<const DataModel::ScalarTypeKind>
+DataModel::toScalarTypeKind(const std::string_view name) {
+	static std::unordered_map<std::string, ScalarTypeKind> map = {
+	    {
+	        "bool",
+	        DataModel::ScalarTypeKind::boolScalar,
+	    }, // bool
+	    {
+	        "u8",
+	        DataModel::ScalarTypeKind::u8Scalar,
+	    }, // u8
+	    {
+	        "s8",
+	        DataModel::ScalarTypeKind::s8Scalar,
+	    }, // s8
+	    {
+	        "u16",
+	        DataModel::ScalarTypeKind::u16Scalar,
+	    }, // u16
+	    {
+	        "s16",
+	        DataModel::ScalarTypeKind::s16Scalar,
+	    }, // s16
+	    {
+	        "u32",
+	        DataModel::ScalarTypeKind::u32Scalar,
+	    }, // u32
+	    {
+	        "s32",
+	        DataModel::ScalarTypeKind::s32Scalar,
+	    }, // s32
+	    {
+	        "u64",
+	        DataModel::ScalarTypeKind::u64Scalar,
+	    }, // u64
+	    {
+	        "s64",
+	        DataModel::ScalarTypeKind::s64Scalar,
+	    }, // s64
+	    {
+	        "f32",
+	        DataModel::ScalarTypeKind::f32Scalar,
+	    }, // f32
+	    {
+	        "f64",
+	        DataModel::ScalarTypeKind::f64Scalar,
+	    }, // f64
+	    {
+	        "usize",
+	        DataModel::ScalarTypeKind::usizeScalar,
+	    }, // usize
+	    {
+	        "ssize",
+	        DataModel::ScalarTypeKind::ssizeScalar,
+	    }, // ssize
+	    {
+	        "c_char",
+	        DataModel::ScalarTypeKind::c_charScalar,
+	    }, // c_char
+	    {
+	        "c_int",
+	        DataModel::ScalarTypeKind::c_intScalar,
+	    }, // c_int
+	    {
+	        "c_size",
+	        DataModel::ScalarTypeKind::c_sizeScalar,
+	    }, // c_size
+	};
+	std::string key{name};
+	return map.contains(key) ? std::optional<ScalarTypeKind>(map.at(key))
+	                         : std::nullopt;
+}
+
 lang::Type
 DataModel::defineTupleType(size_t tupleID,
                            std::vector<util::copy_ptr<lang::Type>> signature,
@@ -87,81 +160,86 @@ lang::Type DataModel::getUnitType(bool isMutable) const {
 	return lang::Type::defineUnitType(isMutable);
 }
 
-std::optional<lang::Type>
-DataModel::findScalarType(const std::string_view name) const {
-	static std::unordered_map<std::string, lang::Type> map = {
+lang::Type DataModel::getScalarType(const ScalarTypeKind scalarKind) const {
+	static std::unordered_map<ScalarTypeKind, lang::Type> map = {
 	    {
-	        "bool",
+	        DataModel::ScalarTypeKind::boolScalar,
 	        defineScalarType("bool", 1, false, false),
 	    }, // bool
 	    {
-	        "u8",
+	        DataModel::ScalarTypeKind::u8Scalar,
 	        defineScalarType("u8", 1, false, false),
 	    }, // u8
 	    {
-	        "s8",
+	        DataModel::ScalarTypeKind::s8Scalar,
 	        defineScalarType("s8", 1, true, false),
 	    }, // s8
 	    {
-	        "u16",
+	        DataModel::ScalarTypeKind::u16Scalar,
 	        defineScalarType("u16", 2, false, false),
 	    }, // u16
 	    {
-	        "s16",
+	        DataModel::ScalarTypeKind::s16Scalar,
 	        defineScalarType("s16", 2, true, false),
 	    }, // s16
 	    {
-	        "u32",
+	        DataModel::ScalarTypeKind::u32Scalar,
 	        defineScalarType("u32", 4, false, false),
 	    }, // u32
 	    {
-	        "s32",
+	        DataModel::ScalarTypeKind::s32Scalar,
 	        defineScalarType("s32", 4, true, false),
 	    }, // s32
 	    {
-	        "u64",
+	        DataModel::ScalarTypeKind::u64Scalar,
 	        defineScalarType("u64", 8, false, false),
 	    }, // u64
 	    {
-	        "s64",
+	        DataModel::ScalarTypeKind::s64Scalar,
 	        defineScalarType("s64", 8, true, false),
 	    }, // s64
 	    {
-	        "f32",
+	        DataModel::ScalarTypeKind::f32Scalar,
 	        defineScalarType("f32", 4, true, false),
 	    }, // f32
 	    {
-	        "f64",
+	        DataModel::ScalarTypeKind::f64Scalar,
 	        defineScalarType("f64", 8, true, false),
 	    }, // f64
 	    {
-	        "usize",
+	        DataModel::ScalarTypeKind::usizeScalar,
 	        defineScalarType("usize", pointerSize, false, false),
 	    }, // usize
 	    {
-	        "ssize",
+	        DataModel::ScalarTypeKind::ssizeScalar,
 	        defineScalarType("ssize", pointerSize, true, false),
 	    }, // ssize
 	    {
-	        "c_char",
+	        DataModel::ScalarTypeKind::c_charScalar,
 	        defineScalarType("c_char", charSize, true, false),
 	    }, // c_char
 	    {
-	        "c_int",
+	        DataModel::ScalarTypeKind::c_intScalar,
 	        defineScalarType("c_int", intSize, true, false),
 	    }, // c_int
 	    {
-	        "c_size",
+	        DataModel::ScalarTypeKind::c_sizeScalar,
 	        defineScalarType("c_size", pointerSize, false, false),
 	    }, // c_size
 	};
-	std::string key{name};
-	return map.contains(key) ? std::optional<lang::Type>(map.at(key))
-	                         : std::nullopt;
+	return map.at(scalarKind);
+}
+
+std::optional<lang::Type>
+DataModel::findScalarType(const std::string_view name) const {
+	return toScalarTypeKind(name).transform(
+	    [this](const DataModel::ScalarTypeKind kind) -> lang::Type {
+		    return this->getScalarType(kind);
+	    });
 }
 
 lang::Type DataModel::defineScalarType(std::string name, size_t calculatedSize,
-                                       bool signedType, bool isMutable) const {
+                                       bool signedType, bool isMutable) {
 	return lang::Type{
 	    // scalars do not have typeID
 	    0,

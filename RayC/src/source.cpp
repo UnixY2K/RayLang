@@ -116,7 +116,8 @@ int main(int argc, char **argv) {
 
 			lang::ModuleStore moduleStore;
 
-			passes::TypeScanner typeScanner(sourceFile, *dataModel);
+			passes::TypeScanner typeScanner(sourceFile, *dataModel,
+			                                moduleStore);
 
 			typeScanner.resolve(statements);
 			// TODO: once a propper typeScanner is set in place replace this so

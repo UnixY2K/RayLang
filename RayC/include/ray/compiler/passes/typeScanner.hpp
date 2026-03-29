@@ -1,4 +1,5 @@
 #pragma once
+#include "ray/compiler/lang/moduleStore.hpp"
 #include <cstddef>
 
 #include <ray/compiler/ast/expression.hpp>
@@ -24,12 +25,15 @@ class TypeScanner : public ast::StatementVisitor,
 	std::reference_wrapper<const environment::DataModel> currentDataModel;
 
 	lang::SourceUnit currentSourceUnit;
+	lang::ModuleStore &currentModuleStore;
 	std::reference_wrapper<lang::Scope> currentScope;
 
   public:
-	TypeScanner(std::string filePath, const environment::DataModel &dataModel)
+	TypeScanner(std::string filePath, const environment::DataModel &dataModel,
+	            lang::ModuleStore &moduleStore)
 	    : messageBag("TYPE-SCANNER", filePath), directivesStack(),
 	      currentDataModel(dataModel), currentSourceUnit(),
+	      currentModuleStore(moduleStore),
 	      currentScope(currentSourceUnit.rootScope) {}
 
 	void resolve(const std::vector<std::unique_ptr<ast::Statement>> &statement);

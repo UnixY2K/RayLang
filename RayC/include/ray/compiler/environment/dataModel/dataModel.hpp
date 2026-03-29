@@ -1,12 +1,49 @@
 #pragma once
+#include <array>
 #include <cstddef>
 #include <optional>
 
 #include <ray/compiler/lang/type.hpp>
+#include <string_view>
 
 namespace ray::compiler::environment {
 class DataModel {
   public:
+	enum class ScalarTypeKind {
+		boolScalar,
+		u8Scalar,
+		s8Scalar,
+		u16Scalar,
+		s16Scalar,
+		u32Scalar,
+		s32Scalar,
+		u64Scalar,
+		s64Scalar,
+		f32Scalar,
+		f64Scalar,
+		usizeScalar,
+		ssizeScalar,
+		c_charScalar,
+		c_intScalar,
+		c_sizeScalar,
+		// undefined type used to keep track of max lenght of enum
+		ScalarTypeKindUndefined,
+	};
+
+	static constexpr const std::optional<const std::string_view>
+	getScalarTypeKindString(const ScalarTypeKind kind) {
+		static constexpr std::array<
+		    std::string_view,
+		    static_cast<size_t>(
+		        DataModel::ScalarTypeKind::ScalarTypeKindUndefined)>
+		    values = {
+
+		    };
+		return values.at(static_cast<size_t>(kind));
+	}
+	static const std::optional<const ScalarTypeKind>
+	toScalarTypeKind(const std::string_view name);
+
 	// allows to define a tuple type, its signature holds
 	lang::Type
 	defineTupleType(size_t tupleID,
@@ -26,10 +63,11 @@ class DataModel {
 	// defines an abstract empty tuple
 	lang::Type getUnitType(bool isMutable = false) const;
 
+	lang::Type getScalarType(const ScalarTypeKind scalarKind) const;
 	std::optional<lang::Type> findScalarType(const std::string_view name) const;
 
-	lang::Type defineScalarType(std::string name, size_t calculatedSize,
-	                            bool signedType, bool isMutable) const;
+	static lang::Type defineScalarType(std::string name, size_t calculatedSize,
+	                            bool signedType, bool isMutable);
 
 	lang::Type definePointerType(lang::Type returnType, bool isMutable) const;
 
