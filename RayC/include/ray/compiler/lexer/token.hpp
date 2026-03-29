@@ -82,8 +82,10 @@ struct Token {
 		TOKEN_PUB,      // pub
 		TOKEN_MUT,      // mut
 		TOKEN_STRUCT,   // struct
+		TOKEN_TRAIT,	// trait
+		TOKEN_ENUM,		// enum (C like enum)
+		TOKEN_VARIANT,	// variant (tagged enum)
 		TOKEN_AS,       // as, ex: 2 as isize
-		TOKEN_IMPORT,   // import ex: import "hello.ray"
 		// other
 		TOKEN_ERROR, // when a token failed to parse
 		TOKEN_EOF    // EOF

@@ -95,8 +95,10 @@ Token::TokenType Token::fromString(std::string_view str) {
 	    {"pub", Token::TokenType::TOKEN_PUB},           // pub
 	    {"mut", Token::TokenType::TOKEN_MUT},           // mut
 	    {"struct", Token::TokenType::TOKEN_STRUCT},     // struct
+	    {"trait", Token::TokenType::TOKEN_TRAIT},       // trait
+	    {"enum", Token::TokenType::TOKEN_ENUM},         // enum
+	    {"variant", Token::TokenType::TOKEN_VARIANT},   // variant
 	    {"as", Token::TokenType::TOKEN_AS},             // as
-	    {"import", Token::TokenType::TOKEN_IMPORT},     // import
 	};
 	std::string key{str};
 	return map.contains(key) ? map.at(key) : TokenType::TOKEN_ERROR;
@@ -244,10 +246,14 @@ std::string_view Token::toString(TokenType token) {
 		return "TOKEN_MUT";
 	case TokenType::TOKEN_STRUCT:
 		return "TOKEN_STRUCT";
+	case TokenType::TOKEN_TRAIT:
+		return "TOKEN_TRAIT";
+	case TokenType::TOKEN_ENUM:
+		return "TOKEN_ENUM";
+	case TokenType::TOKEN_VARIANT:
+		return "TOKEN_VARIANT";
 	case TokenType::TOKEN_AS:
 		return "TOKEN_AS";
-	case TokenType::TOKEN_IMPORT:
-		return "TOKEN_IMPORT";
 	// other
 	case TokenType::TOKEN_ERROR:
 		return "TOKEN_ERROR";
@@ -398,10 +404,14 @@ std::string_view Token::glyph(TokenType token) {
 		return "mut";
 	case TokenType::TOKEN_STRUCT:
 		return "struct";
+	case TokenType::TOKEN_TRAIT:
+		return "trait";
+	case TokenType::TOKEN_ENUM:
+		return "enum";
+	case TokenType::TOKEN_VARIANT:
+		return "variant";
 	case TokenType::TOKEN_AS:
 		return "as";
-	case TokenType::TOKEN_IMPORT:
-		return "import";
 	// other
 	case TokenType::TOKEN_ERROR:
 		return "<{TOKEN_ERROR}>";
@@ -410,7 +420,5 @@ std::string_view Token::glyph(TokenType token) {
 	}
 	return "<{???}>";
 }
-
-
 
 } // namespace ray::compiler
