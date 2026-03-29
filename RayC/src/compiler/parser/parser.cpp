@@ -102,9 +102,13 @@ std::optional<std::unique_ptr<ast::Statement>> Parser::declaration() {
 			return structDeclaration(pubToken.type ==
 			                         Token::TokenType::TOKEN_PUB);
 		}
+		if (match({Token::TokenType::TOKEN_TRAIT})) {
+			return traitDeclaration(pubToken.type ==
+			                        Token::TokenType::TOKEN_PUB);
+		}
 		if (match({Token::TokenType::TOKEN_FN})) {
-			return std::make_unique<ast::Function>(function(
-			    "function", pubToken.type == Token::TokenType::TOKEN_PUB));
+			return std::make_unique<ast::Function>(
+			    function(pubToken.type == Token::TokenType::TOKEN_PUB));
 		}
 		if (match({Token::TokenType::TOKEN_LET})) {
 			if (pubToken.type == Token::TokenType::TOKEN_PUB) {
@@ -148,6 +152,29 @@ Parser::structDeclaration(bool publicVisibility) {
 	    memberVisibility,
 	    name,
 	});
+}
+std::unique_ptr<ast::Statement>
+Parser::traitDeclaration(bool publicVisibility) {
+	Token name =
+	    consume(Token::TokenType::TOKEN_IDENTIFIER, "Expect trait name.");
+	std::vector<ast::Method> methods;
+
+	consume(Token::TokenType::TOKEN_LEFT_BRACE,
+	        "Expect '{' before trait body.");
+	while (!check(Token::TokenType::TOKEN_RIGHT_BRACE) && !isAtEnd()) {
+		Token pubToken;
+		if (match({Token::TokenType::TOKEN_PUB})) {
+			pubToken = previous();
+		}
+		methods.push_back(
+		    methodDeclaration(pubToken.type == Token::TokenType::TOKEN_PUB));
+		consume(Token::TokenType::TOKEN_SEMICOLON, "expected ';' after method");
+	}
+	consume(Token::TokenType::TOKEN_RIGHT_BRACE,
+	        "Expect '}' after trait body.");
+
+	return std::make_unique<ast::Trait>(
+	    ast::Trait{name, publicVisibility, std::move(methods), name});
 }
 
 std::unique_ptr<ast::Statement> Parser::statement() {
@@ -375,6 +402,48 @@ ast::Member Parser::memberDeclaration() {
 	    name, std::move(type), is_mutable, std::move(initializer), name,
 	};
 }
+ast::Method Parser::methodDeclaration(bool publicVisibility) {
+	consume(Token::TokenType::TOKEN_FN, "Expect 'fn' before name");
+	Token name =
+	    consume(Token::TokenType::TOKEN_IDENTIFIER, "Expect method name.");
+
+	consume(Token::TokenType::TOKEN_LEFT_PAREN, "Expect '(' after method name");
+	std::vector<ast::Parameter> parameters;
+	if (!check(Token::TokenType::TOKEN_RIGHT_PAREN)) {
+		do {
+			auto attributeToken = consume(Token::TokenType::TOKEN_IDENTIFIER,
+			                              "Expect parameter name.");
+			consume(Token::TokenType::TOKEN_COLON,
+			        "Expect ':' after parameter name.");
+			std::unique_ptr<ast::Expression> parameterType =
+			    pointerTypeExpression();
+			auto parameter = ast::Parameter{
+			    attributeToken,
+			    std::move(parameterType),
+			    attributeToken,
+			};
+
+			parameters.push_back(std::move(parameter));
+		} while (match({Token::TokenType::TOKEN_COMMA}));
+	}
+	consume(Token::TokenType::TOKEN_RIGHT_PAREN,
+	        "Expect ')' after parameters.");
+
+	auto previousToken = previous();
+
+	size_t newColumn = previous().column + previous().getLexeme().size();
+
+	std::unique_ptr<ast::Expression> returnType =
+	    makeUnitExpression(previous().line, newColumn);
+
+	if (match({Token::TokenType::TOKEN_ARROW})) {
+		returnType = pointerTypeExpression();
+	}
+
+	return ast::Method{Token(name),           publicVisibility,
+	                   std::move(parameters), std::nullopt,
+	                   std::move(returnType), Token(name)};
+}
 std::unique_ptr<ast::Statement> Parser::expressionStatement() {
 	auto expr = expression();
 	auto exprToken = expr->getToken();
@@ -385,13 +454,13 @@ std::unique_ptr<ast::Statement> Parser::expressionStatement() {
 	return std::make_unique<ast::TerminalExpr>(
 	    ast::TerminalExpr(std::move(expr), exprToken));
 }
-ast::Function Parser::function(std::string kind, bool publicVisiblity) {
+ast::Function Parser::function(bool publicVisiblity) {
 
 	Token name = consume(Token::TokenType::TOKEN_IDENTIFIER,
-	                     std::format("Expect {} name.", kind));
+	                     std::format("Expect function name."));
 
 	consume(Token::TokenType::TOKEN_LEFT_PAREN,
-	        std::format("Expect '(' after {} name.", kind));
+	        std::format("Expect '(' after function name."));
 	std::vector<ast::Parameter> parameters;
 	if (!check(Token::TokenType::TOKEN_RIGHT_PAREN)) {
 		do {
@@ -427,7 +496,7 @@ ast::Function Parser::function(std::string kind, bool publicVisiblity) {
 	std::optional<ast::Block> body = std::nullopt;
 	if (!match({Token::TokenType::TOKEN_SEMICOLON})) {
 		auto token = consume(Token::TokenType::TOKEN_LEFT_BRACE,
-		                     std::format("Expect '{{' before {} body.", kind));
+		                     std::format("Expect '{{' before function body."));
 		body = {
 		    block(),
 		    token,
@@ -924,6 +993,11 @@ void Parser::synchronize() {
 		case Token::TokenType::TOKEN_WHILE:
 		case Token::TokenType::TOKEN_RETURN:
 		case Token::TokenType::TOKEN_STRUCT:
+		case Token::TokenType::TOKEN_TRAIT:
+		case Token::TokenType::TOKEN_ENUM:
+		case Token::TokenType::TOKEN_VARIANT: {
+			return;
+		}
 		default: {
 		}
 		}

@@ -93,6 +93,10 @@ void TypeScanner::visitFunctionStatement(const ast::Function &functionAst) {
 	}
 	typeStack.push_back(type);
 }
+void TypeScanner::visitMethodStatement(const ast::Method &value) {
+	messageBag.error(value.getToken(),
+	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
+}
 void TypeScanner::visitIfStatement(const ast::If &ifExprAst) {
 	// we do not care for the condition, only the inner body of the expression
 	// and the else body if applies
@@ -195,6 +199,10 @@ void TypeScanner::visitStructStatement(const ast::Struct &structAst) {
 	}
 
 	structObj.members = members;
+}
+void TypeScanner::visitTraitStatement(const ast::Trait &value) {
+	messageBag.error(value.getToken(),
+	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
 }
 void TypeScanner::visitCompDirectiveStatement(
     const ast::CompDirective &compDirectiveAst) {

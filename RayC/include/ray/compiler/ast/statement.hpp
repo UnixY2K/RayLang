@@ -14,12 +14,14 @@ class Block;
 class TerminalExpr;
 class ExpressionStmt;
 class Function;
+class Method;
 class If;
 class Jump;
 class VarDecl;
 class Member;
 class While;
 class Struct;
+class Trait;
 class CompDirective;
 
 class StatementVisitor {
@@ -28,12 +30,14 @@ class StatementVisitor {
 	virtual void visitTerminalExprStatement(const TerminalExpr& value) = 0;
 	virtual void visitExpressionStmtStatement(const ExpressionStmt& value) = 0;
 	virtual void visitFunctionStatement(const Function& value) = 0;
+	virtual void visitMethodStatement(const Method& value) = 0;
 	virtual void visitIfStatement(const If& value) = 0;
 	virtual void visitJumpStatement(const Jump& value) = 0;
 	virtual void visitVarDeclStatement(const VarDecl& value) = 0;
 	virtual void visitMemberStatement(const Member& value) = 0;
 	virtual void visitWhileStatement(const While& value) = 0;
 	virtual void visitStructStatement(const Struct& value) = 0;
+	virtual void visitTraitStatement(const Trait& value) = 0;
 	virtual void visitCompDirectiveStatement(const CompDirective& value) = 0;
 	virtual ~StatementVisitor() = default;
 };
@@ -127,6 +131,36 @@ class Function : public Statement {
 	}
 
 	const std::string_view variantName() const override { return "Function"; }
+
+	const Token& getToken() const override { return token; };
+};
+class Method : public Statement {
+  public:
+	Token name;
+	bool publicVisibility;
+	std::vector<Parameter> params;
+	std::optional<Block> body;
+	std::unique_ptr<ast::Expression> returnType;
+	Token token;
+
+	Method(Token name,
+	        bool publicVisibility,
+	        std::vector<Parameter> params,
+	        std::optional<Block> body,
+	        std::unique_ptr<ast::Expression> returnType,
+	        Token token):
+		name(std::move(name)),
+		publicVisibility(std::move(publicVisibility)),
+		params(std::move(params)),
+		body(std::move(body)),
+		returnType(std::move(returnType)),
+		token(std::move(token)) {}
+
+	void visit(StatementVisitor& visitor) const override {
+		visitor.visitMethodStatement(*this);
+	}
+
+	const std::string_view variantName() const override { return "Method"; }
 
 	const Token& getToken() const override { return token; };
 };
@@ -277,6 +311,30 @@ class Struct : public Statement {
 	}
 
 	const std::string_view variantName() const override { return "Struct"; }
+
+	const Token& getToken() const override { return token; };
+};
+class Trait : public Statement {
+  public:
+	Token name;
+	bool publicVisibility;
+	std::vector<Method> methods;
+	Token token;
+
+	Trait(Token name,
+	        bool publicVisibility,
+	        std::vector<Method> methods,
+	        Token token):
+		name(std::move(name)),
+		publicVisibility(std::move(publicVisibility)),
+		methods(std::move(methods)),
+		token(std::move(token)) {}
+
+	void visit(StatementVisitor& visitor) const override {
+		visitor.visitTraitStatement(*this);
+	}
+
+	const std::string_view variantName() const override { return "Trait"; }
 
 	const Token& getToken() const override { return token; };
 };

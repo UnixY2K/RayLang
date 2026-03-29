@@ -200,6 +200,10 @@ void CTranspilerGenerator::visitFunctionStatement(
 		output << std::format("{}}}\n", identTabs);
 	}
 }
+void CTranspilerGenerator::visitMethodStatement(const ast::Method &value) {
+	messageBag.error(value.getToken(),
+	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
+}
 void CTranspilerGenerator::visitIfStatement(const ast::If &ifStatement) {
 	output << std::format("{}if (", currentIdent());
 	ifStatement.condition->visit(*this);
@@ -336,6 +340,10 @@ void CTranspilerGenerator::visitStructStatement(const ast::Struct &value) {
 		output << std::format("{}}}", currentIdent());
 		output << std::format(" {};\n", mangledStructName);
 	}
+}
+void CTranspilerGenerator::visitTraitStatement(const ast::Trait &value) {
+	messageBag.error(value.getToken(),
+	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
 }
 void CTranspilerGenerator::visitCompDirectiveStatement(
     const ast::CompDirective &compDirective) {
@@ -644,7 +652,7 @@ void CTranspilerGenerator::visitArrayAccessExpression(
 }
 void CTranspilerGenerator::visitArrayTypeExpression(
     const ast::ArrayType &arrayTypeAst) {
-	// TODO: once array type holds its size in the AST provide 
+	// TODO: once array type holds its size in the AST provide
 	// a check to transpile it to C
 	arrayTypeAst.subType->visit(*this);
 

@@ -181,6 +181,10 @@ void TypeChecker::visitFunctionStatement(const ast::Function &functionExprAst) {
 		typeStack.push_back(functionType);
 	}
 }
+void TypeChecker::visitMethodStatement(const ast::Method &value) {
+	messageBag.error(value.getToken(),
+	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
+}
 void TypeChecker::visitIfStatement(const ast::If &ifStmt) {
 	auto conditionType = resolveType(*ifStmt.condition);
 	if (!conditionType.has_value()) {
@@ -439,6 +443,10 @@ void TypeChecker::visitStructStatement(const ast::Struct &structObj) {
 	auto structType =
 	    currentDataModel.get().defineStructType(structId, structName, 1);
 	typeStack.push_back(structType);
+}
+void TypeChecker::visitTraitStatement(const ast::Trait &value) {
+	messageBag.error(value.getToken(),
+	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
 }
 void TypeChecker::visitCompDirectiveStatement(
     const ast::CompDirective &compDirectiveAst) {

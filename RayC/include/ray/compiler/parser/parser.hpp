@@ -34,6 +34,7 @@ class Parser {
 	std::optional<std::unique_ptr<ast::Statement>> CompilerDirective();
 	std::optional<std::unique_ptr<ast::Statement>> declaration();
 	std::unique_ptr<ast::Statement> structDeclaration(bool publicVisibility);
+	std::unique_ptr<ast::Statement> traitDeclaration(bool publicVisibility);
 	std::unique_ptr<ast::Statement> statement();
 	std::unique_ptr<ast::Statement> forStatement();
 	std::unique_ptr<ast::Statement> ifStatement();
@@ -43,8 +44,9 @@ class Parser {
 	std::unique_ptr<ast::Statement> whileStatement();
 	ast::VarDecl varDeclaration();
 	ast::Member memberDeclaration();
+	ast::Method methodDeclaration(bool publicVisibility);
 	std::unique_ptr<ast::Statement> expressionStatement();
-	ast::Function function(std::string kind, bool publicVisibility);
+	ast::Function function(bool publicVisibility);
 	std::vector<std::unique_ptr<ast::Statement>> block();
 	std::unique_ptr<ast::Expression> comma();
 	std::unique_ptr<ast::Expression> assignment();

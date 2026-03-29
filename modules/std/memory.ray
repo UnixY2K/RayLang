@@ -1,6 +1,7 @@
 
 
 pub trait Allocator{
-
+	fn allocate() -> *mut ();
+	fn free(ptr: *mut ());
 }
 
