@@ -110,4 +110,22 @@ SourceUnit::findStruct(const std::string_view structName,
 		        });
 	    });
 }
+
+std::optional<std::reference_wrapper<Trait>>
+SourceUnit::findTrait(const std::string_view traitName,
+                      const Scope &currentScope) const {
+	auto foundTrait = currentScope.findLocalTrait(traitName);
+	return foundTrait
+	    .transform([](util::soft_reference<Trait> traitRef) {
+		    std::reference_wrapper<const Trait> valueRef =
+		        traitRef.getObject().value();
+		    return traitRef.getObject().value();
+	    })
+	    .or_else([&] {
+		    return currentScope.getParentScope().and_then(
+		        [&](Scope &parentScope) {
+			        return this->findTrait(traitName, parentScope);
+		        });
+	    });
+}
 } // namespace ray::compiler::lang

@@ -373,7 +373,7 @@ void TypeChecker::visitWhileStatement(const ast::While &whileStmt) {
 
 	typeStack.push_back(type);
 }
-void TypeChecker::visitStructStatement(const ast::Struct &structObj) {
+void TypeChecker::visitStructStatement(const ast::Struct &structAst) {
 
 	std::string currentModule;
 
@@ -393,16 +393,16 @@ void TypeChecker::visitStructStatement(const ast::Struct &structObj) {
 		directivesStack.pop_back();
 	}
 
-	std::string structName = std::string(structObj.name.getLexeme());
+	std::string structName = std::string(structAst.name.getLexeme());
 	std::string mangledStructName =
-	    passes::mangling::NameMangler().mangleStruct(currentModule, structObj,
+	    passes::mangling::NameMangler().mangleStruct(currentModule, structAst,
 	                                                 linkageDirective);
 
 	// TODO: rework this section to just verify the existing struct
 	return;
-	if (!structObj.declaration) {
+	if (!structAst.declaration) {
 		std::vector<lang::StructMember> members;
-		for (const auto &member : structObj.members) {
+		for (const auto &member : structAst.members) {
 			auto memberType = resolveType(member);
 			if (!memberType.has_value()) {
 				messageBag.error(
@@ -444,9 +444,31 @@ void TypeChecker::visitStructStatement(const ast::Struct &structObj) {
 	    currentDataModel.get().defineStructType(structId, structName, 1);
 	typeStack.push_back(structType);
 }
-void TypeChecker::visitTraitStatement(const ast::Trait &value) {
-	messageBag.error(value.getToken(),
-	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
+void TypeChecker::visitTraitStatement(const ast::Trait &traitAst) {
+	std::string currentModule;
+
+	std::string traitName = std::string(traitAst.name.getLexeme());
+	std::string mangledTraitName =
+	    passes::mangling::NameMangler().mangleTrait(currentModule, traitAst);
+
+	size_t traitId;
+	auto foundTrait = currentSourceUnit.findTrait(traitName, currentScope);
+
+	if (!foundTrait.has_value()) {
+		return;
+	}
+	traitId = foundTrait->get().traitID;
+
+	std::vector<util::copy_ptr<lang::Type>> methodSignature;
+
+	for (const auto &method : foundTrait->get().methods) {
+		methodSignature.push_back(
+		    method.signature.getMethodType(currentDataModel.get()));
+	}
+
+	auto traitType = currentDataModel.get().defineTraitType(
+	    traitId, foundTrait->get().name, methodSignature);
+	return typeStack.push_back(traitType);
 }
 void TypeChecker::visitCompDirectiveStatement(
     const ast::CompDirective &compDirectiveAst) {

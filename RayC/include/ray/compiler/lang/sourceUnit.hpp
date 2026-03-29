@@ -1,5 +1,6 @@
 #pragma once
 
+#include "ray/compiler/lang/trait.hpp"
 #include <cstddef>
 #include <functional>
 #include <optional>
@@ -40,6 +41,9 @@ class SourceUnit {
 	std::optional<std::reference_wrapper<Struct>>
 	findStruct(const std::string_view structName,
 	           const Scope &currentScope) const;
+	std::optional<std::reference_wrapper<Trait>>
+	findTrait(const std::string_view traitName,
+	          const Scope &currentScope) const;
 
 	const std::unordered_map<size_t, FunctionDeclaration> &
 	getFunctions() const {

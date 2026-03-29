@@ -23,18 +23,9 @@ class MethodSignature {
 	Type returnType;
 	std::vector<MethodParameter> parameters;
 
-	Type getMethodType(const environment::DataModel &dataModel) const {
-		std::vector<util::copy_ptr<Type>> signature;
-		for (const auto &parameter : parameters) {
-			signature.push_back(parameter.parameterType);
-		}
-		return dataModel.defineMethodType(returnType, signature);
-	}
+	Type getMethodType(const environment::DataModel &dataModel) const;
 
-	Type
-	getOverloadedMethodType(const environment::DataModel &dataModel) const {
-		return dataModel.defineOverloadedMethodType(returnType);
-	}
+	Type getOverloadedMethodType(const environment::DataModel &dataModel) const;
 };
 
 class Method {

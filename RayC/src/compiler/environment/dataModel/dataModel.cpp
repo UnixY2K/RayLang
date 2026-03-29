@@ -123,6 +123,24 @@ lang::Type DataModel::defineStructType(size_t structID, std::string name,
 	           // cannot be guaranteed
 	};
 }
+lang::Type DataModel::defineTraitType(
+    size_t traitID, std::string name,
+    std::vector<util::copy_ptr<lang::Type>> methodSignature) const {
+	return {
+	    // its type is the same as structID
+	    traitID,
+	    // initialized
+	    true,
+	    lang::TypeKind::abstract,
+	    name,
+	    0,
+	    false, // non mutable
+	    false, // non signed
+	    false, // cannot be overloaded
+	    {},    // no subtype
+	    methodSignature,
+	};
+}
 
 lang::Type DataModel::defineFunctionType(
     lang::Type returnType,
@@ -146,6 +164,36 @@ DataModel::defineOverloadedFunctionType(lang::Type returnType) const {
 	    lang::TypeKind::pointer,
 	    // define the name as pointer
 	    "//fn-overload",
+	    0,          // an overloaded function does not hold any size
+	    false,      // if the pointer type is const or not is decided later
+	    false,      // non signed, is a pointer
+	    true,       // we hold a function pointer so it is not overloaded
+	    returnType, // same as a function type
+	    {}          // no signature data as the parent expression has to
+	                // resolve the desired overload
+	);
+}
+
+lang::Type DataModel::defineMethodType(
+    lang::Type returnType,
+    std::vector<util::copy_ptr<lang::Type>> signature) const {
+	auto method = definePointerType(returnType, false);
+	// TODO: remove this ugly hack once the new type scanner is set in place
+	method.name = "//method";
+	method.signature = signature;
+	return method;
+}
+lang::Type DataModel::defineOverloadedMethodType(lang::Type returnType) const {
+	return lang::Type(
+	    // no type ID
+	    0,
+	    // initialized as its overloads are initialized
+	    true,
+	    // a pointer is not a scalar as it is an address memory
+	    // that references an object
+	    lang::TypeKind::pointer,
+	    // define the name as pointer
+	    "//method-overload",
 	    0,          // an overloaded function does not hold any size
 	    false,      // if the pointer type is const or not is decided later
 	    false,      // non signed, is a pointer

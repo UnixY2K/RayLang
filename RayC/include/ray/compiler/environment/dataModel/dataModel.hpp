@@ -54,6 +54,9 @@ class DataModel {
 	// the size is 0 and can only be referenced as a pointer
 	lang::Type defineStructType(size_t structID, std::string name,
 	                            size_t aproximatedSize) const;
+	lang::Type defineTraitType(
+	    size_t traitID, std::string name,
+	    std::vector<util::copy_ptr<lang::Type>> methodSignature) const;
 	// defines a new function type
 	lang::Type
 	defineFunctionType(lang::Type returnType,
