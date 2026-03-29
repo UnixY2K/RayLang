@@ -359,7 +359,7 @@ void CTranspilerGenerator::visitCompDirectiveStatement(
 		    attributes.find("mangling") != attributes.end()
 		        ? attributes.at("mangling") == "c"
 		              ? directive::LinkageDirective::ManglingType::C
-		              : directive::LinkageDirective::ManglingType::Unknonw
+		              : directive::LinkageDirective::ManglingType::Unknown
 		        : directive::LinkageDirective::ManglingType::Default,
 		    compDirective.getToken());
 		if (compDirective.child) {

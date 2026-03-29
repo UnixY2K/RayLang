@@ -1,36 +1,43 @@
-#include "ray/compiler/environment/dataModel/dataModel.hpp"
-#include "ray/compiler/lang/symbol.hpp"
-#include "ray/util/copy_ptr.hpp"
+
 #include <cassert>
 #include <cstddef>
 #include <format>
 #include <functional>
+#include <memory>
 #include <optional>
+#include <ranges>
 #include <string_view>
 
 #include <ray/compiler/ast/expression.hpp>
 #include <ray/compiler/ast/statement.hpp>
+#include <ray/compiler/environment/dataModel/dataModel.hpp>
 #include <ray/compiler/lang/functionDefinition.hpp>
 #include <ray/compiler/lang/scope.hpp>
 #include <ray/compiler/lang/struct.hpp>
+#include <ray/compiler/lang/symbol.hpp>
+#include <ray/compiler/lang/trait.hpp>
 #include <ray/compiler/lang/type.hpp>
 #include <ray/compiler/passes/symbol_mangler.hpp>
 #include <ray/compiler/passes/typeScanner.hpp>
+#include <ray/util/copy_ptr.hpp>
 #include <ray/util/soft_reference.hpp>
 
 namespace ray::compiler::passes {
 
 void TypeScanner::resolve(
     const std::vector<std::unique_ptr<ast::Statement>> &statements) {
-	// search for structs, then go throught the statements
-	for (const auto &statement : statements) {
+	// search for structs
+	for (const auto &structAst :
+	     statements | std::views::transform([](const auto &statement) {
+		     return dynamic_cast<const ast::Struct *>(statement.get());
+	     }) | std::views::filter([](const auto *structAst) {
+		     return structAst != nullptr;
+	     })) {
 		// TODO: refactor the compiler directives so they can be attached to
 		// the related AST instead
-		if (const auto *structAst =
-		        dynamic_cast<const ast::Struct *>(statement.get())) {
-			discoverStruct(*structAst);
-		}
+		discoverStruct(*structAst);
 	}
+	// iterate each statement
 	for (const auto &statement : statements) {
 		statement->visit(*this);
 	}
@@ -157,16 +164,7 @@ void TypeScanner::visitStructStatement(const ast::Struct &structAst) {
 	std::string mangledStructName =
 	    passes::mangling::NameMangler().mangleStruct(currentModule, structAst,
 	                                                 linkageDirective);
-
 	auto &scope = currentScope.get();
-	auto structObjRes = scope.findLocalStruct(structName)
-	                        .value_or(util::soft_reference<lang::Struct>())
-	                        .getObject();
-
-	// TODO: change how compiler directives work
-	// this is an ugly workarround to declare structs that have compiler
-	// directives and were not discovered due to it
-
 	if (!currentSourceUnit.declareStruct(
 	        lang::Struct{
 	            .opaque = true,                   // unknown implementation
@@ -177,21 +175,36 @@ void TypeScanner::visitStructStatement(const ast::Struct &structAst) {
 		messageBag.error(structAst.getToken(), "could not declare struct");
 	}
 
+	auto structObjRes = scope.findLocalStruct(structName)
+	                        .value_or(util::soft_reference<lang::Struct>())
+	                        .getObject();
+
+	// TODO: change how compiler directives work
+	// this is an ugly workarround to declare structs that have compiler
+	// directives and were not discovered due to it
+
 	if (structAst.declaration) {
 		return;
 	}
 
 	if (!structObjRes.has_value()) {
-		messageBag.bug(structAst.getToken(),
-		               std::format("could not find internal reference for {}",
-		                           structName));
+		messageBag.bug(
+		    structAst.getToken(),
+		    std::format("could not find Struct internal reference for '{}'",
+		                structName));
 		return;
 	}
 	auto &structObj = structObjRes.value().get();
 	std::vector<lang::StructMember> members;
 	for (const auto &member : structAst.members) {
 		member.visit(*this);
-		assert(!structMemberStack.empty());
+		if (structMemberStack.empty()) {
+			messageBag.bug(
+			    member.getToken(),
+			    std::format("could not get struct member data for '{}'",
+			                member.name.getLexeme()));
+			continue;
+		}
 		auto memberObj = structMemberStack.back();
 		structMemberStack.pop_back();
 
@@ -200,9 +213,68 @@ void TypeScanner::visitStructStatement(const ast::Struct &structAst) {
 
 	structObj.members = members;
 }
-void TypeScanner::visitTraitStatement(const ast::Trait &value) {
-	messageBag.error(value.getToken(),
-	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
+void TypeScanner::visitTraitStatement(const ast::Trait &traitAst) {
+	// process all the linkage directives to ensure they are not dangling after
+	std::optional<directive::LinkageDirective> linkageDirective;
+
+	for (size_t i = directivesStack.size(); i > directivesStackTop; i--) {
+		auto &directive = directivesStack[i - i];
+		if (auto foundLinkDirective =
+		        dynamic_cast<directive::LinkageDirective *>(directive.get())) {
+			linkageDirective = *foundLinkDirective;
+		} else {
+			messageBag.warning(
+			    directive->getToken(),
+			    std::format("unmatched compiler directive '{}' for function.\n",
+			                directive->directiveName()));
+		}
+		directivesStack.pop_back();
+	}
+
+	auto traitName = traitAst.name.getLexeme();
+	std::string currentModule;
+	std::string mangledStructName =
+	    passes::mangling::NameMangler().mangleTrait(currentModule, traitAst);
+
+	auto &scope = currentScope.get();
+	if (!currentSourceUnit.declareTrait(
+	        lang::Trait{
+	            .name = std::string(traitName),   //
+	            .mangledName = mangledStructName, //
+	        },
+	        scope)) {
+		messageBag.error(traitAst.getToken(), "could not declare trait");
+	}
+
+	auto traitObjRes = scope.findLocalTrait(traitName)
+	                       .value_or(util::soft_reference<lang::Trait>())
+	                       .getObject();
+
+	if (!traitObjRes.has_value()) {
+		messageBag.bug(
+		    traitAst.getToken(),
+		    std::format("could not find Trait internal reference for '{}'",
+		                traitName));
+		return;
+	}
+	auto &traitObj = traitObjRes.value().get();
+	std::vector<lang::Method> methods;
+	for (const auto &method : traitAst.methods) {
+		method.visit(*this);
+		if (traitMethodStack.empty()) {
+			messageBag.bug(
+			    method.getToken(),
+			    std::format("could not get trait method data for '{}'",
+			                method.name.getLexeme()));
+			continue;
+		}
+		auto traitObj = traitMethodStack.back();
+		traitMethodStack.pop_back();
+
+		methods.push_back(traitObj);
+	}
+
+	traitObj.methods = methods;
 }
 void TypeScanner::visitCompDirectiveStatement(
     const ast::CompDirective &compDirectiveAst) {
@@ -219,7 +291,7 @@ void TypeScanner::visitCompDirectiveStatement(
 		    attributes.find("mangling") != attributes.end()
 		        ? attributes.at("mangling") == "c"
 		              ? directive::LinkageDirective::ManglingType::C
-		              : directive::LinkageDirective::ManglingType::Unknonw
+		              : directive::LinkageDirective::ManglingType::Unknown
 		        : directive::LinkageDirective::ManglingType::Default,
 		    directiveToken);
 		if (compDirectiveAst.child) {

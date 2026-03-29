@@ -1,13 +1,14 @@
 #pragma once
-#include "ray/compiler/lang/moduleStore.hpp"
 #include <cstddef>
 
 #include <ray/compiler/ast/expression.hpp>
 #include <ray/compiler/ast/statement.hpp>
 #include <ray/compiler/directives/compilerDirective.hpp>
 #include <ray/compiler/environment/dataModel/dataModel.hpp>
+#include <ray/compiler/lang/moduleStore.hpp>
 #include <ray/compiler/lang/sourceUnit.hpp>
 #include <ray/compiler/lang/struct.hpp>
+#include <ray/compiler/lang/trait.hpp>
 #include <ray/compiler/lang/type.hpp>
 #include <ray/compiler/message_bag.hpp>
 
@@ -21,6 +22,7 @@ class TypeScanner : public ast::StatementVisitor,
 
 	std::vector<lang::Type> typeStack;
 	std::vector<lang::StructMember> structMemberStack;
+	std::vector<lang::Method> traitMethodStack;
 
 	std::reference_wrapper<const environment::DataModel> currentDataModel;
 

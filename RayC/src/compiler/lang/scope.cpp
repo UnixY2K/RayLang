@@ -26,6 +26,15 @@ bool Scope::bindStruct(Struct &&structObj) {
 	currentStructObj = structObj;
 	return true;
 }
+bool Scope::bindTrait(Trait &&traitObj) {
+	assert(traits.contains(traitObj.name));
+	util::soft_reference<Trait> currentTraitRef = traits.at(traitObj.name);
+	assert(currentTraitRef.getObjectId() != 0);
+	Trait &currentTraitObj = currentTraitRef.getObject().value().get();
+
+	currentTraitObj = traitObj;
+	return true;
+}
 
 bool Scope::bindFunctionDeclaration(
     std::string_view name,
@@ -79,6 +88,13 @@ bool Scope::declareStruct(const util::soft_reference<Struct> &structRef) {
 	auto result = structs.insert(std::make_pair(structObj.name, structRef));
 	return result.second;
 }
+bool Scope::declareTrait(const util::soft_reference<Trait> &traitRef) {
+	assert(traitRef.getObjectId() != 0);
+	assert(traitRef.getObject().has_value());
+	auto traitObj = traitRef.getObject()->get();
+	auto result = traits.insert(std::make_pair(traitObj.name, traitRef));
+	return result.second;
+}
 bool Scope::declareLocalVariable(const util::soft_reference<Symbol> symbolRef) {
 	assert(symbolRef.getObject().has_value());
 	const auto &symbol = symbolRef.getObject().value().get();
@@ -122,6 +138,24 @@ Scope::findLocalStruct(const std::string_view name) {
 	std::string key = std::string(name);
 	if (structs.contains(key)) {
 		return structs.at(key);
+	}
+	return std::nullopt;
+}
+
+const std::optional<const util::soft_reference<Trait>>
+Scope::findLocalTrait(const std::string_view name) const {
+	std::string key = std::string(name);
+	if (traits.contains(key)) {
+		return traits.at(key);
+	}
+	return std::nullopt;
+}
+
+std::optional<util::soft_reference<Trait>>
+Scope::findLocalTrait(const std::string_view name) {
+	std::string key = std::string(name);
+	if (traits.contains(key)) {
+		return traits.at(key);
 	}
 	return std::nullopt;
 }

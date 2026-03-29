@@ -52,6 +52,20 @@ bool SourceUnit::declareStruct(const Struct &structObj, Scope &scope) {
 
 	return scope.declareStruct(structSoftRef);
 }
+bool SourceUnit::declareTrait(const Trait &traitObj, Scope &scope) {
+
+	if (scope.findLocalTrait(traitObj.name)) {
+		return true;
+	}
+
+	auto val = this->traits.insert(std::make_pair(nextId, traitObj));
+	assert(val.second);
+	auto &traitRef = val.first->second;
+	traitRef.traitID = nextId++;
+	auto traitSoftRef = util::soft_reference<Trait>{traitRef.traitID, traitRef};
+
+	return scope.declareTrait(traitSoftRef);
+}
 
 std::vector<util::soft_reference<FunctionDeclaration>>
 SourceUnit::findFunctionDeclarations(const std::string_view functionName,

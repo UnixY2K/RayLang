@@ -22,7 +22,7 @@ std::string NameMangler::mangleFunction(
 		case directive::LinkageDirective::ManglingType::C: {
 			return function.name.lexeme;
 		}
-		case directive::LinkageDirective::ManglingType::Unknonw: {
+		case directive::LinkageDirective::ManglingType::Unknown: {
 			// the ideal would be to return an optional
 			// and make the compilation to fail
 			std::cerr << std::format(
@@ -50,7 +50,7 @@ std::string NameMangler::mangleStruct(
 		case directive::LinkageDirective::ManglingType::C: {
 			return structDefinition.name.lexeme;
 		}
-		case directive::LinkageDirective::ManglingType::Unknonw: {
+		case directive::LinkageDirective::ManglingType::Unknown: {
 			// the ideal would be to return an optional
 			// and make the compilation to fail
 			std::cerr << std::format(
@@ -64,5 +64,13 @@ std::string NameMangler::mangleStruct(
 	                   module.size(), module,
 	                   structDefinition.name.lexeme.size(),
 	                   structDefinition.name.lexeme);
+}
+
+std::string NameMangler::mangleTrait(std::string_view module,
+                                     const ast::Trait &traitDefinition) {
+	return std::format("_rayMv{}_T{}_M{}_{}_N{}_{}_VTable", manglerVersion, "S",
+	                   module.size(), module,
+	                   traitDefinition.name.lexeme.size(),
+	                   traitDefinition.name.lexeme);
 }
 } // namespace ray::compiler::passes::mangling

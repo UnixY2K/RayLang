@@ -9,7 +9,7 @@ namespace ray::compiler::directive {
 
 class LinkageDirective : public CompilerDirective {
   public:
-	enum class ManglingType { Default, C, Unknonw };
+	enum class ManglingType { Default, C, Unknown };
 
 	std::string overrideName;
 	bool isExternal = false;

@@ -19,6 +19,7 @@ class SourceUnit {
 	std::unordered_map<size_t, Symbol> variables;
 	std::unordered_map<size_t, FunctionDeclaration> functions;
 	std::unordered_map<size_t, Struct> structs;
+	std::unordered_map<size_t, Trait> traits;
 
   public:
 	Scope rootScope;
@@ -30,6 +31,8 @@ class SourceUnit {
 	                     Scope &scope);
 	[[nodiscard("must check struct declaration result")]]
 	bool declareStruct(const Struct &structobj, Scope &scope);
+	[[nodiscard("must check struct declaration result")]]
+	bool declareTrait(const Trait &traitObj, Scope &scope);
 
 	std::vector<util::soft_reference<FunctionDeclaration>>
 	findFunctionDeclarations(const std::string_view functionName,

@@ -2,9 +2,10 @@
 #include <array>
 #include <cstddef>
 #include <optional>
+#include <string_view>
 
 #include <ray/compiler/lang/type.hpp>
-#include <string_view>
+#include <ray/util/copy_ptr.hpp>
 
 namespace ray::compiler::environment {
 class DataModel {
@@ -60,6 +61,11 @@ class DataModel {
 	// defines a type that specifies that it is an overloaded function type
 	lang::Type defineOverloadedFunctionType(lang::Type returnType) const;
 
+	lang::Type
+	defineMethodType(lang::Type returnType,
+	                 std::vector<util::copy_ptr<lang::Type>> signature) const;
+	lang::Type defineOverloadedMethodType(lang::Type returnType) const;
+
 	// defines an abstract empty tuple
 	lang::Type getUnitType(bool isMutable = false) const;
 
@@ -67,7 +73,7 @@ class DataModel {
 	std::optional<lang::Type> findScalarType(const std::string_view name) const;
 
 	static lang::Type defineScalarType(std::string name, size_t calculatedSize,
-	                            bool signedType, bool isMutable);
+	                                   bool signedType, bool isMutable);
 
 	lang::Type definePointerType(lang::Type returnType, bool isMutable) const;
 
