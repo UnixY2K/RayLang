@@ -357,7 +357,7 @@ DataModel::getNumberLiteralType(const std::string_view lexeme) const {
 	}
 
 	if (numEnd + 1 < lexeme.size()) {
-		return findScalarType(std::string_view(lexeme).substr(numEnd));
+		return findScalarType(std::string_view(lexeme).substr(numEnd + 1));
 	}
 
 	const char *parse_start_ptr = lexeme.data();
