@@ -615,26 +615,26 @@ void TypeChecker::visitAssignExpression(const ast::Assign &assignExpr) {
 		break;
 	}
 }
-void TypeChecker::visitBinaryExpression(const ast::Binary &binaryExpr) {
-	auto leftType = resolveType(*binaryExpr.left);
-	auto rightType = resolveType(*binaryExpr.right);
+void TypeChecker::visitBinaryExpression(const ast::Binary &binaryExprAst) {
+	auto leftType = resolveType(*binaryExprAst.left);
+	auto rightType = resolveType(*binaryExprAst.right);
 
 	if (!(leftType.has_value() && rightType.has_value())) {
 		if (!leftType.has_value()) {
 			messageBag.error(
-			    binaryExpr.left->getToken(),
+			    binaryExprAst.left->getToken(),
 			    std::format("left expression did not yield a value"));
 		}
 
 		if (!rightType.has_value()) {
 			messageBag.error(
-			    binaryExpr.right->getToken(),
+			    binaryExprAst.right->getToken(),
 			    std::format("right expression did not yield a value"));
 		}
 		return;
 	}
 
-	auto op = binaryExpr.op;
+	auto op = binaryExprAst.op;
 	// TODO: once we start supporting operator overload this should be done by
 	// lookup of the overloads and get the return type of it
 	switch (op.type) {
@@ -660,7 +660,7 @@ void TypeChecker::visitBinaryExpression(const ast::Binary &binaryExpr) {
 		typeStack.push_back(findScalarTypeInfo("bool").value());
 		break;
 	default:
-		messageBag.error(binaryExpr.op,
+		messageBag.error(binaryExprAst.op,
 		                 std::format("'{}' is not a supported binary operation",
 		                             op.getLexeme()));
 	}

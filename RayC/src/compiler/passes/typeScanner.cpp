@@ -54,9 +54,21 @@ const std::vector<std::string> TypeScanner::getWarnings() const {
 void TypeScanner::visitBlockStatement(const ast::Block &blockAst) {
 	auto &parentScope = currentScope.get();
 	currentScope = parentScope.makeChildScope();
+	std::vector<lang::Type> returnTypes;
 
 	for (const auto &astStatement : blockAst.statements) {
-		astStatement->visit(*this);
+		auto statementTypes = resolveTypes(*astStatement.get());
+		while (!statementTypes.empty()) {
+			auto returnType = statementTypes.back();
+			statementTypes.pop_back();
+			returnTypes.push_back(returnType);
+		}
+	}
+
+	for (const auto &returnType : returnTypes) {
+		if (returnType != lang::Type::defineStmtType()) {
+			typeStack.push_back(returnType);
+		}
 	}
 
 	currentScope = parentScope;
@@ -417,7 +429,57 @@ void TypeScanner::visitAssignExpression(const ast::Assign &assignAst) {
 	assignAst.rhs->visit(*this);
 }
 void TypeScanner::visitBinaryExpression(const ast::Binary &binaryExprAst) {
-	// we do not care about binary expressions as they cannot yield a new type
+	// TODO: once operator overload is implemented
+	// make use of the scanning to resolve its type
+	auto leftType = resolveType(*binaryExprAst.left);
+	auto rightType = resolveType(*binaryExprAst.right);
+
+	if (!(leftType == lang::Type::defineUnknownType() &&
+	      rightType == lang::Type::defineUnknownType())) {
+		if (leftType == lang::Type::defineUnknownType()) {
+			messageBag.error(
+			    binaryExprAst.left->getToken(),
+			    std::format("left expression did not yield a value"));
+		}
+
+		if (rightType == lang::Type::defineUnknownType()) {
+			messageBag.error(
+			    binaryExprAst.right->getToken(),
+			    std::format("right expression did not yield a value"));
+		}
+		return;
+	}
+
+	auto op = binaryExprAst.op;
+	// TODO: once we start supporting operator overload this should be done by
+	// lookup of the overloads and get the return type of it
+	switch (op.type) {
+	case Token::TokenType::TOKEN_PLUS:
+	case Token::TokenType::TOKEN_MINUS:
+	case Token::TokenType::TOKEN_STAR:
+	case Token::TokenType::TOKEN_SLASH:
+	case Token::TokenType::TOKEN_PERCENT:
+	case Token::TokenType::TOKEN_AMPERSAND:
+	case Token::TokenType::TOKEN_PIPE:
+	case Token::TokenType::TOKEN_CARET:
+	case Token::TokenType::TOKEN_LESS_LESS:
+		// currently assume the the type is the same as left expression type
+		typeStack.push_back(leftType);
+		break;
+	case Token::TokenType::TOKEN_GREAT_GREAT:
+	case Token::TokenType::TOKEN_EQUAL_EQUAL:
+	case Token::TokenType::TOKEN_BANG_EQUAL:
+	case Token::TokenType::TOKEN_LESS:
+	case Token::TokenType::TOKEN_GREAT:
+	case Token::TokenType::TOKEN_LESS_EQUAL:
+	case Token::TokenType::TOKEN_GREAT_EQUAL:
+		typeStack.push_back(findScalarTypeInfo("bool").value());
+		break;
+	default:
+		messageBag.error(binaryExprAst.op,
+		                 std::format("'{}' is not a supported binary operation",
+		                             op.getLexeme()));
+	}
 }
 void TypeScanner::visitCallExpression(const ast::Call &callAst) {
 	// the type checker is responsible for verifying the types
@@ -438,9 +500,9 @@ void TypeScanner::visitGetExpression(const ast::Get &value) {
 	messageBag.error(value.getToken(),
 	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
 }
-void TypeScanner::visitGroupingExpression(const ast::Grouping &value) {
-	messageBag.error(value.getToken(),
-	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
+void TypeScanner::visitGroupingExpression(const ast::Grouping &groupingAst) {
+	auto returnType = resolveType(*groupingAst.expression.get());
+	typeStack.push_back(returnType);
 }
 void TypeScanner::visitLiteralExpression(const ast::Literal &literalAst) {
 	switch (literalAst.kind.type) {
