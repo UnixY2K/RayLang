@@ -434,22 +434,6 @@ void TypeScanner::visitBinaryExpression(const ast::Binary &binaryExprAst) {
 	auto leftType = resolveType(*binaryExprAst.left);
 	auto rightType = resolveType(*binaryExprAst.right);
 
-	if (!(leftType == lang::Type::defineUnknownType() &&
-	      rightType == lang::Type::defineUnknownType())) {
-		if (leftType == lang::Type::defineUnknownType()) {
-			messageBag.error(
-			    binaryExprAst.left->getToken(),
-			    std::format("left expression did not yield a value"));
-		}
-
-		if (rightType == lang::Type::defineUnknownType()) {
-			messageBag.error(
-			    binaryExprAst.right->getToken(),
-			    std::format("right expression did not yield a value"));
-		}
-		return;
-	}
-
 	auto op = binaryExprAst.op;
 	// TODO: once we start supporting operator overload this should be done by
 	// lookup of the overloads and get the return type of it
@@ -483,9 +467,11 @@ void TypeScanner::visitBinaryExpression(const ast::Binary &binaryExprAst) {
 }
 void TypeScanner::visitCallExpression(const ast::Call &callAst) {
 	// the type checker is responsible for verifying the types
-	for (const auto &argument : callAst.arguments) {
-		argument->visit(*this);
-	}
+	// for (const auto &argument : callAst.arguments) {
+	//	argument->visit(*this);
+	//}
+	auto returnType = resolveType(*callAst.callee.get());
+	typeStack.push_back(returnType);
 }
 void TypeScanner::visitIntrinsicCallExpression(
     const ast::IntrinsicCall &intrinsicCallAst) {
@@ -674,11 +660,10 @@ TypeScanner::resolveTypes(const ast::Expression &expression) {
 		returnTypes.push_back(returnType);
 	}
 	if (returnTypes.size() < 1) {
-		messageBag.bug(
-		    expression.getToken(),
-		    std::format("'{}' did not resolve a type, assuming statement",
-		                expression.variantName()));
-		typeStack.push_back(lang::Type::defineStmtType());
+		messageBag.bug(expression.getToken(),
+		               std::format("'{}' did not resolve a type",
+		                           expression.variantName()));
+		typeStack.push_back(lang::Type::defineUnknownType());
 	}
 	return returnTypes;
 }
