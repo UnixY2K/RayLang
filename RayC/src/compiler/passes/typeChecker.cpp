@@ -1014,7 +1014,7 @@ TypeChecker::resolveType(const ast::Statement &statement) {
 				messageBag.bug(
 				    statement.getToken(),
 				    std::format(
-				        "'{}' return types does not match for '{}' vs '{}'",
+				        "'{}' return types does not match for expected '{}' vs '{}'",
 				        statement.variantName(), types[0].name, types[i].name));
 			}
 		}
