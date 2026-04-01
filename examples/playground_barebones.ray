@@ -47,7 +47,7 @@ fn fib(fibn: s32) -> s32 {
 
 
 #[Linkage(mangling="c", resolution="external")]
-pub fn main(argc: mut s32, argv: mut *mut *c_char) -> mut s32 {
+pub fn main(argc: mut s32, argv: mut *mut *mut c_char) -> mut s32 {
 	if(argc != 2){
 		print("usage: ");
 		print(argv[0] as [u8;]);
