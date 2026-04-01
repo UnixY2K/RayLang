@@ -108,7 +108,7 @@ void TypeScanner::visitFunctionStatement(const ast::Function &functionAst) {
 
 	auto type = resolveType(*functionAst.returnType);
 	if (functionAst.body.has_value()) {
-		resolveTypes(*functionAst.body);
+		discardTypes(*functionAst.body);
 	}
 	typeStack.push_back(type);
 }
@@ -192,7 +192,7 @@ void TypeScanner::visitMemberStatement(const ast::Member &memberAst) {
 	structMemberStack.push_back(structMember);
 }
 void TypeScanner::visitWhileStatement(const ast::While &whileAst) {
-	resolveType(*whileAst.body);
+	discardTypes(*whileAst.body);
 	typeStack.push_back(lang::Type::defineStmtType());
 }
 void TypeScanner::visitStructStatement(const ast::Struct &structAst) {
@@ -600,7 +600,7 @@ void TypeScanner::visitNamedTypeExpression(const ast::NamedType &typeAst) {
 	}
 }
 void TypeScanner::visitCastExpression(const ast::Cast &castAst) {
-	castAst.expression->visit(*this);
+	discardTypes(*castAst.expression.get());
 	typeStack.push_back(resolveType(*castAst.type));
 }
 void TypeScanner::visitParameterExpression(const ast::Parameter &parameterAst) {
@@ -666,6 +666,21 @@ TypeScanner::resolveTypes(const ast::Expression &expression) {
 		typeStack.push_back(lang::Type::defineUnknownType());
 	}
 	return returnTypes;
+}
+
+void TypeScanner::discardTypes(const ast::Statement &statement) {
+	size_t tsSize = typeStack.size();
+	statement.visit(*this);
+	while (typeStack.size() > tsSize) {
+		typeStack.pop_back();
+	}
+}
+void TypeScanner::discardTypes(const ast::Expression &expression) {
+	size_t tsSize = typeStack.size();
+	expression.visit(*this);
+	while (typeStack.size() > tsSize) {
+		typeStack.pop_back();
+	}
 }
 
 std::optional<lang::Type>

@@ -88,6 +88,10 @@ class TypeScanner : public ast::StatementVisitor,
 	lang::Type resolveType(const ast::Expression &expression);
 	std::vector<lang::Type> resolveTypes(const ast::Statement &statement);
 	std::vector<lang::Type> resolveTypes(const ast::Expression &expression);
+	// only used when you do not care about returned types but
+	// want to traverse the items to perform checks and discovery of types
+	void discardTypes(const ast::Statement &statement);
+	void discardTypes(const ast::Expression &expression);
 
 	std::optional<lang::Type> findScalarTypeInfo(const std::string_view lexeme);
 	lang::Type findTypeInfo(const std::string_view lexeme);

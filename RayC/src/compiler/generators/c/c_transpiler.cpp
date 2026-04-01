@@ -708,7 +708,7 @@ void CTranspilerGenerator::visitNamedTypeExpression(
 			}
 		}
 		typeName = typeName.empty() ? type.name.lexeme : typeName;
-		output << std::format("{} ", typeName);
+		output << std::format("{}", typeName);
 	}
 }
 void CTranspilerGenerator::visitCastExpression(const ast::Cast &value) {
@@ -721,7 +721,7 @@ void CTranspilerGenerator::visitCastExpression(const ast::Cast &value) {
 void CTranspilerGenerator::visitParameterExpression(
     const ast::Parameter &param) {
 	param.type->visit(*this);
-	output << std::format("{}", param.name.lexeme);
+	output << std::format(" {}", param.name.lexeme);
 }
 
 void CTranspilerGenerator::visitType(const lang::Type &type) {
