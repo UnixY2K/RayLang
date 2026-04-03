@@ -3,7 +3,7 @@ struct FILE;
 #[Linkage(mangling = "c", resolution="external", name="ray_libc_stdio_get_stdout")]
 pub fn get_stdout() -> mut *mut FILE;
 #[Linkage(mangling="c", resolution="external")]
-pub fn fwrite(buffer: *mut (), size: mut c_size, count: mut c_size, stream: mut *mut FILE) -> mut c_size;
+pub fn fwrite(buffer: mut*(), size: mut c_size, count: mut c_size, stream: mut *mut FILE) -> mut c_size;
 
 #[Linkage(mangling="c", resolution="external")]
 pub fn strlen(buffer: *c_char) -> mut c_size;
@@ -14,19 +14,19 @@ pub fn floor(number: mut f64) -> mut f64;
 pub fn log10(number: mut f64) -> mut f64;
 
 #[Linkage(mangling="c", resolution="external")]
-pub fn malloc(size: c_size) -> mut *mut();
+pub fn malloc(size: c_size) -> mut *();
 #[Linkage(mangling="c", resolution="external")]
-pub fn free(size: mut *mut()) -> mut();
+pub fn free(size: mut *());
 #[Linkage(mangling="c", resolution="external")]
 pub fn atoi(buffer: [c_char;]) -> mut c_int;
 
 
 
-fn print(buffer: [u8;]){
-	fwrite(buffer as mut *mut(), @sizeOf(c_char) as c_size, strlen(buffer as mut* mut c_char), get_stdout());
+fn print(buffer: [u8;]) {
+	fwrite(buffer as mut *(), @sizeOf(c_char) as c_size, strlen(buffer as mut* mut c_char), get_stdout());
 }
 
-fn s32toString(num: s32) -> mut [mut u8;]{
+fn s32toString(num: s32) -> mut [mut u8;] {
 	let floorResult: usize = floor(log10(num)) as usize;
 	let size: mut usize = floorResult + 1;
 	let n: mut s32 = num;
@@ -57,7 +57,7 @@ pub fn main(argc: mut s32, argv: mut *mut *mut c_char) -> mut s32 {
 	let result: s32 = fib(atoi(argv[1]) as s32);
 	let resultStr: mut [mut u8;] = s32toString((result));
 	print(resultStr);
-	free(resultStr as mut *mut());
+	free(resultStr as mut *());
 	print("\n");
 	return 0;
 }

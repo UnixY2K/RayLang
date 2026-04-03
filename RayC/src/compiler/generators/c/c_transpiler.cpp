@@ -663,12 +663,13 @@ void CTranspilerGenerator::visitArrayTypeExpression(
 }
 void CTranspilerGenerator::visitTupleTypeExpression(
     const ast::TupleType &tupleAst) {
-	if (!tupleAst.isMutable) {
-		output << "const ";
-	}
+	// empty tuples are just plain void
 	if (tupleAst.expressions.empty()) {
 		output << "void";
 		return;
+	}
+	if (!tupleAst.isMutable) {
+		output << "const ";
 	}
 	messageBag.error(tupleAst.getToken(),
 	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
@@ -726,7 +727,8 @@ void CTranspilerGenerator::visitParameterExpression(
 
 void CTranspilerGenerator::visitType(const lang::Type &type) {
 	// all types except pointer have const before its type
-	if (!type.isMutable && type.getKind() != lang::TypeKind::pointer) {
+	if (!type.isMutable && type.getKind() != lang::TypeKind::pointer &&
+	    type.getKind() != lang::TypeKind::abstract) {
 		output << "const ";
 	}
 	switch (type.getKind()) {
