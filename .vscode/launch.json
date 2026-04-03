@@ -25,7 +25,7 @@
 			"request": "launch",
 			"name": "(lldb) Debug Ray file(C)",
 			"program": "${fileDirname}/${fileBasenameNoExtension}",
-			"args": [],
+			"args": ["${input:programArgs}"],
 			"cwd": "${fileDirname}",
 			"preLaunchTask": "Compile Ray c source file to binary"
 		},
