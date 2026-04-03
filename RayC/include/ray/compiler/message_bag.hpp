@@ -41,6 +41,7 @@ class MessageBag {
 	bool failed() const;
 	const std::vector<std::string> getErrors() const;
 	const std::vector<std::string> getWarnings() const;
+	// TODO: implement bug vector and allow to retrieve them
 	const std::vector<std::string> getBugs() const;
 
   private:

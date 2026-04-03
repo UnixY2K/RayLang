@@ -18,6 +18,7 @@ rayc_srcs = [
 	'src/compiler/lexer/lexer.cpp',
 	'src/compiler/lexer/token.cpp',
 	'src/compiler/parser/parser.cpp',
+	'src/compiler/passes/resolver.cpp',
 	'src/compiler/passes/symbol_mangler.cpp',
 	'src/compiler/passes/typeChecker.cpp',
 	'src/compiler/passes/typeScanner.cpp',
