@@ -40,10 +40,10 @@ fn s32toString(num: s32) -> mut [mut u8;] {
 	return array;
 }
 
-fn fib(fibn: s32) -> s32 {
+fn fib(fibn: s32) -> s32 
 	if fibn <= 2 1
-	fib(fibn-1) + fib(fibn-2)
-}
+	else fib(fibn - 1) + fib(fibn - 2)
+
 
 
 #[Linkage(mangling="c", resolution="external")]

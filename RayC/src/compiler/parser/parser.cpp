@@ -495,12 +495,25 @@ ast::Function Parser::function(bool publicVisiblity) {
 
 	std::optional<ast::Block> body = std::nullopt;
 	if (!match({Token::TokenType::TOKEN_SEMICOLON})) {
-		auto token = consume(Token::TokenType::TOKEN_LEFT_BRACE,
-		                     std::format("Expect '{{' before function body."));
-		body = {
-		    block(),
-		    token,
-		};
+		if (peek().type == Token::TokenType::TOKEN_LEFT_BRACE) {
+			auto token =
+			    consume(Token::TokenType::TOKEN_LEFT_BRACE,
+			            std::format("Expect '{{' before function body."));
+			body = {
+			    block(),
+			    token,
+			};
+		} else {
+			auto bodyExpression = statement();
+			auto token = bodyExpression->getToken();
+			auto blockStatement =
+			    std::vector<std::unique_ptr<ast::Statement>>();
+			blockStatement.push_back(std::move(bodyExpression));
+			body = {
+			    std::move(blockStatement),
+			    token,
+			};
+		}
 	}
 	return {
 	    Token(name),     publicVisiblity,       std::move(parameters),
