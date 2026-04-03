@@ -55,6 +55,7 @@
 				"args": [
 					"${relativeFileDirname}\\${fileBasenameNoExtension}.c",
 					"${workspaceFolder}\\libs\\c\\stdio.c",
+					"-I${workspaceFolder}\\RayC\\include",
 					"-g",
 					"-o",
 					"${relativeFileDirname}\\${fileBasenameNoExtension}.exe"

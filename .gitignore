@@ -37,3 +37,9 @@
 # meson
 builddir/
 compile_commands.json
+
+# linker files
+*.ilk
+
+# debug files
+*.pdb
