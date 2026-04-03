@@ -176,6 +176,60 @@ def main():
 			 "Trait			= Token name, bool publicVisibility, std::vector<Method> methods",
              "CompDirective	= Token name, CompDirectiveAttr values, std::unique_ptr<Statement> child"
             ])
+    typedAstOutputDir = "./RayC/include/ray/compiler/ast/typed"
+    defineAst(typedAstOutputDir, "TypedExpression",
+            ["memory",
+             "unordered_map",
+             "vector",
+             "optional",
+             "ray/compiler/lexer/token.hpp",
+			 "ray/compiler/ast/intrinsic.hpp"
+            ],
+            ["CompDirectiveAttr = std::unordered_map<std::string, std::string>"],
+            [
+			 "Variable		= Token name",
+             "Intrinsic		= Token name, IntrinsicType intrinsic",
+             "Assign		= std::unique_ptr<TypedExpression> lhs, Token assignmentOp, std::unique_ptr<TypedExpression> rhs",
+             "Binary		= std::unique_ptr<TypedExpression> left, Token op, std::unique_ptr<TypedExpression> right",
+             "Call			= std::unique_ptr<TypedExpression> callee, Token paren, std::vector<std::unique_ptr<TypedExpression>> arguments",
+             "IntrinsicCall	= std::unique_ptr<Intrinsic> callee, Token paren, std::vector<std::unique_ptr<TypedExpression>> arguments",
+             "Get			= std::unique_ptr<TypedExpression> object, Token name",
+             "Grouping		= std::unique_ptr<TypedExpression> expression",
+             "Literal		= Token kind, std::string value",
+             "Logical		= std::unique_ptr<TypedExpression> left, Token op, std::unique_ptr<TypedExpression> right",
+             "Set			= std::unique_ptr<TypedExpression> object, Token name, Token assignmentOp, std::unique_ptr<TypedExpression> value",
+             "Unary			= Token op, bool isPrefix, std::unique_ptr<TypedExpression> expr",
+             "ArrayAccess	= std::unique_ptr<TypedExpression> array, std::unique_ptr<TypedExpression> index",
+			 "ArrayType		= bool isMutable, std::unique_ptr<TypedExpression> subType",
+			 "TupleType		= bool isMutable, std::vector<std::unique_ptr<TypedExpression>> expressions",
+			 "PointerType	= bool isMutable, std::unique_ptr<TypedExpression> subtype",
+             "NamedType		= Token name, bool isMutable",
+             "Cast			= std::unique_ptr<TypedExpression> expression, std::unique_ptr<TypedExpression> type",
+             "Parameter		= Token name, std::unique_ptr<TypedExpression> type",
+            ])
+    defineAst(outputDir, "TypedStatement",
+            ["memory",
+             "unordered_map",
+             "vector",
+             "optional",
+             "ray/compiler/lexer/token.hpp",
+             "ray/compiler/ast/typed/typedExpression.hpp"
+            ],
+            ["CompDirectiveAttr = std::unordered_map<std::string, std::string>"],
+            ["Block			= std::vector<std::unique_ptr<TypedStatement>> statements",
+             "TerminalExpr	= std::optional<std::unique_ptr<TypedExpression>> expression",
+             "ExpressionStmt= std::unique_ptr<TypedExpression> expression",
+             "Function		= Token name, bool publicVisibility, std::vector<Parameter> params, std::optional<Block> body, std::unique_ptr<ast::TypedExpression> returnType",
+			 "Method 		= Token name, bool publicVisibility, std::vector<Parameter> params, std::optional<Block> body, std::unique_ptr<ast::TypedExpression> returnType",
+             "If			= std::unique_ptr<TypedExpression> condition, std::unique_ptr<TypedStatement> thenBranch, std::optional<std::unique_ptr<TypedStatement>> elseBranch",
+             "Jump			= Token keyword, std::optional<std::unique_ptr<TypedExpression>> returnValue",
+             "VarDecl		= Token name, std::unique_ptr<TypedExpression> type, bool is_mutable, std::optional<std::unique_ptr<TypedExpression>> initializer",
+             "Member		= Token name, std::unique_ptr<TypedExpression> type, bool is_mutable, std::optional<std::unique_ptr<TypedExpression>> initializer",
+             "While			= std::unique_ptr<TypedExpression> condition, std::unique_ptr<TypedStatement> body",
+             "Struct		= Token name, bool publicVisibility, bool declaration, std::vector<Member> members, std::vector<bool> memberVisibility",
+			 "Trait			= Token name, bool publicVisibility, std::vector<Method> methods",
+             "CompDirective	= Token name, CompDirectiveAttr values, std::unique_ptr<TypedStatement> child"
+            ])
 
 
 if __name__ == "__main__":

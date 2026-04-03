@@ -40,9 +40,9 @@ fn s32toString(num: s32) -> mut [mut u8;] {
 	return array;
 }
 
-fn fib(fibn: s32) -> s32 
-	if fibn <= 2 1
-	else fib(fibn - 1) + fib(fibn - 2)
+fn fib(n: s32) -> s32 
+	if n <= 2 1
+	else fib(n - 1) + fib(n - 2)
 
 
 
