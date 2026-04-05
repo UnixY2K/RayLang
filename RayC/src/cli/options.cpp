@@ -1,8 +1,8 @@
+#include <expected>
 #include <ray/cli/options.hpp>
 #include <ray/cli/terminal.hpp>
 
 #include <format>
-#include <iostream>
 #include <string_view>
 #include <unordered_map>
 
@@ -10,48 +10,46 @@ namespace ray::compiler::cli {
 
 using namespace terminal::literals;
 
-bool Options::validate() const {
-	bool success = true;
+std::expected<void, std::vector<std::string>> Options::validate() const {
+	std::vector<std::string> errors;
 
 	if (target == TargetEnum::ERROR) {
-		std::cerr << std::format(
-		    "{}: specified target is not an existing target\n", "Error"_red);
-		success = false;
+		errors.push_back(std::format(
+		    "{}: specified target is not an existing target\n", "Error"_red));
 	}
 
 	// check if the input file is a valid file
 	if (!std::filesystem::exists(input)) {
-		std::cerr << std::format("{}: input file '{}' does not exist\n",
-		                         "Error"_red, input.string());
-		success = false;
+		errors.push_back(std::format("{}: input file '{}' does not exist\n",
+		                             "Error"_red, input.string()));
 	} else if (std::filesystem::is_directory(input)) {
-		std::cerr << std::format(
-		    "{}: input file '{}' must be a file, not a directory\n",
-		    "Error"_red, input.string());
-		success = false;
+		errors.push_back(
+		    std::format("{}: input file '{}' must be a file, not a directory\n",
+		                "Error"_red, input.string()));
 	} else if (!std::filesystem::is_regular_file(input)) {
-		std::cerr << std::format("{}: input file '{}' is not a regular file\n",
-		                         "Error"_red, input.string());
-		success = false;
+		errors.push_back(
+		    std::format("{}: input file '{}' is not a regular file\n",
+		                "Error"_red, input.string()));
 	}
 
 	// check if the output file is a valid location(not a path, or an exising
 	// file)
 	if (std::filesystem::exists(output)) {
 		if (std::filesystem::is_directory(output)) {
-			std::cerr << std::format(
+			errors.push_back(std::format(
 			    "{}: output file '{}' must be a file, not a directory\n",
-			    "Error"_red, output.string());
-			success = false;
+			    "Error"_red, output.string()));
 		} else if (!std::filesystem::is_regular_file(output)) {
-			std::cerr << std::format(
-			    "{}: output file '{}' is not a regular file\n", "Error"_red,
-			    output.string());
-			success = false;
+			errors.push_back(
+			    std::format("{}: output file '{}' is not a regular file\n",
+			                "Error"_red, output.string()));
 		}
 	}
 
-	return success;
+	if (errors.size()) {
+		return std::unexpected(errors);
+	}
+	return {};
 }
 
 Options::TargetEnum Options::targetFromString(std::string_view str) {

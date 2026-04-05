@@ -1,23 +1,25 @@
-#include <ray/cli/cli_args.hpp>
-#include <ray/cli/options.hpp>
-#include <ray/cli/terminal.hpp>
+#include <expected>
+#include <format>
+#include <string_view>
+#include <unordered_map>
+#include <unordered_set>
 
 // non-windows platforms define some types inside of cstddef but windows
 // already defined them so it can give a non used warning
 #ifndef _MSC_VER
 #include <cstddef>
 #endif
-#include <format>
-#include <string_view>
-#include <unordered_map>
-#include <unordered_set>
+
+#include <ray/cli/cli_args.hpp>
+#include <ray/cli/options.hpp>
+#include <ray/cli/terminal.hpp>
 
 using namespace ray::compiler::terminal::literals;
 
 namespace ray::compiler::cli {
 
-std::variant<Options, std::vector<std::string>> parse_args(int argc,
-                                                           char **argv) {
+std::expected<Options, std::vector<std::string>> parse_args(int argc,
+                                                            char **argv) {
 
 	std::unordered_set<std::string> flags;
 	std::unordered_map<std::string, std::string> options;
@@ -76,7 +78,7 @@ std::variant<Options, std::vector<std::string>> parse_args(int argc,
 	}
 
 	if (errors.size() > 0) {
-		return errors;
+		return std::unexpected(errors);
 	}
 
 	Options opts;
@@ -87,6 +89,10 @@ std::variant<Options, std::vector<std::string>> parse_args(int argc,
 	opts.output = options.contains("-o")
 	                  ? options["-o"]
 	                  : std::format("out.{}", opts.assembly ? "asm" : "bin");
+	auto result = opts.validate();
+	if (!result) {
+		return std::unexpected(result.error());
+	}
 	return opts;
 }
 

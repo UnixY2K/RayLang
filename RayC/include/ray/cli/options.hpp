@@ -2,6 +2,8 @@
 
 #include <filesystem>
 #include <string_view>
+#include <expected>
+#include <vector>
 
 namespace ray::compiler::cli {
 
@@ -38,7 +40,7 @@ class Options {
 	std::filesystem::path input;
 	TargetDataModel dataModel = getHostDataModel();
 
-	bool validate() const;
+	std::expected<void, std::vector<std::string>> validate() const;
 
 	static TargetEnum targetFromString(std::string_view str);
 	static constexpr TargetEnum defaultTarget = TargetEnum::C_SOURCE;

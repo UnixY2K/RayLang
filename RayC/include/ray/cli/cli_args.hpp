@@ -1,13 +1,13 @@
 #pragma once
-#include <ray/cli/options.hpp>
-
+#include <expected>
 #include <string>
-#include <variant>
 #include <vector>
+
+#include <ray/cli/options.hpp>
 
 namespace ray::compiler::cli {
 
-std::variant<Options, std::vector<std::string>> parse_args(int argc,
-                                                           char **argv);
+std::expected<Options, std::vector<std::string>> parse_args(int argc,
+                                                            char **argv);
 
 } // namespace ray::compiler::cli
