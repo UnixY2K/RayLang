@@ -5,13 +5,13 @@
 
 #include <ray/compiler/ast/expression.hpp>
 #include <ray/compiler/ast/statement.hpp>
+#include <ray/compiler/ast/typed/TypedExpression.hpp>
+#include <ray/compiler/ast/typed/TypedStatement.hpp>
 #include <ray/compiler/environment/dataModel/dataModel.hpp>
 #include <ray/compiler/lang/moduleStore.hpp>
 #include <ray/compiler/lang/sourceUnit.hpp>
 #include <ray/compiler/message_bag.hpp>
 #include <ray/compiler/passes/typeScanner.hpp>
-#include <ray/compiler/ast/typed/TypedExpression.hpp>
-#include <ray/compiler/ast/typed/TypedStatement.hpp>
 
 namespace ray::compiler::passes {
 class Resolver : public ast::StatementVisitor, public ast::ExpressionVisitor {
@@ -30,8 +30,6 @@ class Resolver : public ast::StatementVisitor, public ast::ExpressionVisitor {
 	lang::SourceUnit currentSourceUnit;
 	lang::ModuleStore &currentModuleStore;
 	std::reference_wrapper<lang::Scope> currentScope;
-
-	
 
   public:
 	Resolver(std::string filePath, const environment::DataModel &dataModel,
@@ -87,6 +85,21 @@ class Resolver : public ast::StatementVisitor, public ast::ExpressionVisitor {
 	void visitNamedTypeExpression(const ast::NamedType &value) override;
 	void visitCastExpression(const ast::Cast &value) override;
 	void visitParameterExpression(const ast::Parameter &value) override;
+
+	lang::Type resolveType(const ast::Statement &statement);
+	lang::Type resolveType(const ast::Expression &expression);
+	std::vector<lang::Type> resolveTypes(const ast::Statement &statement);
+	std::vector<lang::Type> resolveTypes(const ast::Expression &expression);
+	// only used when you do not care about returned types but
+	// want to traverse the items to perform checks and discovery of types
+	void discardTypes(const ast::Statement &statement);
+	void discardTypes(const ast::Expression &expression);
+
+	std::optional<lang::Type> findScalarTypeInfo(const std::string_view lexeme);
+	lang::Type findTypeInfo(const std::string_view lexeme);
+
+	std::optional<lang::FunctionDeclaration>
+	resolveFunctionDeclaration(const ast::Function &functionExpr);
 
 	// gets the current scope
 	lang::Scope &getCurrentScope();

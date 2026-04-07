@@ -1,5 +1,6 @@
 #include <format>
 
+#include <ray/compiler/directives/linkageDirective.hpp>
 #include <ray/compiler/passes/resolver.hpp>
 
 namespace ray::compiler::passes {
@@ -76,9 +77,59 @@ void Resolver::visitTraitStatement(const ast::Trait &value) {
 	messageBag.error(value.getToken(),
 	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
 }
-void Resolver::visitCompDirectiveStatement(const ast::CompDirective &value) {
-	messageBag.error(value.getToken(),
-	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
+void Resolver::visitCompDirectiveStatement(
+    const ast::CompDirective &compDirectiveAst) {
+	auto directiveToken = compDirectiveAst.name;
+	auto directiveName = compDirectiveAst.name.getLexeme();
+	if (directiveName == "Linkage") {
+		auto &attributes = compDirectiveAst.values;
+		auto directive = directive::LinkageDirective(
+		    attributes.find("name") != attributes.end() ? attributes.at("name")
+		                                                : "",
+		    attributes.find("resolution") != attributes.end()
+		        ? attributes.at("resolution") == "external"
+		        : false,
+		    attributes.find("mangling") != attributes.end()
+		        ? attributes.at("mangling") == "c"
+		              ? directive::LinkageDirective::ManglingType::C
+		              : directive::LinkageDirective::ManglingType::Unknown
+		        : directive::LinkageDirective::ManglingType::Default,
+		    directiveToken);
+		if (compDirectiveAst.child) {
+			auto childValue = compDirectiveAst.child.get();
+			if (dynamic_cast<ast::Function *>(childValue) ||
+			    dynamic_cast<ast::Struct *>(childValue)) {
+				size_t startDirectives = directivesStack.size();
+				size_t originalTop = directivesStackTop + 1;
+				directivesStackTop = startDirectives;
+				directivesStack.push_back(
+				    std::make_unique<directive::LinkageDirective>(directive));
+				auto directiveType = resolveType(*compDirectiveAst.child);
+				typeStack.push_back(directiveType);
+
+				if (directivesStack.size() != startDirectives) {
+					messageBag.bug(childValue->getToken(),
+					               "unprocessed compiler directives");
+				}
+
+				directivesStackTop = originalTop;
+			} else {
+				messageBag.error(
+				    childValue->getToken(),
+				    std::format(
+				        "{} child expression must be a function or a struct.",
+				        directive.directiveName()));
+			}
+		} else {
+			messageBag.error(compDirectiveAst.getToken(),
+			                 std::format("{} must have a child expression.",
+			                             directive.directiveName()));
+		}
+	} else {
+		messageBag.error(
+		    compDirectiveAst.getToken(),
+		    std::format("Unknown compiler directive '{}'.", directiveName));
+	}
 }
 void Resolver::visitVariableExpression(const ast::Variable &value) {
 	messageBag.error(value.getToken(),
@@ -155,6 +206,66 @@ void Resolver::visitCastExpression(const ast::Cast &value) {
 void Resolver::visitParameterExpression(const ast::Parameter &value) {
 	messageBag.error(value.getToken(),
 	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
+}
+
+lang::Type Resolver::resolveType(const ast::Statement &statement) {
+	auto types = resolveTypes(statement);
+
+	if (types.size() > 1) {
+		// check wether the return types coerce
+		for (size_t i = 1; i < types.size(); i++) {
+			if (!types[0].coercercesInto(types[i])) {
+				messageBag.bug(
+				    statement.getToken(),
+				    std::format(
+				        "'{}' return types does not match for expected '{}' vs '{}'",
+				        statement.variantName(), types[0].name, types[i].name));
+			}
+		}
+	}
+
+	return types.size() > 0 ? types[0] : lang::Type::defineStmtType();
+}
+lang::Type Resolver::resolveType(const ast::Expression &expression) {
+	auto types = resolveTypes(expression);
+
+	if (types.size() > 1) {
+		messageBag.bug(expression.getToken(),
+		               std::format("'{}' yield multiple values",
+		                           expression.variantName()));
+	}
+
+	return types.size() > 0 ? types[0] : lang::Type::defineUnknownType();
+}
+std::vector<lang::Type>
+Resolver::resolveTypes(const ast::Statement &statement) {
+	std::vector<lang::Type> returnTypes;
+	size_t tsSize = typeStack.size();
+	statement.visit(*this);
+	while (typeStack.size() > tsSize) {
+		auto returnType = typeStack.back();
+		typeStack.pop_back();
+		returnTypes.push_back(returnType);
+	}
+	return returnTypes;
+}
+std::vector<lang::Type>
+Resolver::resolveTypes(const ast::Expression &expression) {
+	std::vector<lang::Type> returnTypes;
+	size_t tsSize = typeStack.size();
+	expression.visit(*this);
+	while (typeStack.size() > tsSize) {
+		auto returnType = typeStack.back();
+		typeStack.pop_back();
+		returnTypes.push_back(returnType);
+	}
+	if (returnTypes.size() < 1) {
+		messageBag.bug(expression.getToken(),
+		               std::format("'{}' did not resolve a type",
+		                           expression.variantName()));
+		typeStack.push_back(lang::Type::defineUnknownType());
+	}
+	return returnTypes;
 }
 
 lang::Scope &Resolver::getCurrentScope() { return currentScope.get(); }
