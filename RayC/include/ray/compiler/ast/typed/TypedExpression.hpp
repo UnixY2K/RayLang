@@ -6,7 +6,7 @@
 #include <ray/compiler/lexer/token.hpp>
 #include <ray/compiler/ast/intrinsic.hpp>
 
-namespace ray::compiler::ast {
+namespace ray::compiler::ast::typed {
 
 using CompDirectiveAttr = std::unordered_map<std::string, std::string>;
 
@@ -480,4 +480,4 @@ class Parameter : public TypedExpression {
 	const Token& getToken() const override { return token; };
 };
 
-} // namespace ray::compiler::ast
+} // namespace ray::compiler::ast::typed

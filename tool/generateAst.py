@@ -24,15 +24,15 @@ def preprocessTypes(baseName: str, types: list[str]):
     return processedClasses
 
 
-def defineAst(outputDir: str, baseName: str, requiredHeaders: list[str], definitions: list[str], types: list[str]):
-    filePath = os.path.join(outputDir, f"{baseName.lower()}.hpp")
+def defineAst(outputDir: str, baseName: str, namespace: str, requiredHeaders: list[str], definitions: list[str], types: list[str]):
+    filePath = os.path.join(outputDir, f"{baseName}.hpp")
     processedClasses = preprocessTypes(baseName, types)
     with open(filePath, "w") as headerFile:
         headerFile.write("#pragma once\n")
         for header in requiredHeaders:
             headerFile.write(f"#include <{header}>\n")
         headerFile.write("\n")
-        headerFile.write("namespace ray::compiler::ast {\n")
+        headerFile.write(f"namespace {namespace} {{\n")
         headerFile.write("\n")
         for definition in definitions:
             (name, value) = [x.strip() for x in definition.split("=")]
@@ -65,7 +65,7 @@ def defineAst(outputDir: str, baseName: str, requiredHeaders: list[str], definit
 
 
 
-        headerFile.write("} // namespace ray::compiler::ast\n")
+        headerFile.write(f"}} // namespace {namespace}\n")
 
 
 def defineType(baseName: str, clazz: dict[str]):
@@ -125,7 +125,7 @@ def defineVisitor(baseName: str, types: dict):
 
 def main():
     outputDir = "./RayC/include/ray/compiler/ast"
-    defineAst(outputDir, "Expression",
+    defineAst(outputDir, "Expression", "ray::compiler::ast",
             ["memory",
              "vector",
              "optional",
@@ -153,7 +153,7 @@ def main():
              "Cast			= std::unique_ptr<Expression> expression, std::unique_ptr<Expression> type",
              "Parameter		= Token name, std::unique_ptr<Expression> type",
             ])
-    defineAst(outputDir, "Statement",
+    defineAst(outputDir, "Statement", "ray::compiler::ast",
             ["memory",
              "unordered_map",
              "vector",
@@ -177,7 +177,7 @@ def main():
              "CompDirective	= Token name, CompDirectiveAttr values, std::unique_ptr<Statement> child"
             ])
     typedAstOutputDir = "./RayC/include/ray/compiler/ast/typed"
-    defineAst(typedAstOutputDir, "TypedExpression",
+    defineAst(typedAstOutputDir, "TypedExpression", "ray::compiler::ast::typed",
             ["memory",
              "unordered_map",
              "vector",
@@ -207,20 +207,20 @@ def main():
              "Cast			= std::unique_ptr<TypedExpression> expression, std::unique_ptr<TypedExpression> type",
              "Parameter		= Token name, std::unique_ptr<TypedExpression> type",
             ])
-    defineAst(outputDir, "TypedStatement",
+    defineAst(typedAstOutputDir, "TypedStatement", "ray::compiler::ast::typed",
             ["memory",
              "unordered_map",
              "vector",
              "optional",
              "ray/compiler/lexer/token.hpp",
-             "ray/compiler/ast/typed/typedExpression.hpp"
+             "ray/compiler/ast/typed/TypedExpression.hpp"
             ],
             ["CompDirectiveAttr = std::unordered_map<std::string, std::string>"],
             ["Block			= std::vector<std::unique_ptr<TypedStatement>> statements",
              "TerminalExpr	= std::optional<std::unique_ptr<TypedExpression>> expression",
              "ExpressionStmt= std::unique_ptr<TypedExpression> expression",
-             "Function		= Token name, bool publicVisibility, std::vector<Parameter> params, std::optional<Block> body, std::unique_ptr<ast::TypedExpression> returnType",
-			 "Method 		= Token name, bool publicVisibility, std::vector<Parameter> params, std::optional<Block> body, std::unique_ptr<ast::TypedExpression> returnType",
+             "Function		= Token name, bool publicVisibility, std::vector<Parameter> params, std::optional<Block> body, std::unique_ptr<TypedExpression> returnType",
+			 "Method 		= Token name, bool publicVisibility, std::vector<Parameter> params, std::optional<Block> body, std::unique_ptr<TypedExpression> returnType",
              "If			= std::unique_ptr<TypedExpression> condition, std::unique_ptr<TypedStatement> thenBranch, std::optional<std::unique_ptr<TypedStatement>> elseBranch",
              "Jump			= Token keyword, std::optional<std::unique_ptr<TypedExpression>> returnValue",
              "VarDecl		= Token name, std::unique_ptr<TypedExpression> type, bool is_mutable, std::optional<std::unique_ptr<TypedExpression>> initializer",

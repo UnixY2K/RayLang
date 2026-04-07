@@ -3,13 +3,15 @@
 #include <memory>
 #include <vector>
 
-#include <ray/compiler/lang/sourceUnit.hpp>
 #include <ray/compiler/ast/expression.hpp>
 #include <ray/compiler/ast/statement.hpp>
 #include <ray/compiler/environment/dataModel/dataModel.hpp>
 #include <ray/compiler/lang/moduleStore.hpp>
+#include <ray/compiler/lang/sourceUnit.hpp>
 #include <ray/compiler/message_bag.hpp>
 #include <ray/compiler/passes/typeScanner.hpp>
+#include <ray/compiler/ast/typed/TypedExpression.hpp>
+#include <ray/compiler/ast/typed/TypedStatement.hpp>
 
 namespace ray::compiler::passes {
 class Resolver : public ast::StatementVisitor, public ast::ExpressionVisitor {
@@ -29,6 +31,8 @@ class Resolver : public ast::StatementVisitor, public ast::ExpressionVisitor {
 	lang::ModuleStore &currentModuleStore;
 	std::reference_wrapper<lang::Scope> currentScope;
 
+	
+
   public:
 	Resolver(std::string filePath, const environment::DataModel &dataModel,
 	         lang::ModuleStore &moduleStore)
@@ -37,7 +41,8 @@ class Resolver : public ast::StatementVisitor, public ast::ExpressionVisitor {
 	      currentModuleStore(moduleStore),
 	      currentScope(currentSourceUnit.rootScope) {}
 
-	void resolve(const std::vector<std::unique_ptr<ast::Statement>> &statement);
+	void
+	resolve(const std::vector<std::unique_ptr<ast::Statement>> &statements);
 
 	const lang::SourceUnit &getCurrentSourceUnit() const {
 		return currentSourceUnit;
@@ -47,7 +52,7 @@ class Resolver : public ast::StatementVisitor, public ast::ExpressionVisitor {
 	const MessageBag &getMessageBag() const;
 
   private:
-  	// Statement
+	// Statement
 	void visitBlockStatement(const ast::Block &value) override;
 	void visitTerminalExprStatement(const ast::TerminalExpr &value) override;
 	void

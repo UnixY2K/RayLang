@@ -5,7 +5,25 @@
 namespace ray::compiler::passes {
 
 void Resolver::resolve(
-    const std::vector<std::unique_ptr<ast::Statement>> &statement) {}
+    const std::vector<std::unique_ptr<ast::Statement>> &statements) {
+
+	for (const auto &statement : statements) {
+		statement->visit(*this);
+	}
+
+	for (auto &directive : directivesStack) {
+		messageBag.warning(directive->getToken(),
+		                   std::format("unused compiler directive {}",
+		                               directive->directiveName()));
+	}
+
+	if (typeStack.size() > 0) {
+		Token errorToken{Token::TokenType::TOKEN_EOF,
+		                 std::string(Token::glyph(Token::TokenType::TOKEN_EOF)),
+		                 0, 0};
+		messageBag.bug(errorToken, std::format("type stack evaluation error"));
+	}
+}
 
 bool Resolver::hasFailed() const { return messageBag.failed(); }
 const MessageBag &Resolver::getMessageBag() const { return messageBag; }
