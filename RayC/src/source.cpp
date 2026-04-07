@@ -14,6 +14,7 @@
 #include <ray/compiler/lexer/lexer.hpp>
 #include <ray/compiler/parser/parser.hpp>
 
+#include <ray/compiler/passes/resolver.hpp>
 #include <ray/compiler/passes/typeChecker.hpp>
 #include <ray/compiler/passes/typeScanner.hpp>
 
@@ -38,8 +39,7 @@ int main(int argc, char **argv) {
 	}
 
 	try {
-		auto result =
-		    ray::compiler::cli::parse_args(argc, argv);
+		auto result = ray::compiler::cli::parse_args(argc, argv);
 		if (!result) {
 			for (const auto &error : result.error()) {
 				std::cout << error << '\n';
@@ -48,9 +48,6 @@ int main(int argc, char **argv) {
 		}
 
 		auto opts = result.value();
-		if (!opts.validate()) {
-			return 1;
-		}
 
 		const environment::DataModel *dataModel;
 		switch (opts.dataModel) {
@@ -114,6 +111,19 @@ int main(int argc, char **argv) {
 		bool handled = false;
 
 		lang::ModuleStore moduleStore;
+
+		passes::Resolver resolver(sourceFile, *dataModel, moduleStore);
+		resolver.resolve(statements);
+
+		if (resolver.hasFailed()) {
+			std::cerr << std::format("{}: {}\n", "Error"_red,
+			                         "typeChecker failed");
+			const auto &messageBag = resolver.getMessageBag();
+			for (auto error : messageBag.getErrors()) {
+				std::cerr << error;
+			}
+			return 1;
+		}
 
 		passes::TypeScanner typeScanner(sourceFile, *dataModel, moduleStore);
 

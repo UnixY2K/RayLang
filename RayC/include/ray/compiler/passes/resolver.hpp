@@ -88,7 +88,7 @@ class Resolver : public ast::StatementVisitor, public ast::ExpressionVisitor {
 	// makes a new child scope and sets it as the root scope
 	lang::Scope &makeChildScope();
 	// pops until located at the requested scope, if not found makes an error
-	bool returnScope(lang::Scope &scope);
+	bool popScope(lang::Scope &scope);
 };
 
 } // namespace ray::compiler::passes
