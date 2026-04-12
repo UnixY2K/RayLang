@@ -1,5 +1,10 @@
+#include <algorithm>
+#include <cstddef>
 #include <format>
+#include <iterator>
+#include <memory>
 
+#include <ray/compiler/directives/compilerDirective.hpp>
 #include <ray/compiler/directives/linkageDirective.hpp>
 #include <ray/compiler/passes/resolver.hpp>
 
@@ -41,8 +46,14 @@ void Resolver::visitExpressionStmtStatement(const ast::ExpressionStmt &value) {
 	messageBag.error(value.getToken(),
 	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
 }
-void Resolver::visitFunctionStatement(const ast::Function &value) {
-	messageBag.error(value.getToken(),
+void Resolver::visitFunctionStatement(const ast::Function &functionAst) {
+
+	auto directives = collectCompilerDirectives();
+
+	// TODO: add to the current generated AST the function and declare it in the
+	// current scope so it can be found by the type system at a later step
+
+	messageBag.error(functionAst.getToken(),
 	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
 }
 void Resolver::visitMethodStatement(const ast::Method &value) {
@@ -70,6 +81,9 @@ void Resolver::visitWhileStatement(const ast::While &value) {
 	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
 }
 void Resolver::visitStructStatement(const ast::Struct &value) {
+
+	auto directives = collectCompilerDirectives();
+
 	messageBag.error(value.getToken(),
 	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
 }
@@ -266,6 +280,23 @@ Resolver::resolveTypes(const ast::Expression &expression) {
 		typeStack.push_back(lang::Type::defineUnknownType());
 	}
 	return returnTypes;
+}
+
+std::vector<std::unique_ptr<directive::CompilerDirective>>
+Resolver::collectCompilerDirectives() {
+	std::vector<std::unique_ptr<directive::CompilerDirective>> directives;
+
+	size_t top = std::min(directivesStack.size(), directivesStackTop);
+
+	directives.insert(directives.end(),
+	                  std::make_move_iterator(directivesStack.begin() + top),
+	                  std::make_move_iterator(directivesStack.end()));
+
+	directivesStack.erase(directivesStack.begin() + top, directivesStack.end());
+
+	directivesStackTop = directivesStack.size();
+
+	return directives;
 }
 
 lang::Scope &Resolver::getCurrentScope() { return currentScope.get(); }

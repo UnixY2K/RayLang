@@ -7,11 +7,13 @@
 #include <ray/compiler/ast/statement.hpp>
 #include <ray/compiler/ast/typed/TypedExpression.hpp>
 #include <ray/compiler/ast/typed/TypedStatement.hpp>
+#include <ray/compiler/directives/compilerDirective.hpp>
 #include <ray/compiler/environment/dataModel/dataModel.hpp>
 #include <ray/compiler/lang/moduleStore.hpp>
 #include <ray/compiler/lang/sourceUnit.hpp>
 #include <ray/compiler/message_bag.hpp>
 #include <ray/compiler/passes/typeScanner.hpp>
+
 
 namespace ray::compiler::passes {
 class Resolver : public ast::StatementVisitor, public ast::ExpressionVisitor {
@@ -100,6 +102,9 @@ class Resolver : public ast::StatementVisitor, public ast::ExpressionVisitor {
 
 	std::optional<lang::FunctionDeclaration>
 	resolveFunctionDeclaration(const ast::Function &functionExpr);
+
+	std::vector<std::unique_ptr<directive::CompilerDirective>>
+	collectCompilerDirectives();
 
 	// gets the current scope
 	lang::Scope &getCurrentScope();
