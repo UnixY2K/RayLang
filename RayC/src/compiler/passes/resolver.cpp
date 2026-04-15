@@ -1,4 +1,3 @@
-#include "ray/compiler/lang/type.hpp"
 #include <algorithm>
 #include <cstddef>
 #include <format>
@@ -8,7 +7,9 @@
 
 #include <ray/compiler/directives/compilerDirective.hpp>
 #include <ray/compiler/directives/linkageDirective.hpp>
+#include <ray/compiler/lang/type.hpp>
 #include <ray/compiler/passes/resolver.hpp>
+#include <ray/compiler/passes/symbol_mangler.hpp>
 
 namespace ray::compiler::passes {
 
@@ -84,12 +85,78 @@ void Resolver::visitWhileStatement(const ast::While &value) {
 	messageBag.error(value.getToken(),
 	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
 }
-void Resolver::visitStructStatement(const ast::Struct &value) {
+void Resolver::visitStructStatement(const ast::Struct &structAst) {
 
-	auto directives = collectCompilerDirectives();
+	auto compilerDirectives = collectCompilerDirectives();
 
-	messageBag.error(value.getToken(),
-	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
+	std::optional<directive::LinkageDirective> linkageDirective;
+
+	for (const auto &directive : compilerDirectives) {
+		if (auto foundLinkDirective =
+		        dynamic_cast<directive::LinkageDirective *>(directive.get())) {
+			linkageDirective = *foundLinkDirective;
+		} else {
+			messageBag.warning(
+			    directive->getToken(),
+			    std::format("unmatched compiler directive '{}' for struct.\n",
+			                directive->directiveName()));
+		}
+	}
+
+	auto structName = structAst.name.getLexeme();
+	std::string currentModule;
+	std::string mangledStructName =
+	    passes::mangling::NameMangler().mangleStruct(currentModule, structAst,
+	                                                 linkageDirective);
+
+	auto &scope = currentScope.get();
+
+	if (!currentSourceUnit.declareStruct(
+	        lang::Struct{
+	            .opaque = true,                   // unknown implementation
+	            .name = std::string(structName),  //
+	            .mangledName = mangledStructName, //
+	        },
+	        scope)) {
+		messageBag.error(structAst.getToken(), "could not declare struct");
+	}
+
+	// don´t bother with declarations
+	if (structAst.declaration) {
+		return;
+	}
+
+	auto structObjRes = scope.findLocalStruct(structName)
+	                        .value_or(util::soft_reference<lang::Struct>())
+	                        .getObject();
+
+	if (!structObjRes.has_value()) {
+		messageBag.bug(
+		    structAst.getToken(),
+		    std::format("could not find Struct internal reference for '{}'",
+		                structName));
+		return;
+	}
+
+	auto &structObj = structObjRes.value().get();
+	std::vector<lang::StructMember> members;
+
+	for (const auto &member : structAst.members) {
+		member.visit(*this);
+		if (structMemberStack.empty()) {
+			messageBag.bug(
+			    member.getToken(),
+			    std::format("could not get struct member data for '{}'",
+			                member.name.getLexeme()));
+			continue;
+		}
+		auto memberObj = structMemberStack.back();
+		structMemberStack.pop_back();
+
+		members.push_back(memberObj);
+	}
+
+	structObj.members = members;
 }
 void Resolver::visitTraitStatement(const ast::Trait &value) {
 	messageBag.error(value.getToken(),
