@@ -14,7 +14,7 @@
 namespace ray::compiler::passes {
 
 void Resolver::resolve(
-    const std::vector<std::unique_ptr<ast::Statement>> &statements) {
+    const std::vector<std::unique_ptr<syntax::ast::Statement>> &statements) {
 
 	for (const auto &statement : statements) {
 		statement->visit(*this);
@@ -39,19 +39,22 @@ void Resolver::resolve(
 bool Resolver::hasFailed() const { return messageBag.failed(); }
 const MessageBag &Resolver::getMessageBag() const { return messageBag; }
 
-void Resolver::visitBlockStatement(const ast::Block &value) {
+void Resolver::visitBlockStatement(const syntax::ast::Block &value) {
 	messageBag.error(value.getToken(),
 	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
 }
-void Resolver::visitTerminalExprStatement(const ast::TerminalExpr &value) {
+void Resolver::visitTerminalExprStatement(
+    const syntax::ast::TerminalExpr &value) {
 	messageBag.error(value.getToken(),
 	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
 }
-void Resolver::visitExpressionStmtStatement(const ast::ExpressionStmt &value) {
+void Resolver::visitExpressionStmtStatement(
+    const syntax::ast::ExpressionStmt &value) {
 	messageBag.error(value.getToken(),
 	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
 }
-void Resolver::visitFunctionStatement(const ast::Function &functionAst) {
+void Resolver::visitFunctionStatement(
+    const syntax::ast::Function &functionAst) {
 
 	auto directives = collectCompilerDirectives();
 
@@ -61,31 +64,31 @@ void Resolver::visitFunctionStatement(const ast::Function &functionAst) {
 	messageBag.error(functionAst.getToken(),
 	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
 }
-void Resolver::visitMethodStatement(const ast::Method &value) {
+void Resolver::visitMethodStatement(const syntax::ast::Method &value) {
 	messageBag.error(value.getToken(),
 	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
 }
-void Resolver::visitIfStatement(const ast::If &value) {
+void Resolver::visitIfStatement(const syntax::ast::If &value) {
 	messageBag.error(value.getToken(),
 	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
 }
-void Resolver::visitJumpStatement(const ast::Jump &value) {
+void Resolver::visitJumpStatement(const syntax::ast::Jump &value) {
 	messageBag.error(value.getToken(),
 	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
 }
-void Resolver::visitVarDeclStatement(const ast::VarDecl &value) {
+void Resolver::visitVarDeclStatement(const syntax::ast::VarDecl &value) {
 	messageBag.error(value.getToken(),
 	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
 }
-void Resolver::visitMemberStatement(const ast::Member &value) {
+void Resolver::visitMemberStatement(const syntax::ast::Member &value) {
 	messageBag.error(value.getToken(),
 	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
 }
-void Resolver::visitWhileStatement(const ast::While &value) {
+void Resolver::visitWhileStatement(const syntax::ast::While &value) {
 	messageBag.error(value.getToken(),
 	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
 }
-void Resolver::visitStructStatement(const ast::Struct &structAst) {
+void Resolver::visitStructStatement(const syntax::ast::Struct &structAst) {
 
 	auto compilerDirectives = collectCompilerDirectives();
 
@@ -158,12 +161,12 @@ void Resolver::visitStructStatement(const ast::Struct &structAst) {
 
 	structObj.members = members;
 }
-void Resolver::visitTraitStatement(const ast::Trait &value) {
+void Resolver::visitTraitStatement(const syntax::ast::Trait &value) {
 	messageBag.error(value.getToken(),
 	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
 }
 void Resolver::visitCompDirectiveStatement(
-    const ast::CompDirective &compDirectiveAst) {
+    const syntax::ast::CompDirective &compDirectiveAst) {
 	auto directiveToken = compDirectiveAst.name;
 	auto directiveName = compDirectiveAst.name.getLexeme();
 	if (directiveName == "Linkage") {
@@ -182,8 +185,8 @@ void Resolver::visitCompDirectiveStatement(
 		    directiveToken);
 		if (compDirectiveAst.child) {
 			auto childValue = compDirectiveAst.child.get();
-			if (dynamic_cast<ast::Function *>(childValue) ||
-			    dynamic_cast<ast::Struct *>(childValue)) {
+			if (dynamic_cast<syntax::ast::Function *>(childValue) ||
+			    dynamic_cast<syntax::ast::Struct *>(childValue)) {
 				size_t startDirectives = directivesStack.size();
 				size_t originalTop = directivesStackTop + 1;
 				directivesStackTop = startDirectives;
@@ -216,84 +219,87 @@ void Resolver::visitCompDirectiveStatement(
 		    std::format("Unknown compiler directive '{}'.", directiveName));
 	}
 }
-void Resolver::visitVariableExpression(const ast::Variable &value) {
+void Resolver::visitVariableExpression(const syntax::ast::Variable &value) {
 	messageBag.error(value.getToken(),
 	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
 }
-void Resolver::visitIntrinsicExpression(const ast::Intrinsic &value) {
+void Resolver::visitIntrinsicExpression(const syntax::ast::Intrinsic &value) {
 	messageBag.error(value.getToken(),
 	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
 }
-void Resolver::visitAssignExpression(const ast::Assign &value) {
+void Resolver::visitAssignExpression(const syntax::ast::Assign &value) {
 	messageBag.error(value.getToken(),
 	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
 }
-void Resolver::visitBinaryExpression(const ast::Binary &value) {
+void Resolver::visitBinaryExpression(const syntax::ast::Binary &value) {
 	messageBag.error(value.getToken(),
 	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
 }
-void Resolver::visitCallExpression(const ast::Call &value) {
+void Resolver::visitCallExpression(const syntax::ast::Call &value) {
 	messageBag.error(value.getToken(),
 	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
 }
-void Resolver::visitIntrinsicCallExpression(const ast::IntrinsicCall &value) {
+void Resolver::visitIntrinsicCallExpression(
+    const syntax::ast::IntrinsicCall &value) {
 	messageBag.error(value.getToken(),
 	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
 }
-void Resolver::visitGetExpression(const ast::Get &value) {
+void Resolver::visitGetExpression(const syntax::ast::Get &value) {
 	messageBag.error(value.getToken(),
 	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
 }
-void Resolver::visitGroupingExpression(const ast::Grouping &value) {
+void Resolver::visitGroupingExpression(const syntax::ast::Grouping &value) {
 	messageBag.error(value.getToken(),
 	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
 }
-void Resolver::visitLiteralExpression(const ast::Literal &value) {
+void Resolver::visitLiteralExpression(const syntax::ast::Literal &value) {
 	messageBag.error(value.getToken(),
 	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
 }
-void Resolver::visitLogicalExpression(const ast::Logical &value) {
+void Resolver::visitLogicalExpression(const syntax::ast::Logical &value) {
 	messageBag.error(value.getToken(),
 	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
 }
-void Resolver::visitSetExpression(const ast::Set &value) {
+void Resolver::visitSetExpression(const syntax::ast::Set &value) {
 	messageBag.error(value.getToken(),
 	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
 }
-void Resolver::visitUnaryExpression(const ast::Unary &value) {
+void Resolver::visitUnaryExpression(const syntax::ast::Unary &value) {
 	messageBag.error(value.getToken(),
 	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
 }
-void Resolver::visitArrayAccessExpression(const ast::ArrayAccess &value) {
+void Resolver::visitArrayAccessExpression(
+    const syntax::ast::ArrayAccess &value) {
 	messageBag.error(value.getToken(),
 	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
 }
-void Resolver::visitArrayTypeExpression(const ast::ArrayType &value) {
+void Resolver::visitArrayTypeExpression(const syntax::ast::ArrayType &value) {
 	messageBag.error(value.getToken(),
 	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
 }
-void Resolver::visitTupleTypeExpression(const ast::TupleType &value) {
+void Resolver::visitTupleTypeExpression(const syntax::ast::TupleType &value) {
 	messageBag.error(value.getToken(),
 	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
 }
-void Resolver::visitPointerTypeExpression(const ast::PointerType &value) {
+void Resolver::visitPointerTypeExpression(
+    const syntax::ast::PointerType &value) {
 	messageBag.error(value.getToken(),
 	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
 }
-void Resolver::visitNamedTypeExpression(const ast::NamedType &value) {
+void Resolver::visitNamedTypeExpression(const syntax::ast::NamedType &value) {
 	messageBag.error(value.getToken(),
 	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
 }
-void Resolver::visitCastExpression(const ast::Cast &value) {
+void Resolver::visitCastExpression(const syntax::ast::Cast &value) {
 	messageBag.error(value.getToken(),
 	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
 }
-void Resolver::visitParameterExpression(const ast::Parameter &value) {
+void Resolver::visitParameterExpression(const syntax::ast::Parameter &value) {
 	messageBag.error(value.getToken(),
 	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
 }
 
-lang::Type Resolver::resolveType(const ast::Statement &statement) {
+lang::Type Resolver::resolveType(const syntax::ast::Statement &statement) {
 	auto types = resolveTypes(statement);
 
 	if (types.size() > 1) {
@@ -311,7 +317,7 @@ lang::Type Resolver::resolveType(const ast::Statement &statement) {
 
 	return types.size() > 0 ? types[0] : lang::Type::defineStmtType();
 }
-lang::Type Resolver::resolveType(const ast::Expression &expression) {
+lang::Type Resolver::resolveType(const syntax::ast::Expression &expression) {
 	auto types = resolveTypes(expression);
 
 	if (types.size() > 1) {
@@ -323,7 +329,7 @@ lang::Type Resolver::resolveType(const ast::Expression &expression) {
 	return types.size() > 0 ? types[0] : lang::Type::defineUnknownType();
 }
 std::vector<lang::Type>
-Resolver::resolveTypes(const ast::Statement &statement) {
+Resolver::resolveTypes(const syntax::ast::Statement &statement) {
 	std::vector<lang::Type> returnTypes;
 	size_t tsSize = typeStack.size();
 	statement.visit(*this);
@@ -335,7 +341,7 @@ Resolver::resolveTypes(const ast::Statement &statement) {
 	return returnTypes;
 }
 std::vector<lang::Type>
-Resolver::resolveTypes(const ast::Expression &expression) {
+Resolver::resolveTypes(const syntax::ast::Expression &expression) {
 	std::vector<lang::Type> returnTypes;
 	size_t tsSize = typeStack.size();
 	expression.visit(*this);

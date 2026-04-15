@@ -3,8 +3,6 @@
 #include <memory>
 #include <optional>
 
-#include <ray/compiler/ast/expression.hpp>
-#include <ray/compiler/ast/statement.hpp>
 #include <ray/compiler/directives/compilerDirective.hpp>
 #include <ray/compiler/directives/linkageDirective.hpp>
 #include <ray/compiler/environment/dataModel/dataModel.hpp>
@@ -14,11 +12,13 @@
 #include <ray/compiler/lang/struct.hpp>
 #include <ray/compiler/lang/type.hpp>
 #include <ray/compiler/message_bag.hpp>
+#include <ray/compiler/syntax/ast/Expression.hpp>
+#include <ray/compiler/syntax/ast/Statement.hpp>
 
 namespace ray::compiler::passes {
 
-class TypeChecker : public ast::StatementVisitor,
-                    public ast::ExpressionVisitor {
+class TypeChecker : public syntax::ast::StatementVisitor,
+                    public syntax::ast::ExpressionVisitor {
 	MessageBag messageBag;
 
 	std::vector<std::unique_ptr<directive::CompilerDirective>> directivesStack;
@@ -41,7 +41,8 @@ class TypeChecker : public ast::StatementVisitor,
 	//,moduleStore(moduleStore)
 	{}
 
-	void resolve(const std::vector<std::unique_ptr<ast::Statement>> &statement);
+	void resolve(
+	    const std::vector<std::unique_ptr<syntax::ast::Statement>> &statement);
 
 	const lang::SourceUnit &getCurrentSourceUnit() const {
 		return currentSourceUnit;
@@ -52,51 +53,60 @@ class TypeChecker : public ast::StatementVisitor,
 	const std::vector<std::string> getWarnings() const;
 
   private:
-	void visitBlockStatement(const ast::Block &value) override;
-	void visitTerminalExprStatement(const ast::TerminalExpr &value) override;
+	void visitBlockStatement(const syntax::ast::Block &value) override;
 	void
-	visitExpressionStmtStatement(const ast::ExpressionStmt &value) override;
-	void visitFunctionStatement(const ast::Function &value) override;
-	void visitMethodStatement(const ast::Method &value) override;
-	void visitIfStatement(const ast::If &value) override;
-	void visitJumpStatement(const ast::Jump &value) override;
-	void visitVarDeclStatement(const ast::VarDecl &value) override;
-	void visitMemberStatement(const ast::Member &value) override;
-	void visitWhileStatement(const ast::While &value) override;
-	void visitStructStatement(const ast::Struct &value) override;
-	void visitTraitStatement(const ast::Trait &value) override;
-	void visitCompDirectiveStatement(const ast::CompDirective &value) override;
+	visitTerminalExprStatement(const syntax::ast::TerminalExpr &value) override;
+	void visitExpressionStmtStatement(
+	    const syntax::ast::ExpressionStmt &value) override;
+	void visitFunctionStatement(const syntax::ast::Function &value) override;
+	void visitMethodStatement(const syntax::ast::Method &value) override;
+	void visitIfStatement(const syntax::ast::If &value) override;
+	void visitJumpStatement(const syntax::ast::Jump &value) override;
+	void visitVarDeclStatement(const syntax::ast::VarDecl &value) override;
+	void visitMemberStatement(const syntax::ast::Member &value) override;
+	void visitWhileStatement(const syntax::ast::While &value) override;
+	void visitStructStatement(const syntax::ast::Struct &value) override;
+	void visitTraitStatement(const syntax::ast::Trait &value) override;
+	void visitCompDirectiveStatement(
+	    const syntax::ast::CompDirective &value) override;
 	// Expression
-	void visitVariableExpression(const ast::Variable &value) override;
-	void visitIntrinsicExpression(const ast::Intrinsic &value) override;
-	void visitAssignExpression(const ast::Assign &value) override;
-	void visitBinaryExpression(const ast::Binary &value) override;
-	void visitCallExpression(const ast::Call &value) override;
-	void visitIntrinsicCallExpression(const ast::IntrinsicCall &value) override;
-	void visitGetExpression(const ast::Get &value) override;
-	void visitGroupingExpression(const ast::Grouping &value) override;
-	void visitLiteralExpression(const ast::Literal &value) override;
-	void visitLogicalExpression(const ast::Logical &value) override;
-	void visitSetExpression(const ast::Set &value) override;
-	void visitUnaryExpression(const ast::Unary &value) override;
-	void visitArrayAccessExpression(const ast::ArrayAccess &value) override;
-	void visitArrayTypeExpression(const ast::ArrayType &value) override;
-	void visitTupleTypeExpression(const ast::TupleType &value) override;
-	void visitPointerTypeExpression(const ast::PointerType &value) override;
-	void visitNamedTypeExpression(const ast::NamedType &value) override;
-	void visitCastExpression(const ast::Cast &value) override;
-	void visitParameterExpression(const ast::Parameter &value) override;
+	void visitVariableExpression(const syntax::ast::Variable &value) override;
+	void visitIntrinsicExpression(const syntax::ast::Intrinsic &value) override;
+	void visitAssignExpression(const syntax::ast::Assign &value) override;
+	void visitBinaryExpression(const syntax::ast::Binary &value) override;
+	void visitCallExpression(const syntax::ast::Call &value) override;
+	void visitIntrinsicCallExpression(
+	    const syntax::ast::IntrinsicCall &value) override;
+	void visitGetExpression(const syntax::ast::Get &value) override;
+	void visitGroupingExpression(const syntax::ast::Grouping &value) override;
+	void visitLiteralExpression(const syntax::ast::Literal &value) override;
+	void visitLogicalExpression(const syntax::ast::Logical &value) override;
+	void visitSetExpression(const syntax::ast::Set &value) override;
+	void visitUnaryExpression(const syntax::ast::Unary &value) override;
+	void
+	visitArrayAccessExpression(const syntax::ast::ArrayAccess &value) override;
+	void visitArrayTypeExpression(const syntax::ast::ArrayType &value) override;
+	void visitTupleTypeExpression(const syntax::ast::TupleType &value) override;
+	void
+	visitPointerTypeExpression(const syntax::ast::PointerType &value) override;
+	void visitNamedTypeExpression(const syntax::ast::NamedType &value) override;
+	void visitCastExpression(const syntax::ast::Cast &value) override;
+	void visitParameterExpression(const syntax::ast::Parameter &value) override;
 
-	std::optional<lang::Type> resolveType(const ast::Statement &statement);
-	std::optional<lang::Type> resolveType(const ast::Expression &expression);
-	std::vector<lang::Type> resolveTypes(const ast::Statement &statement);
-	std::vector<lang::Type> resolveTypes(const ast::Expression &expression);
+	std::optional<lang::Type>
+	resolveType(const syntax::ast::Statement &statement);
+	std::optional<lang::Type>
+	resolveType(const syntax::ast::Expression &expression);
+	std::vector<lang::Type>
+	resolveTypes(const syntax::ast::Statement &statement);
+	std::vector<lang::Type>
+	resolveTypes(const syntax::ast::Expression &expression);
 
 	std::optional<lang::Type> findScalarTypeInfo(const std::string_view lexeme);
 	std::optional<lang::Type> findTypeInfo(const std::string_view lexeme);
 
 	std::optional<lang::FunctionDeclaration>
-	resolveFunctionDeclaration(const ast::Function &functionExpr);
+	resolveFunctionDeclaration(const syntax::ast::Function &functionExpr);
 
 	// gets the current scope
 	lang::Scope &getCurrentScope();

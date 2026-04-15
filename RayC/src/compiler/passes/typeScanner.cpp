@@ -8,8 +8,6 @@
 #include <ranges>
 #include <string_view>
 
-#include <ray/compiler/ast/expression.hpp>
-#include <ray/compiler/ast/statement.hpp>
 #include <ray/compiler/environment/dataModel/dataModel.hpp>
 #include <ray/compiler/lang/functionDefinition.hpp>
 #include <ray/compiler/lang/scope.hpp>
@@ -19,17 +17,19 @@
 #include <ray/compiler/lang/type.hpp>
 #include <ray/compiler/passes/symbol_mangler.hpp>
 #include <ray/compiler/passes/typeScanner.hpp>
+#include <ray/compiler/syntax/ast/Expression.hpp>
+#include <ray/compiler/syntax/ast/Statement.hpp>
 #include <ray/util/copy_ptr.hpp>
 #include <ray/util/soft_reference.hpp>
 
 namespace ray::compiler::passes {
 
 void TypeScanner::resolve(
-    const std::vector<std::unique_ptr<ast::Statement>> &statements) {
+    const std::vector<std::unique_ptr<syntax::ast::Statement>> &statements) {
 	// search for structs
 	for (const auto &structAst :
 	     statements | std::views::transform([](const auto &statement) {
-		     return dynamic_cast<const ast::Struct *>(statement.get());
+		     return dynamic_cast<const syntax::ast::Struct *>(statement.get());
 	     }) | std::views::filter([](const auto *structAst) {
 		     return structAst != nullptr;
 	     })) {
@@ -51,7 +51,7 @@ const std::vector<std::string> TypeScanner::getWarnings() const {
 	return messageBag.getWarnings();
 }
 
-void TypeScanner::visitBlockStatement(const ast::Block &blockAst) {
+void TypeScanner::visitBlockStatement(const syntax::ast::Block &blockAst) {
 	auto &parentScope = currentScope.get();
 	currentScope = parentScope.makeChildScope();
 	std::vector<lang::Type> returnTypes;
@@ -74,16 +74,17 @@ void TypeScanner::visitBlockStatement(const ast::Block &blockAst) {
 	currentScope = parentScope;
 }
 void TypeScanner::visitTerminalExprStatement(
-    const ast::TerminalExpr &terminalExprAst) {
+    const syntax::ast::TerminalExpr &terminalExprAst) {
 	if (terminalExprAst.expression.has_value()) {
 		terminalExprAst.expression->get()->visit(*this);
 	}
 }
 void TypeScanner::visitExpressionStmtStatement(
-    const ast::ExpressionStmt &expressionStmtAst) {
+    const syntax::ast::ExpressionStmt &expressionStmtAst) {
 	expressionStmtAst.expression->visit(*this);
 }
-void TypeScanner::visitFunctionStatement(const ast::Function &functionAst) {
+void TypeScanner::visitFunctionStatement(
+    const syntax::ast::Function &functionAst) {
 	std::string currentModule;
 
 	std::optional<directive::LinkageDirective> linkageDirective;
@@ -112,7 +113,7 @@ void TypeScanner::visitFunctionStatement(const ast::Function &functionAst) {
 	}
 	typeStack.push_back(type);
 }
-void TypeScanner::visitMethodStatement(const ast::Method &methodAst) {
+void TypeScanner::visitMethodStatement(const syntax::ast::Method &methodAst) {
 	std::string currentModule;
 
 	std::optional<directive::LinkageDirective> linkageDirective;
@@ -158,7 +159,7 @@ void TypeScanner::visitMethodStatement(const ast::Method &methodAst) {
 
 	traitMethodStack.push_back(traitMethod);
 }
-void TypeScanner::visitIfStatement(const ast::If &ifExprAst) {
+void TypeScanner::visitIfStatement(const syntax::ast::If &ifExprAst) {
 	// we do not care for the condition, only the inner body of the expression
 	// and the else body if applies
 	ifExprAst.thenBranch->visit(*this);
@@ -166,17 +167,18 @@ void TypeScanner::visitIfStatement(const ast::If &ifExprAst) {
 		ifExprAst.elseBranch->get()->visit(*this);
 	}
 }
-void TypeScanner::visitJumpStatement(const ast::Jump &jumpAst) {
+void TypeScanner::visitJumpStatement(const syntax::ast::Jump &jumpAst) {
 	if (jumpAst.returnValue.has_value()) {
 		jumpAst.returnValue->get()->visit(*this);
 	}
 }
-void TypeScanner::visitVarDeclStatement(const ast::VarDecl &varDeclAst) {
+void TypeScanner::visitVarDeclStatement(
+    const syntax::ast::VarDecl &varDeclAst) {
 	if (varDeclAst.initializer.has_value()) {
 		auto initializerType = resolveType(*varDeclAst.initializer->get());
 	}
 }
-void TypeScanner::visitMemberStatement(const ast::Member &memberAst) {
+void TypeScanner::visitMemberStatement(const syntax::ast::Member &memberAst) {
 	std::string memberName = memberAst.name.lexeme;
 
 	auto memberTypeObj = resolveType(*memberAst.type);
@@ -191,11 +193,11 @@ void TypeScanner::visitMemberStatement(const ast::Member &memberAst) {
 
 	structMemberStack.push_back(structMember);
 }
-void TypeScanner::visitWhileStatement(const ast::While &whileAst) {
+void TypeScanner::visitWhileStatement(const syntax::ast::While &whileAst) {
 	discardTypes(*whileAst.body);
 	typeStack.push_back(lang::Type::defineStmtType());
 }
-void TypeScanner::visitStructStatement(const ast::Struct &structAst) {
+void TypeScanner::visitStructStatement(const syntax::ast::Struct &structAst) {
 	// process all the linkage directives to ensure they are not dangling after
 	std::optional<directive::LinkageDirective> linkageDirective;
 
@@ -267,7 +269,7 @@ void TypeScanner::visitStructStatement(const ast::Struct &structAst) {
 
 	structObj.members = members;
 }
-void TypeScanner::visitTraitStatement(const ast::Trait &traitAst) {
+void TypeScanner::visitTraitStatement(const syntax::ast::Trait &traitAst) {
 	// process all the linkage directives to ensure they are not dangling after
 	std::optional<directive::LinkageDirective> linkageDirective;
 
@@ -331,7 +333,7 @@ void TypeScanner::visitTraitStatement(const ast::Trait &traitAst) {
 	traitObj.methods = methods;
 }
 void TypeScanner::visitCompDirectiveStatement(
-    const ast::CompDirective &compDirectiveAst) {
+    const syntax::ast::CompDirective &compDirectiveAst) {
 	auto directiveToken = compDirectiveAst.name;
 	auto directiveName = compDirectiveAst.name.getLexeme();
 	if (directiveName == "Linkage") {
@@ -350,8 +352,8 @@ void TypeScanner::visitCompDirectiveStatement(
 		    directiveToken);
 		if (compDirectiveAst.child) {
 			auto childValue = compDirectiveAst.child.get();
-			if (dynamic_cast<ast::Function *>(childValue) ||
-			    dynamic_cast<ast::Struct *>(childValue)) {
+			if (dynamic_cast<syntax::ast::Function *>(childValue) ||
+			    dynamic_cast<syntax::ast::Struct *>(childValue)) {
 				size_t startDirectives = directivesStack.size();
 				size_t originalTop = directivesStackTop + 1;
 				directivesStackTop = startDirectives;
@@ -385,7 +387,8 @@ void TypeScanner::visitCompDirectiveStatement(
 	}
 }
 // Expression
-void TypeScanner::visitVariableExpression(const ast::Variable &varExprAst) {
+void TypeScanner::visitVariableExpression(
+    const syntax::ast::Variable &varExprAst) {
 	// TODO: once we have modules support(and maybe a template system?)
 	// revisit this section so we can determine if abstract variables can hold
 	// values required to them
@@ -407,28 +410,30 @@ void TypeScanner::visitVariableExpression(const ast::Variable &varExprAst) {
 	        .value_or(lang::Symbol::defineUnknownSymbol());
 	typeStack.push_back(foundVariable.innerType);
 }
-void TypeScanner::visitIntrinsicExpression(const ast::Intrinsic &intrinsicAst) {
+void TypeScanner::visitIntrinsicExpression(
+    const syntax::ast::Intrinsic &intrinsicAst) {
 	switch (intrinsicAst.intrinsic) {
-	case ast::IntrinsicType::INTR_SIZEOF: {
+	case syntax::ast::IntrinsicType::INTR_SIZEOF: {
 		typeStack.push_back(currentDataModel.get().getScalarType(
 		    environment::DataModel::ScalarTypeKind::ssizeScalar));
 		break;
 	}
-	case ast::IntrinsicType::INTR_IMPORT: {
+	case syntax::ast::IntrinsicType::INTR_IMPORT: {
 		// TODO: return modulequery type so the module can be scanned
 		messageBag.error(
 		    intrinsicAst.getToken(),
 		    std::format("{} not implemented", __PRETTY_FUNCTION__));
 		break;
 	}
-	case ast::IntrinsicType::INTR_UNKNOWN:
+	case syntax::ast::IntrinsicType::INTR_UNKNOWN:
 		break;
 	}
 }
-void TypeScanner::visitAssignExpression(const ast::Assign &assignAst) {
+void TypeScanner::visitAssignExpression(const syntax::ast::Assign &assignAst) {
 	assignAst.rhs->visit(*this);
 }
-void TypeScanner::visitBinaryExpression(const ast::Binary &binaryExprAst) {
+void TypeScanner::visitBinaryExpression(
+    const syntax::ast::Binary &binaryExprAst) {
 	// TODO: once operator overload is implemented
 	// make use of the scanning to resolve its type
 	auto leftType = resolveType(*binaryExprAst.left);
@@ -465,7 +470,7 @@ void TypeScanner::visitBinaryExpression(const ast::Binary &binaryExprAst) {
 		                             op.getLexeme()));
 	}
 }
-void TypeScanner::visitCallExpression(const ast::Call &callAst) {
+void TypeScanner::visitCallExpression(const syntax::ast::Call &callAst) {
 	// the type checker is responsible for verifying the types
 	// for (const auto &argument : callAst.arguments) {
 	//	argument->visit(*this);
@@ -474,7 +479,7 @@ void TypeScanner::visitCallExpression(const ast::Call &callAst) {
 	typeStack.push_back(returnType);
 }
 void TypeScanner::visitIntrinsicCallExpression(
-    const ast::IntrinsicCall &intrinsicCallAst) {
+    const syntax::ast::IntrinsicCall &intrinsicCallAst) {
 	// TODO: review this section later for a module system
 	auto type = resolveType(*intrinsicCallAst.callee);
 
@@ -482,15 +487,17 @@ void TypeScanner::visitIntrinsicCallExpression(
 		argument->visit(*this);
 	}
 }
-void TypeScanner::visitGetExpression(const ast::Get &value) {
+void TypeScanner::visitGetExpression(const syntax::ast::Get &value) {
 	messageBag.error(value.getToken(),
 	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
 }
-void TypeScanner::visitGroupingExpression(const ast::Grouping &groupingAst) {
+void TypeScanner::visitGroupingExpression(
+    const syntax::ast::Grouping &groupingAst) {
 	auto returnType = resolveType(*groupingAst.expression.get());
 	typeStack.push_back(returnType);
 }
-void TypeScanner::visitLiteralExpression(const ast::Literal &literalAst) {
+void TypeScanner::visitLiteralExpression(
+    const syntax::ast::Literal &literalAst) {
 	switch (literalAst.kind.type) {
 
 	case Token::TokenType::TOKEN_STRING: {
@@ -537,22 +544,22 @@ void TypeScanner::visitLiteralExpression(const ast::Literal &literalAst) {
 		break;
 	}
 }
-void TypeScanner::visitLogicalExpression(const ast::Logical &value) {
+void TypeScanner::visitLogicalExpression(const syntax::ast::Logical &value) {
 	messageBag.error(value.getToken(),
 	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
 }
-void TypeScanner::visitSetExpression(const ast::Set &value) {
+void TypeScanner::visitSetExpression(const syntax::ast::Set &value) {
 	messageBag.error(value.getToken(),
 	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
 }
-void TypeScanner::visitUnaryExpression(const ast::Unary &unaryAst) {
+void TypeScanner::visitUnaryExpression(const syntax::ast::Unary &unaryAst) {
 	// TODO: rework this section once operator overload is implemented
 	// for now we assume the same type is returned
 	auto innerType = resolveType(*unaryAst.expr);
 	return typeStack.push_back(innerType);
 }
 void TypeScanner::visitArrayAccessExpression(
-    const ast::ArrayAccess &arrayAccessAst) {
+    const syntax::ast::ArrayAccess &arrayAccessAst) {
 	// TODO: remove this hack in the future once we convert to an cleaner AST
 	auto arrayType = resolveType(*arrayAccessAst.array);
 	auto indexType = resolveType(*arrayAccessAst.index);
@@ -565,13 +572,15 @@ void TypeScanner::visitArrayAccessExpression(
 	        .value_or(lang::Type::defineUnknownType());
 	typeStack.push_back(innerType);
 }
-void TypeScanner::visitArrayTypeExpression(const ast::ArrayType &arrayTypeAst) {
+void TypeScanner::visitArrayTypeExpression(
+    const syntax::ast::ArrayType &arrayTypeAst) {
 	auto innerType = resolveType(*arrayTypeAst.subType);
 
 	typeStack.push_back(currentDataModel.get().definePointerType(
 	    innerType, arrayTypeAst.isMutable));
 }
-void TypeScanner::visitTupleTypeExpression(const ast::TupleType &tupleAst) {
+void TypeScanner::visitTupleTypeExpression(
+    const syntax::ast::TupleType &tupleAst) {
 	if (tupleAst.expressions.empty()) {
 		typeStack.push_back(currentDataModel.get().getUnitType());
 		return;
@@ -581,12 +590,13 @@ void TypeScanner::visitTupleTypeExpression(const ast::TupleType &tupleAst) {
 	    std::format("{} not implemented for tuples", __PRETTY_FUNCTION__));
 }
 void TypeScanner::visitPointerTypeExpression(
-    const ast::PointerType &pointerTypeAst) {
+    const syntax::ast::PointerType &pointerTypeAst) {
 	auto innerType = resolveType(*pointerTypeAst.subtype);
 	typeStack.push_back(currentDataModel.get().definePointerType(
 	    innerType, pointerTypeAst.isMutable));
 }
-void TypeScanner::visitNamedTypeExpression(const ast::NamedType &typeAst) {
+void TypeScanner::visitNamedTypeExpression(
+    const syntax::ast::NamedType &typeAst) {
 	auto queriedType = findTypeInfo(typeAst.name.lexeme);
 	if (queriedType != lang::Type::defineUnknownType()) {
 		lang::Type obtainedType = queriedType;
@@ -599,16 +609,17 @@ void TypeScanner::visitNamedTypeExpression(const ast::NamedType &typeAst) {
 		typeStack.push_back(lang::Type::defineUnknownType());
 	}
 }
-void TypeScanner::visitCastExpression(const ast::Cast &castAst) {
+void TypeScanner::visitCastExpression(const syntax::ast::Cast &castAst) {
 	discardTypes(*castAst.expression.get());
 	typeStack.push_back(resolveType(*castAst.type));
 }
-void TypeScanner::visitParameterExpression(const ast::Parameter &parameterAst) {
+void TypeScanner::visitParameterExpression(
+    const syntax::ast::Parameter &parameterAst) {
 	lang::Type parameterType = resolveType(*parameterAst.type.get());
 	typeStack.push_back(parameterType);
 }
 
-lang::Type TypeScanner::resolveType(const ast::Statement &statement) {
+lang::Type TypeScanner::resolveType(const syntax::ast::Statement &statement) {
 	auto types = resolveTypes(statement);
 
 	if (types.size() > 1) {
@@ -626,7 +637,7 @@ lang::Type TypeScanner::resolveType(const ast::Statement &statement) {
 
 	return types.size() > 0 ? types[0] : lang::Type::defineUnknownType();
 }
-lang::Type TypeScanner::resolveType(const ast::Expression &expression) {
+lang::Type TypeScanner::resolveType(const syntax::ast::Expression &expression) {
 	auto types = resolveTypes(expression);
 
 	if (types.size() > 1) {
@@ -638,7 +649,7 @@ lang::Type TypeScanner::resolveType(const ast::Expression &expression) {
 	return types.size() > 0 ? types[0] : lang::Type::defineUnknownType();
 }
 std::vector<lang::Type>
-TypeScanner::resolveTypes(const ast::Statement &statement) {
+TypeScanner::resolveTypes(const syntax::ast::Statement &statement) {
 	std::vector<lang::Type> returnTypes;
 	size_t tsSize = typeStack.size();
 	statement.visit(*this);
@@ -650,7 +661,7 @@ TypeScanner::resolveTypes(const ast::Statement &statement) {
 	return returnTypes;
 }
 std::vector<lang::Type>
-TypeScanner::resolveTypes(const ast::Expression &expression) {
+TypeScanner::resolveTypes(const syntax::ast::Expression &expression) {
 	std::vector<lang::Type> returnTypes;
 	size_t tsSize = typeStack.size();
 	expression.visit(*this);
@@ -668,14 +679,14 @@ TypeScanner::resolveTypes(const ast::Expression &expression) {
 	return returnTypes;
 }
 
-void TypeScanner::discardTypes(const ast::Statement &statement) {
+void TypeScanner::discardTypes(const syntax::ast::Statement &statement) {
 	size_t tsSize = typeStack.size();
 	statement.visit(*this);
 	while (typeStack.size() > tsSize) {
 		typeStack.pop_back();
 	}
 }
-void TypeScanner::discardTypes(const ast::Expression &expression) {
+void TypeScanner::discardTypes(const syntax::ast::Expression &expression) {
 	size_t tsSize = typeStack.size();
 	expression.visit(*this);
 	while (typeStack.size() > tsSize) {
@@ -731,7 +742,7 @@ bool TypeScanner::returnScope(lang::Scope &targetScope) {
 	return false;
 }
 
-void TypeScanner::discoverStruct(const ast::Struct &structAst) {
+void TypeScanner::discoverStruct(const syntax::ast::Struct &structAst) {
 	std::optional<directive::LinkageDirective> linkageDirective;
 
 	for (size_t i = directivesStack.size(); i > directivesStackTop; i--) {

@@ -1,6 +1,5 @@
 #pragma once
 
-#include "ray/compiler/lang/trait.hpp"
 #include <cstddef>
 #include <functional>
 #include <optional>
@@ -11,6 +10,7 @@
 #include <ray/compiler/lang/scope.hpp>
 #include <ray/compiler/lang/struct.hpp>
 #include <ray/compiler/lang/symbol.hpp>
+#include <ray/compiler/lang/trait.hpp>
 #include <ray/util/soft_reference.hpp>
 
 namespace ray::compiler::lang {

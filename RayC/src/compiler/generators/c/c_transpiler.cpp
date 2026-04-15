@@ -7,9 +7,6 @@
 #include <string>
 #include <string_view>
 
-#include <ray/compiler/ast/expression.hpp>
-#include <ray/compiler/ast/intrinsic.hpp>
-#include <ray/compiler/ast/statement.hpp>
 #include <ray/compiler/directives/compilerDirective.hpp>
 #include <ray/compiler/directives/linkageDirective.hpp>
 #include <ray/compiler/generators/c/c_transpiler.hpp>
@@ -19,6 +16,9 @@
 #include <ray/compiler/lexer/token.hpp>
 #include <ray/compiler/message_bag.hpp>
 #include <ray/compiler/passes/symbol_mangler.hpp>
+#include <ray/compiler/syntax/ast/Expression.hpp>
+#include <ray/compiler/syntax/ast/Statement.hpp>
+#include <ray/compiler/syntax/ast/intrinsic.hpp>
 #include <ray/util/soft_reference.hpp>
 
 namespace ray::compiler::generator::c {
@@ -34,7 +34,7 @@ CTranspilerGenerator::CTranspilerGenerator(
       currentScope(sourceUnit.rootScope), currentDataModel(dataModel) {}
 
 void CTranspilerGenerator::resolve(
-    const std::vector<std::unique_ptr<ast::Statement>> &statement) {
+    const std::vector<std::unique_ptr<syntax::ast::Statement>> &statement) {
 	output.clear();
 
 	output << "#include <ray/ray_definitions.h>\n";
@@ -115,7 +115,8 @@ const std::vector<std::string> CTranspilerGenerator::getErrors() const {
 std::string CTranspilerGenerator::getOutput() const { return output.str(); }
 
 // Statement
-void CTranspilerGenerator::visitBlockStatement(const ast::Block &block) {
+void CTranspilerGenerator::visitBlockStatement(
+    const syntax::ast::Block &block) {
 	if (block.statements.size() > 0) {
 		for (auto &statement : block.statements) {
 			statement->visit(*this);
@@ -123,7 +124,7 @@ void CTranspilerGenerator::visitBlockStatement(const ast::Block &block) {
 	}
 }
 void CTranspilerGenerator::visitTerminalExprStatement(
-    const ast::TerminalExpr &terminalExpr) {
+    const syntax::ast::TerminalExpr &terminalExpr) {
 	if (terminalExpr.expression.has_value()) {
 		output << std::format("{}return ", currentIdent());
 		terminalExpr.expression->get()->visit(*this);
@@ -131,13 +132,13 @@ void CTranspilerGenerator::visitTerminalExprStatement(
 	}
 }
 void CTranspilerGenerator::visitExpressionStmtStatement(
-    const ast::ExpressionStmt &expression) {
+    const syntax::ast::ExpressionStmt &expression) {
 	output << currentIdent();
 	expression.expression->visit(*this);
 	output << std::format(";\n", currentIdent());
 }
 void CTranspilerGenerator::visitFunctionStatement(
-    const ast::Function &function) {
+    const syntax::ast::Function &function) {
 	std::string identTabs = currentIdent();
 	std::string currentModule;
 
@@ -188,7 +189,7 @@ void CTranspilerGenerator::visitFunctionStatement(
 		output << ")";
 		output << " {";
 		if (function.body->statements.size() > 0) {
-			auto statement = dynamic_cast<ast::TerminalExpr *>(
+			auto statement = dynamic_cast<syntax::ast::TerminalExpr *>(
 			    function.body->statements[0].get());
 			if (!statement || statement->expression.has_value()) {
 				output << "\n";
@@ -200,11 +201,13 @@ void CTranspilerGenerator::visitFunctionStatement(
 		output << std::format("{}}}\n", identTabs);
 	}
 }
-void CTranspilerGenerator::visitMethodStatement(const ast::Method &value) {
+void CTranspilerGenerator::visitMethodStatement(
+    const syntax::ast::Method &value) {
 	messageBag.error(value.getToken(),
 	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
 }
-void CTranspilerGenerator::visitIfStatement(const ast::If &ifStatement) {
+void CTranspilerGenerator::visitIfStatement(
+    const syntax::ast::If &ifStatement) {
 	output << std::format("{}if (", currentIdent());
 	ifStatement.condition->visit(*this);
 	output << ") {\n";
@@ -220,7 +223,7 @@ void CTranspilerGenerator::visitIfStatement(const ast::If &ifStatement) {
 		output << std::format("{}}}\n", currentIdent());
 	}
 }
-void CTranspilerGenerator::visitJumpStatement(const ast::Jump &jump) {
+void CTranspilerGenerator::visitJumpStatement(const syntax::ast::Jump &jump) {
 	std::string identTab = currentIdent();
 	switch (jump.keyword.type) {
 	case Token::TokenType::TOKEN_BREAK:
@@ -247,7 +250,8 @@ void CTranspilerGenerator::visitJumpStatement(const ast::Jump &jump) {
 		break;
 	}
 }
-void CTranspilerGenerator::visitVarDeclStatement(const ast::VarDecl &var) {
+void CTranspilerGenerator::visitVarDeclStatement(
+    const syntax::ast::VarDecl &var) {
 	output << currentIdent();
 
 	var.type->visit(*this);
@@ -263,7 +267,8 @@ void CTranspilerGenerator::visitVarDeclStatement(const ast::VarDecl &var) {
 	}
 	output << ";\n";
 }
-void CTranspilerGenerator::visitMemberStatement(const ast::Member &var) {
+void CTranspilerGenerator::visitMemberStatement(
+    const syntax::ast::Member &var) {
 	output << currentIdent();
 
 	var.type->visit(*this);
@@ -279,7 +284,8 @@ void CTranspilerGenerator::visitMemberStatement(const ast::Member &var) {
 	}
 	output << ";\n";
 }
-void CTranspilerGenerator::visitWhileStatement(const ast::While &value) {
+void CTranspilerGenerator::visitWhileStatement(
+    const syntax::ast::While &value) {
 	auto identTab = currentIdent();
 	output << std::format("{}while (", identTab);
 	auto currentIdent = ident;
@@ -292,7 +298,8 @@ void CTranspilerGenerator::visitWhileStatement(const ast::While &value) {
 	ident--;
 	output << std::format("{}}}\n", identTab);
 }
-void CTranspilerGenerator::visitStructStatement(const ast::Struct &value) {
+void CTranspilerGenerator::visitStructStatement(
+    const syntax::ast::Struct &value) {
 	std::string currentModule;
 	std::optional<directive::LinkageDirective> linkageDirective;
 
@@ -341,12 +348,13 @@ void CTranspilerGenerator::visitStructStatement(const ast::Struct &value) {
 		output << std::format(" {};\n", mangledStructName);
 	}
 }
-void CTranspilerGenerator::visitTraitStatement(const ast::Trait &value) {
+void CTranspilerGenerator::visitTraitStatement(
+    const syntax::ast::Trait &value) {
 	messageBag.error(value.getToken(),
 	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
 }
 void CTranspilerGenerator::visitCompDirectiveStatement(
-    const ast::CompDirective &compDirective) {
+    const syntax::ast::CompDirective &compDirective) {
 	auto directiveName = compDirective.name.getLexeme();
 	if (directiveName == "Linkage") {
 		auto &attributes = compDirective.values;
@@ -364,8 +372,8 @@ void CTranspilerGenerator::visitCompDirectiveStatement(
 		    compDirective.getToken());
 		if (compDirective.child) {
 			auto childValue = compDirective.child.get();
-			if (dynamic_cast<ast::Function *>(childValue) ||
-			    dynamic_cast<ast::Struct *>(childValue)) {
+			if (dynamic_cast<syntax::ast::Function *>(childValue) ||
+			    dynamic_cast<syntax::ast::Struct *>(childValue)) {
 				size_t startDirectives = directivesStack.size();
 				size_t originalTop = top + 1;
 				top = startDirectives;
@@ -397,21 +405,22 @@ void CTranspilerGenerator::visitCompDirectiveStatement(
 }
 // Expression
 void CTranspilerGenerator::visitVariableExpression(
-    const ast::Variable &variable) {
+    const syntax::ast::Variable &variable) {
 	output << std::format("{}", variable.name.lexeme);
 }
 void CTranspilerGenerator::visitIntrinsicExpression(
-    const ast::Intrinsic &intrinsic) {
+    const syntax::ast::Intrinsic &intrinsic) {
 	messageBag.error(intrinsic.name,
 	                 "visitIntrinsicExpression not implemented");
 }
-void CTranspilerGenerator::visitAssignExpression(const ast::Assign &value) {
+void CTranspilerGenerator::visitAssignExpression(
+    const syntax::ast::Assign &value) {
 	value.lhs->visit(*this);
 	output << std::format(" {} ", value.assignmentOp.getGlyph());
 	value.rhs->visit(*this);
 }
 void CTranspilerGenerator::visitBinaryExpression(
-    const ast::Binary &binaryExpression) {
+    const syntax::ast::Binary &binaryExpression) {
 	std::string identTab = currentIdent();
 	binaryExpression.left->visit(*this);
 
@@ -443,10 +452,11 @@ void CTranspilerGenerator::visitBinaryExpression(
 
 	binaryExpression.right->visit(*this);
 }
-void CTranspilerGenerator::visitCallExpression(const ast::Call &callable) {
+void CTranspilerGenerator::visitCallExpression(
+    const syntax::ast::Call &callable) {
 	// check if the callable contains a function
-	if (ast::Variable *var =
-	        dynamic_cast<ast::Variable *>(callable.callee.get())) {
+	if (syntax::ast::Variable *var =
+	        dynamic_cast<syntax::ast::Variable *>(callable.callee.get())) {
 		std::string callableName =
 		    findCallableName(callable, var->name.getLexeme());
 		if (callableName.empty()) {
@@ -474,10 +484,10 @@ void CTranspilerGenerator::visitCallExpression(const ast::Call &callable) {
 	}
 }
 void CTranspilerGenerator::visitIntrinsicCallExpression(
-    const ast::IntrinsicCall &value) {
+    const syntax::ast::IntrinsicCall &value) {
 
 	switch (value.callee->intrinsic) {
-	case ray::compiler::ast::IntrinsicType::INTR_SIZEOF: {
+	case ray::compiler::syntax::ast::IntrinsicType::INTR_SIZEOF: {
 		if (value.arguments.size() != 1) {
 			messageBag.error(value.callee->name,
 			                 std::format("@sizeOf intrinsic expects 1 "
@@ -495,29 +505,30 @@ void CTranspilerGenerator::visitIntrinsicCallExpression(
 		}
 		break;
 	}
-	case ray::compiler::ast::IntrinsicType::INTR_IMPORT: {
+	case ray::compiler::syntax::ast::IntrinsicType::INTR_IMPORT: {
 		messageBag.error(
 		    value.callee->name,
 		    std::format("'{}' is not implemented yet for C backend",
 		                value.callee->name.lexeme));
 		break;
 	}
-	case ray::compiler::ast::IntrinsicType::INTR_UNKNOWN:
+	case ray::compiler::syntax::ast::IntrinsicType::INTR_UNKNOWN:
 		messageBag.error(value.callee->name,
 		                 std::format("'{}' is not a valid intrinsic",
 		                             value.callee->name.lexeme));
 		break;
 	}
 }
-void CTranspilerGenerator::visitGetExpression(const ast::Get &value) {
+void CTranspilerGenerator::visitGetExpression(const syntax::ast::Get &value) {
 	value.object->visit(*this);
 	output << std::format(".{}", value.name.lexeme);
 }
 void CTranspilerGenerator::visitGroupingExpression(
-    const ast::Grouping &grouping) {
+    const syntax::ast::Grouping &grouping) {
 	grouping.expression->visit(*this);
 }
-void CTranspilerGenerator::visitLiteralExpression(const ast::Literal &literal) {
+void CTranspilerGenerator::visitLiteralExpression(
+    const syntax::ast::Literal &literal) {
 	switch (literal.kind.type) {
 	case Token::TokenType::TOKEN_TRUE:
 	case Token::TokenType::TOKEN_FALSE:
@@ -610,20 +621,21 @@ void CTranspilerGenerator::visitLiteralExpression(const ast::Literal &literal) {
 	}
 }
 void CTranspilerGenerator::visitLogicalExpression(
-    const ast::Logical &logicalExpr) {
+    const syntax::ast::Logical &logicalExpr) {
 	output << "(bool)(";
 	logicalExpr.left->visit(*this);
 	output << std::format(" {} ", logicalExpr.op.getGlyph());
 	logicalExpr.right->visit(*this);
 	output << ")";
 }
-void CTranspilerGenerator::visitSetExpression(const ast::Set &value) {
+void CTranspilerGenerator::visitSetExpression(const syntax::ast::Set &value) {
 	value.object->visit(*this);
 	output << std::format(".{} {} ", value.name.lexeme,
 	                      value.assignmentOp.getGlyph());
 	value.value->visit(*this);
 }
-void CTranspilerGenerator::visitUnaryExpression(const ast::Unary &unary) {
+void CTranspilerGenerator::visitUnaryExpression(
+    const syntax::ast::Unary &unary) {
 	if (!unary.isPrefix) {
 		unary.expr->visit(*this);
 	}
@@ -644,14 +656,14 @@ void CTranspilerGenerator::visitUnaryExpression(const ast::Unary &unary) {
 	}
 }
 void CTranspilerGenerator::visitArrayAccessExpression(
-    const ast::ArrayAccess &value) {
+    const syntax::ast::ArrayAccess &value) {
 	value.array->visit(*this);
 	output << "[";
 	value.index->visit(*this);
 	output << "]";
 }
 void CTranspilerGenerator::visitArrayTypeExpression(
-    const ast::ArrayType &arrayTypeAst) {
+    const syntax::ast::ArrayType &arrayTypeAst) {
 	// TODO: once array type holds its size in the AST provide
 	// a check to transpile it to C
 	arrayTypeAst.subType->visit(*this);
@@ -662,7 +674,7 @@ void CTranspilerGenerator::visitArrayTypeExpression(
 	}
 }
 void CTranspilerGenerator::visitTupleTypeExpression(
-    const ast::TupleType &tupleAst) {
+    const syntax::ast::TupleType &tupleAst) {
 	// empty tuples are just plain void
 	if (tupleAst.expressions.empty()) {
 		output << "void";
@@ -675,7 +687,7 @@ void CTranspilerGenerator::visitTupleTypeExpression(
 	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
 }
 void CTranspilerGenerator::visitPointerTypeExpression(
-    const ast::PointerType &pointerTypeAst) {
+    const syntax::ast::PointerType &pointerTypeAst) {
 
 	pointerTypeAst.subtype->visit(*this);
 
@@ -685,7 +697,7 @@ void CTranspilerGenerator::visitPointerTypeExpression(
 	}
 }
 void CTranspilerGenerator::visitNamedTypeExpression(
-    const ast::NamedType &type) {
+    const syntax::ast::NamedType &type) {
 	if (!type.isMutable && type.name.lexeme != "void"
 	    // && !type.isPointer // TODO: make this section use the type checker
 	    // instead
@@ -712,7 +724,7 @@ void CTranspilerGenerator::visitNamedTypeExpression(
 		output << std::format("{}", typeName);
 	}
 }
-void CTranspilerGenerator::visitCastExpression(const ast::Cast &value) {
+void CTranspilerGenerator::visitCastExpression(const syntax::ast::Cast &value) {
 	output << "(";
 	value.type->visit(*this);
 	output << ")(";
@@ -720,7 +732,7 @@ void CTranspilerGenerator::visitCastExpression(const ast::Cast &value) {
 	output << ")";
 }
 void CTranspilerGenerator::visitParameterExpression(
-    const ast::Parameter &param) {
+    const syntax::ast::Parameter &param) {
 	param.type->visit(*this);
 	output << std::format(" {}", param.name.lexeme);
 }
@@ -777,7 +789,7 @@ void CTranspilerGenerator::visitType(const lang::Type &type) {
 }
 
 std::string
-CTranspilerGenerator::findCallableName(const ast::Call &callable,
+CTranspilerGenerator::findCallableName(const syntax::ast::Call &callable,
                                        const std::string_view name) const {
 	// TODO: replace this to a resolved lookup done by the type checker
 	// once the type checker performs the binding
@@ -832,9 +844,9 @@ CTranspilerGenerator::findTypeInfo(const std::string_view lexeme) {
 	}
 	return {};
 }
-std::optional<lang::Type>
-CTranspilerGenerator::getTypeExpression(const ast::Expression *expression) {
-	if (auto var = dynamic_cast<const ast::Variable *>(expression)) {
+std::optional<lang::Type> CTranspilerGenerator::getTypeExpression(
+    const syntax::ast::Expression *expression) {
+	if (auto var = dynamic_cast<const syntax::ast::Variable *>(expression)) {
 		return findTypeInfo(var->name.lexeme);
 	}
 	return {};

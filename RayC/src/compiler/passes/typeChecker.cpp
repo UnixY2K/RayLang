@@ -7,8 +7,6 @@
 #include <string_view>
 #include <vector>
 
-#include <ray/compiler/ast/expression.hpp>
-#include <ray/compiler/ast/statement.hpp>
 #include <ray/compiler/lang/functionDefinition.hpp>
 #include <ray/compiler/lang/scope.hpp>
 #include <ray/compiler/lang/struct.hpp>
@@ -17,13 +15,15 @@
 #include <ray/compiler/lexer/token.hpp>
 #include <ray/compiler/passes/symbol_mangler.hpp>
 #include <ray/compiler/passes/typeChecker.hpp>
+#include <ray/compiler/syntax/ast/Expression.hpp>
+#include <ray/compiler/syntax/ast/Statement.hpp>
 #include <ray/util/copy_ptr.hpp>
 #include <ray/util/soft_reference.hpp>
 
 namespace ray::compiler::passes {
 
 void TypeChecker::resolve(
-    const std::vector<std::unique_ptr<ast::Statement>> &statements) {
+    const std::vector<std::unique_ptr<syntax::ast::Statement>> &statements) {
 
 	for (const auto &stmt : statements) {
 		auto stmtType = resolveType(*stmt);
@@ -69,7 +69,7 @@ const std::vector<std::string> TypeChecker::getWarnings() const {
 	return messageBag.getWarnings();
 }
 
-void TypeChecker::visitBlockStatement(const ast::Block &block) {
+void TypeChecker::visitBlockStatement(const syntax::ast::Block &block) {
 	std::vector<lang::Type> types;
 	for (const auto &statement : block.statements) {
 		auto stmtTypes = resolveTypes(*statement);
@@ -85,7 +85,7 @@ void TypeChecker::visitBlockStatement(const ast::Block &block) {
 	typeStack.insert(typeStack.end(), types.begin(), types.end());
 }
 void TypeChecker::visitTerminalExprStatement(
-    const ast::TerminalExpr &terminalExpr) {
+    const syntax::ast::TerminalExpr &terminalExpr) {
 	if (terminalExpr.expression.has_value()) {
 		const auto &returnExpr = *terminalExpr.expression.value();
 		auto returnType = resolveType(returnExpr);
@@ -104,14 +104,15 @@ void TypeChecker::visitTerminalExprStatement(
 	typeStack.push_back(lang::Type::defineStmtType());
 }
 void TypeChecker::visitExpressionStmtStatement(
-    const ast::ExpressionStmt &exprStmt) {
+    const syntax::ast::ExpressionStmt &exprStmt) {
 	// an expression statement consumes the type and does not return a type
 	// so it is an type of size 0 that cannot even be instatiated nor used
 	resolveType(*exprStmt.expression);
 
 	typeStack.push_back(lang::Type::defineStmtType());
 }
-void TypeChecker::visitFunctionStatement(const ast::Function &functionExprAst) {
+void TypeChecker::visitFunctionStatement(
+    const syntax::ast::Function &functionExprAst) {
 
 	auto declarationResult = resolveFunctionDeclaration(functionExprAst);
 	if (!declarationResult.has_value()) {
@@ -186,11 +187,11 @@ void TypeChecker::visitFunctionStatement(const ast::Function &functionExprAst) {
 		typeStack.push_back(functionType);
 	}
 }
-void TypeChecker::visitMethodStatement(const ast::Method &value) {
+void TypeChecker::visitMethodStatement(const syntax::ast::Method &value) {
 	messageBag.error(value.getToken(),
 	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
 }
-void TypeChecker::visitIfStatement(const ast::If &ifStmt) {
+void TypeChecker::visitIfStatement(const syntax::ast::If &ifStmt) {
 	auto conditionType = resolveType(*ifStmt.condition);
 	if (!conditionType.has_value()) {
 		messageBag.error(ifStmt.condition->getToken(), "non boolean condition");
@@ -223,7 +224,7 @@ void TypeChecker::visitIfStatement(const ast::If &ifStmt) {
 
 	typeStack.push_back(thenType);
 }
-void TypeChecker::visitJumpStatement(const ast::Jump &jumpStmt) {
+void TypeChecker::visitJumpStatement(const syntax::ast::Jump &jumpStmt) {
 	// if our expression is a return we need to return its optional value
 	// for anything else we do not care about its type
 	if (jumpStmt.token.type == Token::TokenType::TOKEN_RETURN) {
@@ -237,7 +238,8 @@ void TypeChecker::visitJumpStatement(const ast::Jump &jumpStmt) {
 	}
 	typeStack.push_back(lang::Type::defineStmtType());
 }
-void TypeChecker::visitVarDeclStatement(const ast::VarDecl &variableDeclAst) {
+void TypeChecker::visitVarDeclStatement(
+    const syntax::ast::VarDecl &variableDeclAst) {
 	auto variableType = lang::Type{};
 
 	if (variableDeclAst.type->getToken().type !=
@@ -301,7 +303,7 @@ void TypeChecker::visitVarDeclStatement(const ast::VarDecl &variableDeclAst) {
 	    variableDeclAst.getToken(),
 	    "variable does not have a valid type assigned nor an valid initialization");
 }
-void TypeChecker::visitMemberStatement(const ast::Member &variable) {
+void TypeChecker::visitMemberStatement(const syntax::ast::Member &variable) {
 	auto variableType = lang::Type{};
 
 	if (variable.type->getToken().type !=
@@ -358,7 +360,7 @@ void TypeChecker::visitMemberStatement(const ast::Member &variable) {
 	    variable.getToken(),
 	    "variable does not have a type assigned nor an valid initialization");
 }
-void TypeChecker::visitWhileStatement(const ast::While &whileStmt) {
+void TypeChecker::visitWhileStatement(const syntax::ast::While &whileStmt) {
 	auto conditionType = resolveType(*whileStmt.condition);
 	if (!conditionType.has_value()) {
 		messageBag.error(whileStmt.condition->getToken(),
@@ -378,7 +380,7 @@ void TypeChecker::visitWhileStatement(const ast::While &whileStmt) {
 
 	typeStack.push_back(type);
 }
-void TypeChecker::visitStructStatement(const ast::Struct &structAst) {
+void TypeChecker::visitStructStatement(const syntax::ast::Struct &structAst) {
 
 	std::string currentModule;
 
@@ -449,7 +451,7 @@ void TypeChecker::visitStructStatement(const ast::Struct &structAst) {
 	    currentDataModel.get().defineStructType(structId, structName, 1);
 	typeStack.push_back(structType);
 }
-void TypeChecker::visitTraitStatement(const ast::Trait &traitAst) {
+void TypeChecker::visitTraitStatement(const syntax::ast::Trait &traitAst) {
 	std::string currentModule;
 
 	std::string traitName = std::string(traitAst.name.getLexeme());
@@ -476,7 +478,7 @@ void TypeChecker::visitTraitStatement(const ast::Trait &traitAst) {
 	return typeStack.push_back(traitType);
 }
 void TypeChecker::visitCompDirectiveStatement(
-    const ast::CompDirective &compDirectiveAst) {
+    const syntax::ast::CompDirective &compDirectiveAst) {
 	auto directiveToken = compDirectiveAst.name;
 	auto directiveName = compDirectiveAst.name.getLexeme();
 	if (directiveName == "Linkage") {
@@ -495,8 +497,8 @@ void TypeChecker::visitCompDirectiveStatement(
 		    directiveToken);
 		if (compDirectiveAst.child) {
 			auto childValue = compDirectiveAst.child.get();
-			if (dynamic_cast<ast::Function *>(childValue) ||
-			    dynamic_cast<ast::Struct *>(childValue)) {
+			if (dynamic_cast<syntax::ast::Function *>(childValue) ||
+			    dynamic_cast<syntax::ast::Struct *>(childValue)) {
 				size_t startDirectives = directivesStack.size();
 				size_t originalTop = directivesStackTop + 1;
 				directivesStackTop = startDirectives;
@@ -531,7 +533,8 @@ void TypeChecker::visitCompDirectiveStatement(
 	}
 }
 // Expression
-void TypeChecker::visitVariableExpression(const ast::Variable &variableExpr) {
+void TypeChecker::visitVariableExpression(
+    const syntax::ast::Variable &variableExpr) {
 
 	auto foundVariable =
 	    getCurrentScope().findVariable(variableExpr.name.lexeme);
@@ -570,12 +573,13 @@ void TypeChecker::visitVariableExpression(const ast::Variable &variableExpr) {
 	// we did not find anything so do not bother and report an error
 	return;
 }
-void TypeChecker::visitIntrinsicExpression(const ast::Intrinsic &value) {
+void TypeChecker::visitIntrinsicExpression(
+    const syntax::ast::Intrinsic &value) {
 	messageBag.bug(value.getToken(),
 	               std::format("visit method not implemented for {}",
 	                           value.variantName()));
 }
-void TypeChecker::visitAssignExpression(const ast::Assign &assignExpr) {
+void TypeChecker::visitAssignExpression(const syntax::ast::Assign &assignExpr) {
 	auto leftType = resolveType(*assignExpr.lhs);
 	auto rightType = resolveType(*assignExpr.rhs);
 
@@ -620,7 +624,8 @@ void TypeChecker::visitAssignExpression(const ast::Assign &assignExpr) {
 		break;
 	}
 }
-void TypeChecker::visitBinaryExpression(const ast::Binary &binaryExprAst) {
+void TypeChecker::visitBinaryExpression(
+    const syntax::ast::Binary &binaryExprAst) {
 	auto leftType = resolveType(*binaryExprAst.left);
 	auto rightType = resolveType(*binaryExprAst.right);
 
@@ -670,7 +675,7 @@ void TypeChecker::visitBinaryExpression(const ast::Binary &binaryExprAst) {
 		                             op.getLexeme()));
 	}
 }
-void TypeChecker::visitCallExpression(const ast::Call &callExpr) {
+void TypeChecker::visitCallExpression(const syntax::ast::Call &callExpr) {
 	auto calleeTypeResult = resolveType(*callExpr.callee);
 	if (!calleeTypeResult.has_value()) {
 		messageBag.error(callExpr.getToken(),
@@ -755,10 +760,10 @@ void TypeChecker::visitCallExpression(const ast::Call &callExpr) {
 	typeStack.push_back(*calleeType.subtype.value());
 }
 void TypeChecker::visitIntrinsicCallExpression(
-    const ast::IntrinsicCall &intrinsicCall) {
+    const syntax::ast::IntrinsicCall &intrinsicCall) {
 
 	switch (intrinsicCall.callee->intrinsic) {
-	case ray::compiler::ast::IntrinsicType::INTR_SIZEOF: {
+	case ray::compiler::syntax::ast::IntrinsicType::INTR_SIZEOF: {
 		if (intrinsicCall.arguments.size() != 1) {
 			messageBag.error(
 			    intrinsicCall.callee->name,
@@ -775,7 +780,7 @@ void TypeChecker::visitIntrinsicCallExpression(
 		}
 		break;
 	}
-	case ray::compiler::ast::IntrinsicType::INTR_IMPORT: {
+	case ray::compiler::syntax::ast::IntrinsicType::INTR_IMPORT: {
 		if (intrinsicCall.arguments.size() != 1) {
 			messageBag.error(intrinsicCall.callee->name,
 			                 std::format("{} intrinsic expects 1 "
@@ -790,15 +795,16 @@ void TypeChecker::visitIntrinsicCallExpression(
 
 		break;
 	}
-	case ray::compiler::ast::IntrinsicType::INTR_UNKNOWN:
+	case ray::compiler::syntax::ast::IntrinsicType::INTR_UNKNOWN:
 		messageBag.error(intrinsicCall.callee->name,
 		                 std::format("'{}' is not a valid intrinsic",
 		                             intrinsicCall.callee->name.lexeme));
 		break;
 	}
 }
-void TypeChecker::visitGetExpression(const ast::Get &getExpression) {}
-void TypeChecker::visitGroupingExpression(const ast::Grouping &groupingExpr) {
+void TypeChecker::visitGetExpression(const syntax::ast::Get &getExpression) {}
+void TypeChecker::visitGroupingExpression(
+    const syntax::ast::Grouping &groupingExpr) {
 	// the type of the grouping is just the child of the inner expression
 	auto innerType = resolveType(*groupingExpr.expression);
 
@@ -806,7 +812,8 @@ void TypeChecker::visitGroupingExpression(const ast::Grouping &groupingExpr) {
 		typeStack.push_back(innerType.value());
 	}
 }
-void TypeChecker::visitLiteralExpression(const ast::Literal &literalAst) {
+void TypeChecker::visitLiteralExpression(
+    const syntax::ast::Literal &literalAst) {
 	switch (literalAst.kind.type) {
 
 	case Token::TokenType::TOKEN_STRING: {
@@ -853,7 +860,8 @@ void TypeChecker::visitLiteralExpression(const ast::Literal &literalAst) {
 		break;
 	}
 }
-void TypeChecker::visitLogicalExpression(const ast::Logical &logicalExpr) {
+void TypeChecker::visitLogicalExpression(
+    const syntax::ast::Logical &logicalExpr) {
 	auto leftType = resolveType(*logicalExpr.left);
 	auto rightType = resolveType(*logicalExpr.right);
 
@@ -888,12 +896,12 @@ void TypeChecker::visitLogicalExpression(const ast::Logical &logicalExpr) {
 		                op.getLexeme()));
 	}
 }
-void TypeChecker::visitSetExpression(const ast::Set &value) {
+void TypeChecker::visitSetExpression(const syntax::ast::Set &value) {
 	messageBag.bug(value.getToken(),
 	               std::format("visit method not implemented for {}",
 	                           value.variantName()));
 }
-void TypeChecker::visitUnaryExpression(const ast::Unary &unaryExpr) {
+void TypeChecker::visitUnaryExpression(const syntax::ast::Unary &unaryExpr) {
 	// assume that it returns the same type until we implement operator overload
 	// where we will treat each operator a a function
 
@@ -906,7 +914,7 @@ void TypeChecker::visitUnaryExpression(const ast::Unary &unaryExpr) {
 	typeStack.push_back(innerType.value());
 }
 void TypeChecker::visitArrayAccessExpression(
-    const ast::ArrayAccess &arrayExpr) {
+    const syntax::ast::ArrayAccess &arrayExpr) {
 	const auto accessedTypeR = resolveType(*arrayExpr.array);
 	if (!accessedTypeR.has_value()) {
 		messageBag.error(arrayExpr.array->getToken(),
@@ -926,7 +934,8 @@ void TypeChecker::visitArrayAccessExpression(
 
 	typeStack.push_back(*subType);
 }
-void TypeChecker::visitArrayTypeExpression(const ast::ArrayType &arrayTypeAst) {
+void TypeChecker::visitArrayTypeExpression(
+    const syntax::ast::ArrayType &arrayTypeAst) {
 	auto innerType = resolveType(*arrayTypeAst.subType)
 	                     .value_or(lang::Type::defineUnknownType());
 	if (innerType == lang::Type::defineUnknownType()) {
@@ -944,7 +953,8 @@ void TypeChecker::visitArrayTypeExpression(const ast::ArrayType &arrayTypeAst) {
 	    innerType, arrayTypeAst.isMutable);
 	typeStack.push_back(arrayType);
 }
-void TypeChecker::visitTupleTypeExpression(const ast::TupleType &tupleAst) {
+void TypeChecker::visitTupleTypeExpression(
+    const syntax::ast::TupleType &tupleAst) {
 	if (tupleAst.expressions.empty()) {
 		auto unitType = currentDataModel.get().getUnitType();
 		unitType.isMutable = tupleAst.isMutable;
@@ -958,7 +968,7 @@ void TypeChecker::visitTupleTypeExpression(const ast::TupleType &tupleAst) {
 }
 
 void TypeChecker::visitPointerTypeExpression(
-    const ast::PointerType &pointerTypeAst) {
+    const syntax::ast::PointerType &pointerTypeAst) {
 	auto subTypeResult = resolveType(*pointerTypeAst.subtype);
 	if (!subTypeResult.has_value()) {
 		messageBag.error(pointerTypeAst.token, "pointer subtype is unknown");
@@ -968,7 +978,8 @@ void TypeChecker::visitPointerTypeExpression(
 	typeStack.push_back(currentDataModel.get().definePointerType(
 	    subTypeResult.value(), pointerTypeAst.isMutable));
 }
-void TypeChecker::visitNamedTypeExpression(const ast::NamedType &typeAst) {
+void TypeChecker::visitNamedTypeExpression(
+    const syntax::ast::NamedType &typeAst) {
 	auto result = findTypeInfo(typeAst.name.lexeme);
 	if (result.has_value()) {
 		lang::Type obtainedType = result.value();
@@ -981,7 +992,7 @@ void TypeChecker::visitNamedTypeExpression(const ast::NamedType &typeAst) {
 		typeStack.push_back(lang::Type::defineUnknownType());
 	}
 }
-void TypeChecker::visitCastExpression(const ast::Cast &castExpr) {
+void TypeChecker::visitCastExpression(const syntax::ast::Cast &castExpr) {
 	// TODO: remove cast expression and make it a compiler intrinsic for scalars
 	// additionally make the propper checks, for now we just blindly cast the
 	// expression
@@ -995,7 +1006,8 @@ void TypeChecker::visitCastExpression(const ast::Cast &castExpr) {
 	}
 	typeStack.push_back(type.value());
 }
-void TypeChecker::visitParameterExpression(const ast::Parameter &parameter) {
+void TypeChecker::visitParameterExpression(
+    const syntax::ast::Parameter &parameter) {
 	const auto type = resolveType(*parameter.type.get());
 	if (!type.has_value()) {
 		messageBag.error(
@@ -1009,7 +1021,7 @@ void TypeChecker::visitParameterExpression(const ast::Parameter &parameter) {
 }
 
 std::optional<lang::Type>
-TypeChecker::resolveType(const ast::Statement &statement) {
+TypeChecker::resolveType(const syntax::ast::Statement &statement) {
 	auto types = resolveTypes(statement);
 
 	if (types.size() > 1) {
@@ -1029,7 +1041,7 @@ TypeChecker::resolveType(const ast::Statement &statement) {
 	                        : std::nullopt;
 }
 std::optional<lang::Type>
-TypeChecker::resolveType(const ast::Expression &expression) {
+TypeChecker::resolveType(const syntax::ast::Expression &expression) {
 	auto types = resolveTypes(expression);
 
 	if (types.size() > 1) {
@@ -1042,7 +1054,7 @@ TypeChecker::resolveType(const ast::Expression &expression) {
 	                        : std::nullopt;
 }
 std::vector<lang::Type>
-TypeChecker::resolveTypes(const ast::Statement &statement) {
+TypeChecker::resolveTypes(const syntax::ast::Statement &statement) {
 	std::vector<lang::Type> returnTypes;
 	size_t tsSize = typeStack.size();
 	statement.visit(*this);
@@ -1054,7 +1066,7 @@ TypeChecker::resolveTypes(const ast::Statement &statement) {
 	return returnTypes;
 }
 std::vector<lang::Type>
-TypeChecker::resolveTypes(const ast::Expression &expression) {
+TypeChecker::resolveTypes(const syntax::ast::Expression &expression) {
 	std::vector<lang::Type> returnTypes;
 	size_t tsSize = typeStack.size();
 	expression.visit(*this);
@@ -1094,7 +1106,8 @@ TypeChecker::findTypeInfo(const std::string_view typeName) {
 }
 
 std::optional<lang::FunctionDeclaration>
-TypeChecker::resolveFunctionDeclaration(const ast::Function &functionAst) {
+TypeChecker::resolveFunctionDeclaration(
+    const syntax::ast::Function &functionAst) {
 	std::string currentModule;
 
 	std::optional<directive::LinkageDirective> linkageDirective;

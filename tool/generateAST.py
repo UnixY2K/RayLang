@@ -27,7 +27,7 @@ def preprocessTypes(baseName: str, types: list[str]):
 def defineAst(outputDir: str, baseName: str, namespace: str, requiredHeaders: list[str], definitions: list[str], types: list[str]):
     filePath = os.path.join(outputDir, f"{baseName}.hpp")
     processedClasses = preprocessTypes(baseName, types)
-    with open(filePath, "w") as headerFile:
+    with open(filePath, "w+") as headerFile:
         headerFile.write("#pragma once\n")
         for header in requiredHeaders:
             headerFile.write(f"#include <{header}>\n")
@@ -124,13 +124,13 @@ def defineVisitor(baseName: str, types: dict):
 
 
 def main():
-    outputDir = "./RayC/include/ray/compiler/ast"
-    defineAst(outputDir, "Expression", "ray::compiler::ast",
+    outputDir = "./RayC/include/ray/compiler/syntax/ast"
+    defineAst(outputDir, "Expression", "ray::compiler::syntax::ast",
             ["memory",
              "vector",
              "optional",
              "ray/compiler/lexer/token.hpp",
-             "ray/compiler/ast/intrinsic.hpp"
+             "ray/compiler/syntax/ast/intrinsic.hpp"
             ],
             [],
             ["Variable		= Token name",
@@ -153,13 +153,13 @@ def main():
              "Cast			= std::unique_ptr<Expression> expression, std::unique_ptr<Expression> type",
              "Parameter		= Token name, std::unique_ptr<Expression> type",
             ])
-    defineAst(outputDir, "Statement", "ray::compiler::ast",
+    defineAst(outputDir, "Statement", "ray::compiler::syntax::ast",
             ["memory",
              "unordered_map",
              "vector",
              "optional",
              "ray/compiler/lexer/token.hpp",
-             "ray/compiler/ast/expression.hpp"
+             "ray/compiler/syntax/ast/Expression.hpp"
             ],
             ["CompDirectiveAttr = std::unordered_map<std::string, std::string>"],
             ["Block			= std::vector<std::unique_ptr<Statement>> statements",
@@ -175,60 +175,6 @@ def main():
              "Struct		= Token name, bool publicVisibility, bool declaration, std::vector<Member> members, std::vector<bool> memberVisibility",
 			 "Trait			= Token name, bool publicVisibility, std::vector<Method> methods",
              "CompDirective	= Token name, CompDirectiveAttr values, std::unique_ptr<Statement> child"
-            ])
-    typedAstOutputDir = "./RayC/include/ray/compiler/ast/typed"
-    defineAst(typedAstOutputDir, "TypedExpression", "ray::compiler::ast::typed",
-            ["memory",
-             "unordered_map",
-             "vector",
-             "optional",
-             "ray/compiler/lexer/token.hpp",
-			 "ray/compiler/ast/intrinsic.hpp"
-            ],
-            ["CompDirectiveAttr = std::unordered_map<std::string, std::string>"],
-            [
-			 "Variable		= Token name",
-             "Intrinsic		= Token name, IntrinsicType intrinsic",
-             "Assign		= std::unique_ptr<TypedExpression> lhs, Token assignmentOp, std::unique_ptr<TypedExpression> rhs",
-             "Binary		= std::unique_ptr<TypedExpression> left, Token op, std::unique_ptr<TypedExpression> right",
-             "Call			= std::unique_ptr<TypedExpression> callee, Token paren, std::vector<std::unique_ptr<TypedExpression>> arguments",
-             "IntrinsicCall	= std::unique_ptr<Intrinsic> callee, Token paren, std::vector<std::unique_ptr<TypedExpression>> arguments",
-             "Get			= std::unique_ptr<TypedExpression> object, Token name",
-             "Grouping		= std::unique_ptr<TypedExpression> expression",
-             "Literal		= Token kind, std::string value",
-             "Logical		= std::unique_ptr<TypedExpression> left, Token op, std::unique_ptr<TypedExpression> right",
-             "Set			= std::unique_ptr<TypedExpression> object, Token name, Token assignmentOp, std::unique_ptr<TypedExpression> value",
-             "Unary			= Token op, bool isPrefix, std::unique_ptr<TypedExpression> expr",
-             "ArrayAccess	= std::unique_ptr<TypedExpression> array, std::unique_ptr<TypedExpression> index",
-			 "ArrayType		= bool isMutable, std::unique_ptr<TypedExpression> subType",
-			 "TupleType		= bool isMutable, std::vector<std::unique_ptr<TypedExpression>> expressions",
-			 "PointerType	= bool isMutable, std::unique_ptr<TypedExpression> subtype",
-             "NamedType		= Token name, bool isMutable",
-             "Cast			= std::unique_ptr<TypedExpression> expression, std::unique_ptr<TypedExpression> type",
-             "Parameter		= Token name, std::unique_ptr<TypedExpression> type",
-            ])
-    defineAst(typedAstOutputDir, "TypedStatement", "ray::compiler::ast::typed",
-            ["memory",
-             "unordered_map",
-             "vector",
-             "optional",
-             "ray/compiler/lexer/token.hpp",
-             "ray/compiler/ast/typed/TypedExpression.hpp"
-            ],
-            ["CompDirectiveAttr = std::unordered_map<std::string, std::string>"],
-            ["Block			= std::vector<std::unique_ptr<TypedStatement>> statements",
-             "TerminalExpr	= std::optional<std::unique_ptr<TypedExpression>> expression",
-             "ExpressionStmt= std::unique_ptr<TypedExpression> expression",
-             "Function		= Token name, bool publicVisibility, std::vector<Parameter> params, std::optional<Block> body, std::unique_ptr<TypedExpression> returnType",
-			 "Method 		= Token name, bool publicVisibility, std::vector<Parameter> params, std::optional<Block> body, std::unique_ptr<TypedExpression> returnType",
-             "If			= std::unique_ptr<TypedExpression> condition, std::unique_ptr<TypedStatement> thenBranch, std::optional<std::unique_ptr<TypedStatement>> elseBranch",
-             "Jump			= Token keyword, std::optional<std::unique_ptr<TypedExpression>> returnValue",
-             "VarDecl		= Token name, std::unique_ptr<TypedExpression> type, bool is_mutable, std::optional<std::unique_ptr<TypedExpression>> initializer",
-             "Member		= Token name, std::unique_ptr<TypedExpression> type, bool is_mutable, std::optional<std::unique_ptr<TypedExpression>> initializer",
-             "While			= std::unique_ptr<TypedExpression> condition, std::unique_ptr<TypedStatement> body",
-             "Struct		= Token name, bool publicVisibility, bool declaration, std::vector<Member> members, std::vector<bool> memberVisibility",
-			 "Trait			= Token name, bool publicVisibility, std::vector<Method> methods",
-             "CompDirective	= Token name, CompDirectiveAttr values, std::unique_ptr<TypedStatement> child"
             ])
 
 

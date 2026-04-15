@@ -3,8 +3,8 @@
 #include <string>
 #include <string_view>
 
-#include <ray/compiler/ast/statement.hpp>
 #include <ray/compiler/directives/linkageDirective.hpp>
+#include <ray/compiler/syntax/ast/Statement.hpp>
 
 namespace ray::compiler::passes::mangling {
 class NameMangler {
@@ -12,15 +12,16 @@ class NameMangler {
 
   public:
 	std::string mangleFunction(
-	    std::string_view module, const ast::Function &function,
+	    std::string_view module, const syntax::ast::Function &function,
 	    std::optional<directive::LinkageDirective> &linkageDirective);
 	std::string
-	mangleMethod(std::string_view module, const ast::Method &method,
+	mangleMethod(std::string_view module, const syntax::ast::Method &method,
 	             std::optional<directive::LinkageDirective> &linkageDirective);
 	std::string
-	mangleStruct(std::string_view module, const ast::Struct &structDefinition,
+	mangleStruct(std::string_view module,
+	             const syntax::ast::Struct &structDefinition,
 	             std::optional<directive::LinkageDirective> &linkageDirective);
 	std::string mangleTrait(std::string_view module,
-	                        const ast::Trait &traitDefinition);
+	                        const syntax::ast::Trait &traitDefinition);
 };
 } // namespace ray::compiler::passes::mangling

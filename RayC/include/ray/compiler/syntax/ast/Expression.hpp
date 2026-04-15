@@ -3,9 +3,9 @@
 #include <vector>
 #include <optional>
 #include <ray/compiler/lexer/token.hpp>
-#include <ray/compiler/ast/intrinsic.hpp>
+#include <ray/compiler/syntax/ast/intrinsic.hpp>
 
-namespace ray::compiler::ast {
+namespace ray::compiler::syntax::ast {
 
 class Variable;
 class Intrinsic;
@@ -477,4 +477,4 @@ class Parameter : public Expression {
 	const Token& getToken() const override { return token; };
 };
 
-} // namespace ray::compiler::ast
+} // namespace ray::compiler::syntax::ast
