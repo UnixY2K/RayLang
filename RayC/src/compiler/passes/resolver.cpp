@@ -1,8 +1,10 @@
+#include "ray/compiler/lang/type.hpp"
 #include <algorithm>
 #include <cstddef>
 #include <format>
 #include <iterator>
 #include <memory>
+#include <ranges>
 
 #include <ray/compiler/directives/compilerDirective.hpp>
 #include <ray/compiler/directives/linkageDirective.hpp>
@@ -23,7 +25,9 @@ void Resolver::resolve(
 		                               directive->directiveName()));
 	}
 
-	if (typeStack.size() > 0) {
+	if (!(typeStack | std::views::filter([](const lang::Type &type) {
+		      return type.getKind() != lang::TypeKind::abstract;
+	      })).empty()) {
 		Token errorToken{Token::TokenType::TOKEN_EOF,
 		                 std::string(Token::glyph(Token::TokenType::TOKEN_EOF)),
 		                 0, 0};
