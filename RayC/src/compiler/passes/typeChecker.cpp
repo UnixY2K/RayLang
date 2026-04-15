@@ -141,6 +141,8 @@ void TypeChecker::visitFunctionStatement(const ast::Function &functionExprAst) {
 		// again, just the body
 		if (functionExprAst.body.has_value()) {
 
+			lang::Scope &parentScope = currentScope;
+			currentScope = currentScope.get().makeChildScope();
 			// add functions to the current scope and validate that each
 			for (const auto &param : functionDeclaration.signature.parameters) {
 				// TODO: variable definitions should be done at an earlier stage
@@ -159,6 +161,7 @@ void TypeChecker::visitFunctionStatement(const ast::Function &functionExprAst) {
 					                paramSymbol.name));
 				}
 			}
+
 			const auto type =
 			    resolveType(functionExprAst.body.value())
 			        .value_or(currentDataModel.get().getUnitType());
@@ -174,6 +177,8 @@ void TypeChecker::visitFunctionStatement(const ast::Function &functionExprAst) {
 				        type.name,
 				        functionDeclaration.signature.returnType.name));
 			}
+
+			currentScope = parentScope;
 		}
 
 		auto functionType = currentDataModel.get().defineFunctionType(
