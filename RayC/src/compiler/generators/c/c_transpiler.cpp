@@ -18,7 +18,7 @@
 #include <ray/compiler/passes/symbol_mangler.hpp>
 #include <ray/compiler/syntax/ast/Expression.hpp>
 #include <ray/compiler/syntax/ast/Statement.hpp>
-#include <ray/compiler/syntax/ast/intrinsic.hpp>
+#include <ray/compiler/syntax/common/intrinsic.hpp>
 #include <ray/util/soft_reference.hpp>
 
 namespace ray::compiler::generator::c {
@@ -487,7 +487,7 @@ void CTranspilerGenerator::visitIntrinsicCallExpression(
     const syntax::ast::IntrinsicCall &value) {
 
 	switch (value.callee->intrinsic) {
-	case ray::compiler::syntax::ast::IntrinsicType::INTR_SIZEOF: {
+	case ray::compiler::syntax::common::IntrinsicType::INTR_SIZEOF: {
 		if (value.arguments.size() != 1) {
 			messageBag.error(value.callee->name,
 			                 std::format("@sizeOf intrinsic expects 1 "
@@ -505,14 +505,14 @@ void CTranspilerGenerator::visitIntrinsicCallExpression(
 		}
 		break;
 	}
-	case ray::compiler::syntax::ast::IntrinsicType::INTR_IMPORT: {
+	case ray::compiler::syntax::common::IntrinsicType::INTR_IMPORT: {
 		messageBag.error(
 		    value.callee->name,
 		    std::format("'{}' is not implemented yet for C backend",
 		                value.callee->name.lexeme));
 		break;
 	}
-	case ray::compiler::syntax::ast::IntrinsicType::INTR_UNKNOWN:
+	case ray::compiler::syntax::common::IntrinsicType::INTR_UNKNOWN:
 		messageBag.error(value.callee->name,
 		                 std::format("'{}' is not a valid intrinsic",
 		                             value.callee->name.lexeme));

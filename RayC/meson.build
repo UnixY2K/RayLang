@@ -4,7 +4,7 @@ rayc_srcs = [
 	'src/cli/cli_args.cpp',
 	'src/cli/options.cpp',
 	'src/cli/terminal.cpp',
-	'src/compiler/syntax/ast/intrinsic.cpp',
+	'src/compiler/syntax/common/intrinsic.cpp',
 	'src/compiler/environment/dataModel/dataModel.cpp',
 	# generators/targets outputs
 	'src/compiler/generators/c/c_transpiler.cpp',

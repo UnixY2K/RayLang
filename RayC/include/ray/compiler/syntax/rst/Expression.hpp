@@ -1,11 +1,11 @@
 #pragma once
+#include <ray/compiler/syntax/common/intrinsic.hpp>
 #include <memory>
 #include <vector>
-#include <optional>
+#include <string_view>
 #include <ray/compiler/lexer/token.hpp>
-#include <ray/compiler/syntax/common/intrinsic.hpp>
 
-namespace ray::compiler::syntax::ast {
+namespace ray::compiler::syntax::rst {
 
 class Variable;
 class Intrinsic;
@@ -26,7 +26,6 @@ class PointerType;
 class NamedType;
 class Cast;
 class Parameter;
-
 class ExpressionVisitor {
   public:
 	virtual void visitVariableExpression(const Variable& value) = 0;
@@ -53,9 +52,9 @@ class ExpressionVisitor {
 
 class Expression {
   public:
-	virtual void visit(ExpressionVisitor& visitor) const = 0;
+	virtual void visit(ExpressionVisitor &visitor) const = 0;
 	virtual const std::string_view variantName() const = 0;
-	virtual const Token& getToken() const = 0;
+	virtual const Token &getToken() const = 0;
 	virtual ~Expression() = default;
 };
 
@@ -476,5 +475,4 @@ class Parameter : public Expression {
 
 	const Token& getToken() const override { return token; };
 };
-
-} // namespace ray::compiler::syntax::ast
+} // namespace ray::compiler::syntax::rst

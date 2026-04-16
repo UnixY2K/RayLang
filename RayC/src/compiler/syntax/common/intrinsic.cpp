@@ -1,9 +1,9 @@
 #include <string>
 #include <unordered_map>
 
-#include <ray/compiler/syntax/ast/intrinsic.hpp>
+#include <ray/compiler/syntax/common/intrinsic.hpp>
 
-namespace ray::compiler::syntax::ast {
+namespace ray::compiler::syntax::common {
 
 IntrinsicType getintrinsicType(const std::string_view lexeme) {
 	static std::unordered_map<std::string, IntrinsicType> map = {

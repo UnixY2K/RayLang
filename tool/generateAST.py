@@ -130,11 +130,11 @@ def main():
              "vector",
              "optional",
              "ray/compiler/lexer/token.hpp",
-             "ray/compiler/syntax/ast/intrinsic.hpp"
+             "ray/compiler/syntax/common/intrinsic.hpp"
             ],
             [],
             ["Variable		= Token name",
-             "Intrinsic		= Token name, IntrinsicType intrinsic",
+             "Intrinsic		= Token name, common::IntrinsicType intrinsic",
              "Assign		= std::unique_ptr<Expression> lhs, Token assignmentOp, std::unique_ptr<Expression> rhs",
              "Binary		= std::unique_ptr<Expression> left, Token op, std::unique_ptr<Expression> right",
              "Call			= std::unique_ptr<Expression> callee, Token paren, std::vector<std::unique_ptr<Expression>> arguments",

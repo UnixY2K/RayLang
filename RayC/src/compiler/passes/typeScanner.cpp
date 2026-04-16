@@ -413,19 +413,19 @@ void TypeScanner::visitVariableExpression(
 void TypeScanner::visitIntrinsicExpression(
     const syntax::ast::Intrinsic &intrinsicAst) {
 	switch (intrinsicAst.intrinsic) {
-	case syntax::ast::IntrinsicType::INTR_SIZEOF: {
+	case syntax::common::IntrinsicType::INTR_SIZEOF: {
 		typeStack.push_back(currentDataModel.get().getScalarType(
 		    environment::DataModel::ScalarTypeKind::ssizeScalar));
 		break;
 	}
-	case syntax::ast::IntrinsicType::INTR_IMPORT: {
+	case syntax::common::IntrinsicType::INTR_IMPORT: {
 		// TODO: return modulequery type so the module can be scanned
 		messageBag.error(
 		    intrinsicAst.getToken(),
 		    std::format("{} not implemented", __PRETTY_FUNCTION__));
 		break;
 	}
-	case syntax::ast::IntrinsicType::INTR_UNKNOWN:
+	case syntax::common::IntrinsicType::INTR_UNKNOWN:
 		break;
 	}
 }

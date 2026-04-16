@@ -763,7 +763,7 @@ void TypeChecker::visitIntrinsicCallExpression(
     const syntax::ast::IntrinsicCall &intrinsicCall) {
 
 	switch (intrinsicCall.callee->intrinsic) {
-	case ray::compiler::syntax::ast::IntrinsicType::INTR_SIZEOF: {
+	case ray::compiler::syntax::common::IntrinsicType::INTR_SIZEOF: {
 		if (intrinsicCall.arguments.size() != 1) {
 			messageBag.error(
 			    intrinsicCall.callee->name,
@@ -780,7 +780,7 @@ void TypeChecker::visitIntrinsicCallExpression(
 		}
 		break;
 	}
-	case ray::compiler::syntax::ast::IntrinsicType::INTR_IMPORT: {
+	case ray::compiler::syntax::common::IntrinsicType::INTR_IMPORT: {
 		if (intrinsicCall.arguments.size() != 1) {
 			messageBag.error(intrinsicCall.callee->name,
 			                 std::format("{} intrinsic expects 1 "
@@ -795,7 +795,7 @@ void TypeChecker::visitIntrinsicCallExpression(
 
 		break;
 	}
-	case ray::compiler::syntax::ast::IntrinsicType::INTR_UNKNOWN:
+	case ray::compiler::syntax::common::IntrinsicType::INTR_UNKNOWN:
 		messageBag.error(intrinsicCall.callee->name,
 		                 std::format("'{}' is not a valid intrinsic",
 		                             intrinsicCall.callee->name.lexeme));

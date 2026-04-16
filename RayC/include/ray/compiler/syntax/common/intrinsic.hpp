@@ -2,7 +2,7 @@
 
 #include <string_view>
 
-namespace ray::compiler::syntax::ast {
+namespace ray::compiler::syntax::common {
 enum class IntrinsicType {
 	INTR_SIZEOF,  //@sizeOf(myType)
 	INTR_IMPORT,  //@import("myPackage:dir/file.ray")

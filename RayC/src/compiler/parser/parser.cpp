@@ -14,7 +14,7 @@
 #include <ray/compiler/parser/parser.hpp>
 #include <ray/compiler/syntax/ast/Expression.hpp>
 #include <ray/compiler/syntax/ast/Statement.hpp>
-#include <ray/compiler/syntax/ast/intrinsic.hpp>
+#include <ray/compiler/syntax/common/intrinsic.hpp>
 
 namespace ray::compiler {
 
@@ -936,7 +936,7 @@ std::unique_ptr<syntax::ast::Expression> Parser::primaryExpresion() {
 		Token token = previous();
 		return std::make_unique<syntax::ast::Intrinsic>(syntax::ast::Intrinsic{
 		    token,
-		    syntax::ast::getintrinsicType(token.lexeme),
+		    syntax::common::getintrinsicType(token.lexeme),
 		    kind,
 		});
 	}
