@@ -14,7 +14,7 @@ class Block;
 class TerminalExpr;
 class ExpressionStmt;
 class Function;
-class Method;
+class TraitMethod;
 class If;
 class Jump;
 class VarDecl;
@@ -30,7 +30,7 @@ class StatementVisitor {
 	virtual void visitTerminalExprStatement(const TerminalExpr& value) = 0;
 	virtual void visitExpressionStmtStatement(const ExpressionStmt& value) = 0;
 	virtual void visitFunctionStatement(const Function& value) = 0;
-	virtual void visitMethodStatement(const Method& value) = 0;
+	virtual void visitTraitMethodStatement(const TraitMethod& value) = 0;
 	virtual void visitIfStatement(const If& value) = 0;
 	virtual void visitJumpStatement(const Jump& value) = 0;
 	virtual void visitVarDeclStatement(const VarDecl& value) = 0;
@@ -109,14 +109,14 @@ class Function : public Statement {
 	Token name;
 	bool publicVisibility;
 	std::vector<Parameter> params;
-	std::optional<Block> body;
+	std::optional<std::unique_ptr<Statement>> body;
 	std::unique_ptr<ast::Expression> returnType;
 	Token token;
 
 	Function(Token name,
 	        bool publicVisibility,
 	        std::vector<Parameter> params,
-	        std::optional<Block> body,
+	        std::optional<std::unique_ptr<Statement>> body,
 	        std::unique_ptr<ast::Expression> returnType,
 	        Token token):
 		name(std::move(name)),
@@ -134,19 +134,19 @@ class Function : public Statement {
 
 	const Token& getToken() const override { return token; };
 };
-class Method : public Statement {
+class TraitMethod : public Statement {
   public:
 	Token name;
 	bool publicVisibility;
 	std::vector<Parameter> params;
-	std::optional<Block> body;
+	std::optional<std::unique_ptr<Statement>> body;
 	std::unique_ptr<ast::Expression> returnType;
 	Token token;
 
-	Method(Token name,
+	TraitMethod(Token name,
 	        bool publicVisibility,
 	        std::vector<Parameter> params,
-	        std::optional<Block> body,
+	        std::optional<std::unique_ptr<Statement>> body,
 	        std::unique_ptr<ast::Expression> returnType,
 	        Token token):
 		name(std::move(name)),
@@ -157,10 +157,10 @@ class Method : public Statement {
 		token(std::move(token)) {}
 
 	void visit(StatementVisitor& visitor) const override {
-		visitor.visitMethodStatement(*this);
+		visitor.visitTraitMethodStatement(*this);
 	}
 
-	const std::string_view variantName() const override { return "Method"; }
+	const std::string_view variantName() const override { return "TraitMethod"; }
 
 	const Token& getToken() const override { return token; };
 };
@@ -318,12 +318,12 @@ class Trait : public Statement {
   public:
 	Token name;
 	bool publicVisibility;
-	std::vector<Method> methods;
+	std::vector<TraitMethod> methods;
 	Token token;
 
 	Trait(Token name,
 	        bool publicVisibility,
-	        std::vector<Method> methods,
+	        std::vector<TraitMethod> methods,
 	        Token token):
 		name(std::move(name)),
 		publicVisibility(std::move(publicVisibility)),

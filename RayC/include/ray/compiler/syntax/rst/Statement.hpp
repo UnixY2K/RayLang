@@ -3,6 +3,7 @@
 #include <unordered_map>
 #include <string>
 #include <vector>
+#include <optional>
 #include <string_view>
 #include <ray/compiler/lexer/token.hpp>
 
@@ -102,14 +103,14 @@ class Function : public Statement {
 	Token name;
 	bool publicVisibility;
 	std::vector<Parameter> params;
-	std::optional<Block> body;
+	std::optional<std::unique_ptr<Statement>> body;
 	std::unique_ptr<rst::Expression> returnType;
 	Token token;
 
 	Function(Token name,
 	        bool publicVisibility,
 	        std::vector<Parameter> params,
-	        std::optional<Block> body,
+	        std::optional<std::unique_ptr<Statement>> body,
 	        std::unique_ptr<rst::Expression> returnType,
 	        Token token):
 		name(std::move(name)),

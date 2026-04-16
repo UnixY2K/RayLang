@@ -146,18 +146,18 @@ def main():
          "Parameter		= Token name, std::unique_ptr<Expression> type",
 		]) 
     defineRST(outputDir, "Statement", "ray::compiler::syntax::rst",
-        ["ray/compiler/syntax/rst/Expression.hpp", "unordered_map", "string", "vector"],
+        ["ray/compiler/syntax/rst/Expression.hpp", "unordered_map", "string", "vector", "optional"],
         ["CompDirectiveAttr = std::unordered_map<std::string, std::string>"],
         ["Block			= std::vector<std::unique_ptr<Statement>> statements",
-             "TerminalExpr	= std::optional<std::unique_ptr<Expression>> expression",
-             "ExpressionStmt= std::unique_ptr<Expression> expression",
-             "Function		= Token name, bool publicVisibility, std::vector<Parameter> params, std::optional<Block> body, std::unique_ptr<rst::Expression> returnType",
-             "If			= std::unique_ptr<Expression> condition, std::unique_ptr<Statement> thenBranch, std::optional<std::unique_ptr<Statement>> elseBranch",
-             "Jump			= Token keyword, std::optional<std::unique_ptr<Expression>> returnValue",
-             "VarDecl		= Token name, std::unique_ptr<Expression> type, bool is_mutable, std::optional<std::unique_ptr<Expression>> initializer",
-             "Member		= Token name, std::unique_ptr<Expression> type, bool is_mutable, std::optional<std::unique_ptr<Expression>> initializer",
-             "While			= std::unique_ptr<Expression> condition, std::unique_ptr<Statement> body",
-             "Struct		= Token name, bool publicVisibility, bool declaration, std::vector<Member> members, std::vector<bool> memberVisibility",
+         "TerminalExpr	= std::optional<std::unique_ptr<Expression>> expression",
+         "ExpressionStmt= std::unique_ptr<Expression> expression",
+         "Function		= Token name, bool publicVisibility, std::vector<Parameter> params, std::optional<std::unique_ptr<Statement>> body, std::unique_ptr<rst::Expression> returnType",
+         "If			= std::unique_ptr<Expression> condition, std::unique_ptr<Statement> thenBranch, std::optional<std::unique_ptr<Statement>> elseBranch",
+         "Jump			= Token keyword, std::optional<std::unique_ptr<Expression>> returnValue",
+         "VarDecl		= Token name, std::unique_ptr<Expression> type, bool is_mutable, std::optional<std::unique_ptr<Expression>> initializer",
+         "Member		= Token name, std::unique_ptr<Expression> type, bool is_mutable, std::optional<std::unique_ptr<Expression>> initializer",
+         "While			= std::unique_ptr<Expression> condition, std::unique_ptr<Statement> body",
+         "Struct		= Token name, bool publicVisibility, bool declaration, std::vector<Member> members, std::vector<bool> memberVisibility",
         ]) 
     
     pass

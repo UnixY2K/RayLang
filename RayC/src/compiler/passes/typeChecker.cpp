@@ -164,7 +164,7 @@ void TypeChecker::visitFunctionStatement(
 			}
 
 			const auto type =
-			    resolveType(functionExprAst.body.value())
+			    resolveType(*functionExprAst.body->get())
 			        .value_or(currentDataModel.get().getUnitType());
 
 			if (!type.coercercesInto(
@@ -172,7 +172,7 @@ void TypeChecker::visitFunctionStatement(
 			    // main is the only function allowed to not return anything
 			    functionDeclaration.mangledName != "main") {
 				messageBag.error(
-				    functionExprAst.body->getToken(),
+				    functionExprAst.body->get()->getToken(),
 				    std::format(
 				        "inner body return type does not match with function return: '{}' vs '{}'",
 				        type.name,
@@ -187,7 +187,8 @@ void TypeChecker::visitFunctionStatement(
 		typeStack.push_back(functionType);
 	}
 }
-void TypeChecker::visitMethodStatement(const syntax::ast::Method &value) {
+void TypeChecker::visitTraitMethodStatement(
+    const syntax::ast::TraitMethod &value) {
 	messageBag.error(value.getToken(),
 	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
 }

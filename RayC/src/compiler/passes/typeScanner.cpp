@@ -109,11 +109,12 @@ void TypeScanner::visitFunctionStatement(
 
 	auto type = resolveType(*functionAst.returnType);
 	if (functionAst.body.has_value()) {
-		discardTypes(*functionAst.body);
+		discardTypes(*functionAst.body->get());
 	}
 	typeStack.push_back(type);
 }
-void TypeScanner::visitMethodStatement(const syntax::ast::Method &methodAst) {
+void TypeScanner::visitTraitMethodStatement(
+    const syntax::ast::TraitMethod &methodAst) {
 	std::string currentModule;
 
 	std::optional<directive::LinkageDirective> linkageDirective;

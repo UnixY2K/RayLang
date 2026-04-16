@@ -11,6 +11,8 @@
 #include <ray/compiler/passes/typeScanner.hpp>
 #include <ray/compiler/syntax/ast/Expression.hpp>
 #include <ray/compiler/syntax/ast/Statement.hpp>
+#include <ray/compiler/syntax/rst/Expression.hpp>
+#include <ray/compiler/syntax/rst/Statement.hpp>
 
 namespace ray::compiler::passes {
 class Resolver : public syntax::ast::StatementVisitor,
@@ -57,7 +59,8 @@ class Resolver : public syntax::ast::StatementVisitor,
 	void visitExpressionStmtStatement(
 	    const syntax::ast::ExpressionStmt &value) override;
 	void visitFunctionStatement(const syntax::ast::Function &value) override;
-	void visitMethodStatement(const syntax::ast::Method &value) override;
+	void
+	visitTraitMethodStatement(const syntax::ast::TraitMethod &value) override;
 	void visitIfStatement(const syntax::ast::If &value) override;
 	void visitJumpStatement(const syntax::ast::Jump &value) override;
 	void visitVarDeclStatement(const syntax::ast::VarDecl &value) override;

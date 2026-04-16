@@ -15,7 +15,8 @@ class NameMangler {
 	    std::string_view module, const syntax::ast::Function &function,
 	    std::optional<directive::LinkageDirective> &linkageDirective);
 	std::string
-	mangleMethod(std::string_view module, const syntax::ast::Method &method,
+	mangleMethod(std::string_view module,
+	             const syntax::ast::TraitMethod &method,
 	             std::optional<directive::LinkageDirective> &linkageDirective);
 	std::string
 	mangleStruct(std::string_view module,

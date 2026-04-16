@@ -56,7 +56,8 @@ class TypeScanner : public syntax::ast::StatementVisitor,
 	void visitExpressionStmtStatement(
 	    const syntax::ast::ExpressionStmt &value) override;
 	void visitFunctionStatement(const syntax::ast::Function &value) override;
-	void visitMethodStatement(const syntax::ast::Method &value) override;
+	void
+	visitTraitMethodStatement(const syntax::ast::TraitMethod &value) override;
 	void visitIfStatement(const syntax::ast::If &value) override;
 	void visitJumpStatement(const syntax::ast::Jump &value) override;
 	void visitVarDeclStatement(const syntax::ast::VarDecl &value) override;

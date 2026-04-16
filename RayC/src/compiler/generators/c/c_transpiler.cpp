@@ -188,21 +188,16 @@ void CTranspilerGenerator::visitFunctionStatement(
 		}
 		output << ")";
 		output << " {";
-		if (function.body->statements.size() > 0) {
-			auto statement = dynamic_cast<syntax::ast::TerminalExpr *>(
-			    function.body->statements[0].get());
-			if (!statement || statement->expression.has_value()) {
-				output << "\n";
-				ident++;
-				function.body->visit(*this);
-				ident--;
-			}
+		if (function.body.has_value()) {
+			ident++;
+			function.body->get()->visit(*this);
+			ident--;
 		}
 		output << std::format("{}}}\n", identTabs);
 	}
 }
-void CTranspilerGenerator::visitMethodStatement(
-    const syntax::ast::Method &value) {
+void CTranspilerGenerator::visitTraitMethodStatement(
+    const syntax::ast::TraitMethod &value) {
 	messageBag.error(value.getToken(),
 	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
 }

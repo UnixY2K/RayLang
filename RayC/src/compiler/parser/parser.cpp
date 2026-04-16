@@ -160,7 +160,7 @@ std::unique_ptr<syntax::ast::Statement>
 Parser::traitDeclaration(bool publicVisibility) {
 	Token name =
 	    consume(Token::TokenType::TOKEN_IDENTIFIER, "Expect trait name.");
-	std::vector<syntax::ast::Method> methods;
+	std::vector<syntax::ast::TraitMethod> methods;
 
 	consume(Token::TokenType::TOKEN_LEFT_BRACE,
 	        "Expect '{' before trait body.");
@@ -169,8 +169,8 @@ Parser::traitDeclaration(bool publicVisibility) {
 		if (match({Token::TokenType::TOKEN_PUB})) {
 			pubToken = previous();
 		}
-		methods.push_back(
-		    methodDeclaration(pubToken.type == Token::TokenType::TOKEN_PUB));
+		methods.push_back(traitMethodDeclaration(pubToken.type ==
+		                                         Token::TokenType::TOKEN_PUB));
 		consume(Token::TokenType::TOKEN_SEMICOLON, "expected ';' after method");
 	}
 	consume(Token::TokenType::TOKEN_RIGHT_BRACE,
@@ -409,7 +409,7 @@ syntax::ast::Member Parser::memberDeclaration() {
 	    name, std::move(type), is_mutable, std::move(initializer), name,
 	};
 }
-syntax::ast::Method Parser::methodDeclaration(bool publicVisibility) {
+syntax::ast::TraitMethod Parser::traitMethodDeclaration(bool publicVisibility) {
 	consume(Token::TokenType::TOKEN_FN, "Expect 'fn' before name");
 	Token name =
 	    consume(Token::TokenType::TOKEN_IDENTIFIER, "Expect method name.");
@@ -447,9 +447,9 @@ syntax::ast::Method Parser::methodDeclaration(bool publicVisibility) {
 		returnType = pointerTypeExpression();
 	}
 
-	return syntax::ast::Method{Token(name),           publicVisibility,
-	                           std::move(parameters), std::nullopt,
-	                           std::move(returnType), Token(name)};
+	return syntax::ast::TraitMethod{Token(name),           publicVisibility,
+	                                std::move(parameters), std::nullopt,
+	                                std::move(returnType), Token(name)};
 }
 std::unique_ptr<syntax::ast::Statement> Parser::expressionStatement() {
 	auto expr = expression();
@@ -500,27 +500,9 @@ syntax::ast::Function Parser::function(bool publicVisiblity) {
 		returnType = pointerTypeExpression();
 	}
 
-	std::optional<syntax::ast::Block> body = std::nullopt;
+	std::optional<std::unique_ptr<syntax::ast::Statement>> body = std::nullopt;
 	if (!match({Token::TokenType::TOKEN_SEMICOLON})) {
-		if (peek().type == Token::TokenType::TOKEN_LEFT_BRACE) {
-			auto token =
-			    consume(Token::TokenType::TOKEN_LEFT_BRACE,
-			            std::format("Expect '{{' before function body."));
-			body = {
-			    block(),
-			    token,
-			};
-		} else {
-			auto bodyExpression = statement();
-			auto token = bodyExpression->getToken();
-			auto blockStatement =
-			    std::vector<std::unique_ptr<syntax::ast::Statement>>();
-			blockStatement.push_back(std::move(bodyExpression));
-			body = {
-			    std::move(blockStatement),
-			    token,
-			};
-		}
+		body = statement();
 	}
 	return {
 	    Token(name),     publicVisiblity,       std::move(parameters),

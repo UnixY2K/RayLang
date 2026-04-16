@@ -37,7 +37,7 @@ std::string NameMangler::mangleFunction(
 	                   function.name.lexeme);
 }
 std::string NameMangler::mangleMethod(
-    std::string_view module, const syntax::ast::Method &method,
+    std::string_view module, const syntax::ast::TraitMethod &method,
     std::optional<directive::LinkageDirective> &linkageDirective) {
 	if (linkageDirective) {
 		if (!linkageDirective->overrideName.empty()) {

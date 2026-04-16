@@ -46,7 +46,7 @@ class Parser {
 	std::unique_ptr<syntax::ast::Statement> whileStatement();
 	syntax::ast::VarDecl varDeclaration();
 	syntax::ast::Member memberDeclaration();
-	syntax::ast::Method methodDeclaration(bool publicVisibility);
+	syntax::ast::TraitMethod traitMethodDeclaration(bool publicVisibility);
 	std::unique_ptr<syntax::ast::Statement> expressionStatement();
 	syntax::ast::Function function(bool publicVisibility);
 	std::vector<std::unique_ptr<syntax::ast::Statement>> block();

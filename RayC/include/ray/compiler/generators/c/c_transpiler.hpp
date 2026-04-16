@@ -46,7 +46,8 @@ class CTranspilerGenerator : public syntax::ast::StatementVisitor,
 	                     const lang::SourceUnit &sourceUnit,
 	                     const environment::DataModel &dataModel);
 
-	void resolve(const std::vector<std::unique_ptr<syntax::ast::Statement>> &statement);
+	void resolve(
+	    const std::vector<std::unique_ptr<syntax::ast::Statement>> &statement);
 
 	bool hasFailed() const;
 	const std::vector<std::string> getErrors() const;
@@ -55,11 +56,13 @@ class CTranspilerGenerator : public syntax::ast::StatementVisitor,
 
 	// Statement
 	void visitBlockStatement(const syntax::ast::Block &value) override;
-	void visitTerminalExprStatement(const syntax::ast::TerminalExpr &value) override;
 	void
-	visitExpressionStmtStatement(const syntax::ast::ExpressionStmt &value) override;
+	visitTerminalExprStatement(const syntax::ast::TerminalExpr &value) override;
+	void visitExpressionStmtStatement(
+	    const syntax::ast::ExpressionStmt &value) override;
 	void visitFunctionStatement(const syntax::ast::Function &value) override;
-	void visitMethodStatement(const syntax::ast::Method &value) override;
+	void
+	visitTraitMethodStatement(const syntax::ast::TraitMethod &value) override;
 	void visitIfStatement(const syntax::ast::If &value) override;
 	void visitJumpStatement(const syntax::ast::Jump &value) override;
 	void visitVarDeclStatement(const syntax::ast::VarDecl &value) override;
@@ -67,24 +70,28 @@ class CTranspilerGenerator : public syntax::ast::StatementVisitor,
 	void visitWhileStatement(const syntax::ast::While &value) override;
 	void visitStructStatement(const syntax::ast::Struct &value) override;
 	void visitTraitStatement(const syntax::ast::Trait &value) override;
-	void visitCompDirectiveStatement(const syntax::ast::CompDirective &value) override;
+	void visitCompDirectiveStatement(
+	    const syntax::ast::CompDirective &value) override;
 	// Expression
 	void visitVariableExpression(const syntax::ast::Variable &value) override;
 	void visitIntrinsicExpression(const syntax::ast::Intrinsic &value) override;
 	void visitAssignExpression(const syntax::ast::Assign &value) override;
 	void visitBinaryExpression(const syntax::ast::Binary &value) override;
 	void visitCallExpression(const syntax::ast::Call &value) override;
-	void visitIntrinsicCallExpression(const syntax::ast::IntrinsicCall &value) override;
+	void visitIntrinsicCallExpression(
+	    const syntax::ast::IntrinsicCall &value) override;
 	void visitGetExpression(const syntax::ast::Get &value) override;
 	void visitGroupingExpression(const syntax::ast::Grouping &value) override;
 	void visitLiteralExpression(const syntax::ast::Literal &value) override;
 	void visitLogicalExpression(const syntax::ast::Logical &value) override;
 	void visitSetExpression(const syntax::ast::Set &value) override;
 	void visitUnaryExpression(const syntax::ast::Unary &value) override;
-	void visitArrayAccessExpression(const syntax::ast::ArrayAccess &value) override;
+	void
+	visitArrayAccessExpression(const syntax::ast::ArrayAccess &value) override;
 	void visitArrayTypeExpression(const syntax::ast::ArrayType &value) override;
 	void visitTupleTypeExpression(const syntax::ast::TupleType &value) override;
-	void visitPointerTypeExpression(const syntax::ast::PointerType &value) override;
+	void
+	visitPointerTypeExpression(const syntax::ast::PointerType &value) override;
 	void visitNamedTypeExpression(const syntax::ast::NamedType &value) override;
 	void visitCastExpression(const syntax::ast::Cast &value) override;
 	void visitParameterExpression(const syntax::ast::Parameter &value) override;
@@ -98,7 +105,8 @@ class CTranspilerGenerator : public syntax::ast::StatementVisitor,
 
 	std::optional<lang::Type> findScalarTypeInfo(const std::string_view lexeme);
 	std::optional<lang::Type> findTypeInfo(const std::string_view lexeme);
-	std::optional<lang::Type> getTypeExpression(const syntax::ast::Expression *);
+	std::optional<lang::Type>
+	getTypeExpression(const syntax::ast::Expression *);
 
 	void defineStruct(std::unordered_set<size_t> &visitedStructs,
 	                  const lang::Struct &);

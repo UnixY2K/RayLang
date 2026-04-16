@@ -64,7 +64,7 @@ void Resolver::visitFunctionStatement(
 	messageBag.error(functionAst.getToken(),
 	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
 }
-void Resolver::visitMethodStatement(const syntax::ast::Method &value) {
+void Resolver::visitTraitMethodStatement(const syntax::ast::TraitMethod &value) {
 	messageBag.error(value.getToken(),
 	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
 }
