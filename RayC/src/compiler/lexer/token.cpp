@@ -96,6 +96,8 @@ Token::TokenType Token::fromString(std::string_view str) {
 	    {"mut", Token::TokenType::TOKEN_MUT},           // mut
 	    {"struct", Token::TokenType::TOKEN_STRUCT},     // struct
 	    {"trait", Token::TokenType::TOKEN_TRAIT},       // trait
+	    {"with", Token::TokenType::TOKEN_WITH},         // with
+	    {"defer", Token::TokenType::TOKEN_DEFER},       // defer
 	    {"enum", Token::TokenType::TOKEN_ENUM},         // enum
 	    {"variant", Token::TokenType::TOKEN_VARIANT},   // variant
 	    {"as", Token::TokenType::TOKEN_AS},             // as
@@ -248,6 +250,10 @@ std::string_view Token::toString(TokenType token) {
 		return "TOKEN_STRUCT";
 	case TokenType::TOKEN_TRAIT:
 		return "TOKEN_TRAIT";
+	case TokenType::TOKEN_WITH:
+		return "TOKEN_WITH";
+	case TokenType::TOKEN_DEFER:
+		return "TOKEN_DEFER";
 	case TokenType::TOKEN_ENUM:
 		return "TOKEN_ENUM";
 	case TokenType::TOKEN_VARIANT:
@@ -406,6 +412,10 @@ std::string_view Token::glyph(TokenType token) {
 		return "struct";
 	case TokenType::TOKEN_TRAIT:
 		return "trait";
+	case TokenType::TOKEN_WITH:
+		return "with";
+	case TokenType::TOKEN_DEFER:
+		return "defer";
 	case TokenType::TOKEN_ENUM:
 		return "enum";
 	case TokenType::TOKEN_VARIANT:
