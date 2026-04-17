@@ -22,9 +22,8 @@ pub fn atoi(buffer: [c_char;]) -> mut c_int;
 
 
 
-fn print(buffer: [u8;]) {
+fn print(buffer: [u8;]) 
 	fwrite(buffer as mut *(), @sizeOf(c_char) as c_size, strlen(buffer as mut* mut c_char), get_stdout());
-}
 
 fn s32toString(num: s32) -> mut [mut u8;] {
 	let floorResult: usize = floor(log10(num)) as usize;

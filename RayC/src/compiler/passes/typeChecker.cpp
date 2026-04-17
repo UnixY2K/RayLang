@@ -1,3 +1,4 @@
+#include "ray/compiler/environment/dataModel/dataModel.hpp"
 #include <cassert>
 #include <cstddef>
 #include <cstdio>
@@ -163,9 +164,11 @@ void TypeChecker::visitFunctionStatement(
 				}
 			}
 
-			const auto type =
-			    resolveType(*functionExprAst.body->get())
-			        .value_or(currentDataModel.get().getUnitType());
+			auto type = resolveType(*functionExprAst.body->get())
+			                .value_or(currentDataModel.get().getUnitType());
+			if (type == lang::Type::defineStmtType()) {
+				type = lang::Type::defineUnitType();
+			}
 
 			if (!type.coercercesInto(
 			        functionDeclaration.signature.returnType) &&
@@ -535,10 +538,10 @@ void TypeChecker::visitCompDirectiveStatement(
 }
 // Expression
 void TypeChecker::visitVariableExpression(
-    const syntax::ast::Variable &variableExpr) {
+    const syntax::ast::Variable &variableExprAst) {
 
 	auto foundVariable =
-	    getCurrentScope().findVariable(variableExpr.name.lexeme);
+	    getCurrentScope().findVariable(variableExprAst.name.lexeme);
 	if (foundVariable.has_value()) {
 		typeStack.push_back(foundVariable.value().getObject()->get().innerType);
 		return;
@@ -548,7 +551,7 @@ void TypeChecker::visitVariableExpression(
 	// an overloadedFunction Type
 	lang::Type functionType;
 	for (const auto &functionDeclarationRef :
-	     currentSourceUnit.findFunctionDeclarations(variableExpr.name.lexeme,
+	     currentSourceUnit.findFunctionDeclarations(variableExprAst.name.lexeme,
 	                                                getCurrentScope())) {
 		assert(functionDeclarationRef.getObject().has_value());
 		const auto &functionDeclaration =
@@ -566,11 +569,20 @@ void TypeChecker::visitVariableExpression(
 
 	if (functionType.isInitialized()) {
 		typeStack.push_back(functionType);
-	} else {
-		messageBag.error(variableExpr.getToken(),
-		                 std::format("unknown symbol '{}'",
-		                             variableExpr.getToken().getLexeme()));
+		return;
 	}
+
+	// check if is a known type
+	auto foundType = findTypeInfo(variableExprAst.name.getLexeme());
+	if (foundType.has_value()) {
+		typeStack.push_back(foundType.value());
+		return;
+	}
+
+	messageBag.error(variableExprAst.getToken(),
+	                 std::format("unknown symbol '{}'",
+	                             variableExprAst.getToken().getLexeme()));
+
 	// we did not find anything so do not bother and report an error
 	return;
 }
@@ -724,7 +736,7 @@ void TypeChecker::visitCallExpression(const syntax::ast::Call &callExpr) {
 				messageBag.error(
 				    callerParamExpr.getToken(),
 				    std::format(
-				        "argument #'{}' does not matches the expected type {} vs {}",
+				        "argument #'{}' does not coerce the expected type {} vs {}",
 				        i, callerParamType.name, calleeParamType.name));
 				continue;
 			}
@@ -772,13 +784,21 @@ void TypeChecker::visitIntrinsicCallExpression(
 			        "{} intrinsic expects 1 argument but {} got provided",
 			        intrinsicCall.callee->name.lexeme,
 			        intrinsicCall.arguments.size()));
-		} else {
-			auto param = intrinsicCall.arguments[0].get();
-			auto paramType = resolveType(*param);
-			if (paramType.has_value()) {
-				// TODO: check the type and then return the size type
-			}
+			break;
 		}
+		auto param = intrinsicCall.arguments[0].get();
+		auto paramType = resolveType(*param);
+
+		if (!paramType.has_value()) {
+			messageBag.error(
+			    param->getToken(),
+			    std::format("'{}' does not hold a valid known type information",
+			                param->getToken().getLexeme()));
+			break;
+		}
+		typeStack.push_back(this->currentDataModel.get().getScalarType(
+		    environment::DataModel::ScalarTypeKind::usizeScalar));
+
 		break;
 	}
 	case ray::compiler::syntax::common::IntrinsicType::INTR_IMPORT: {
@@ -796,11 +816,12 @@ void TypeChecker::visitIntrinsicCallExpression(
 
 		break;
 	}
-	case ray::compiler::syntax::common::IntrinsicType::INTR_UNKNOWN:
+	case ray::compiler::syntax::common::IntrinsicType::INTR_UNKNOWN: {
 		messageBag.error(intrinsicCall.callee->name,
 		                 std::format("'{}' is not a valid intrinsic",
 		                             intrinsicCall.callee->name.lexeme));
 		break;
+	}
 	}
 }
 void TypeChecker::visitGetExpression(const syntax::ast::Get &getExpression) {}

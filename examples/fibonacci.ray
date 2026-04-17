@@ -3,15 +3,14 @@ let cstdio = @import("cstd:io.ray");
 let cstdlib = @import("cstd:std.ray");
 let cstring = @import("cstd:string.ray");
 
-fn print(buffer: [u8;]){
-	cstdio.fwrite(buffer as mut *mut(), @sizeOf(c_char) as c_size, cstring.strlen(buffer as mut* mut c_char), cstdio.get_stdout());
-}
+fn print(buffer: [u8;]) 
+	fwrite(buffer as mut *(), @sizeOf(c_char) as c_size, strlen(buffer as mut* mut c_char), get_stdout());
 
-fn s32toString(num: s32) -> mut [mut u8;]{
-	let floorResult: usize = cmath.floor(cmath.log10(num)) as usize;
+fn s32toString(num: s32) -> mut [mut u8;] {
+	let floorResult: usize = floor(log10(num)) as usize;
 	let size: mut usize = floorResult + 1;
 	let n: mut s32 = num;
-	let array: mut [mut u8;] = cstdlib.malloc(size + 1) as mut [mut u8;];
+	let array: mut [mut u8;] = malloc(size + 1) as mut [mut u8;];
 	let i: mut usize = (size - 1);
 	array[size] = '\0';
 	while n != 0 {
@@ -21,10 +20,9 @@ fn s32toString(num: s32) -> mut [mut u8;]{
 	return array;
 }
 
-fn fib(fibn: s32) -> s32 {
-	if fibn <= 2 1
-	fib(fibn-1) + fib(fibn-2)
-}
+fn fib(n: s32) -> s32 
+	if n <= 2 1
+	else fib(n - 1) + fib(n - 2)
 
 
 #[Linkage(mangling="c", resolution="external")]

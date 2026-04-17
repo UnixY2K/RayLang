@@ -8,12 +8,13 @@ namespace ray::compiler::lang {
 bool Type::coercercesInto(const Type &targetType) const {
 	// TODO: rework this to keep in mind the typekind when comparing coercion
 	// for now just validate wether the type is the same minus constness
-	return baseMatches(
-	           targetType) && // base has to match
-	                          // base type either is mutable or matches
-	                          // same level as target
-	                          // for scalar types they can be trivially coerced
-	                          // as its contents are copied directly
+	return baseMatches(targetType) && // base has to match
+	       /*
+	        base type either is mutable or matches
+	        same level as target
+	        for scalar types they can be trivially coerced
+	        as its contents are copied directly
+	        */
 	       ((kind == TypeKind::scalar) || isMutable ||
 	        isMutable == targetType.isMutable) &&
 	       signatureMatches(targetType); // signature is a heavier

@@ -187,7 +187,7 @@ void CTranspilerGenerator::visitFunctionStatement(
 			}
 		}
 		output << ")";
-		output << " {";
+		output << " {\n";
 		if (function.body.has_value()) {
 			ident++;
 			function.body->get()->visit(*this);
@@ -479,38 +479,48 @@ void CTranspilerGenerator::visitCallExpression(
 	}
 }
 void CTranspilerGenerator::visitIntrinsicCallExpression(
-    const syntax::ast::IntrinsicCall &value) {
+    const syntax::ast::IntrinsicCall &intrinsicCallAst) {
 
-	switch (value.callee->intrinsic) {
+	switch (intrinsicCallAst.callee->intrinsic) {
 	case ray::compiler::syntax::common::IntrinsicType::INTR_SIZEOF: {
-		if (value.arguments.size() != 1) {
-			messageBag.error(value.callee->name,
+		if (intrinsicCallAst.arguments.size() != 1) {
+			messageBag.error(intrinsicCallAst.callee->name,
 			                 std::format("@sizeOf intrinsic expects 1 "
 			                             "argument but {} got provided",
-			                             value.arguments.size()));
+			                             intrinsicCallAst.arguments.size()));
 		} else {
-			auto param = value.arguments[0].get();
-			if (auto type = getTypeExpression(param)) {
-				output << std::format("((ssize){})", type->calculatedSize);
-			} else {
-				messageBag.error(value.callee->name,
+			auto param = intrinsicCallAst.arguments[0].get();
+			auto type = getTypeExpression(param);
+			if (!type) {
+				messageBag.error(intrinsicCallAst.callee->name,
 				                 std::format("'{}' is not a Type expression",
 				                             param->variantName()));
+				break;
 			}
+			if (type->getKind() == lang::TypeKind::abstract) {
+				messageBag.error(
+				    intrinsicCallAst.callee->name,
+				    std::format("'{}' cannot be an abstract Type expression",
+				                param->variantName()));
+				break;
+			}
+			output << "(sizeof (";
+			param->visit(*this);
+			output << "))";
 		}
 		break;
 	}
 	case ray::compiler::syntax::common::IntrinsicType::INTR_IMPORT: {
 		messageBag.error(
-		    value.callee->name,
+		    intrinsicCallAst.callee->name,
 		    std::format("'{}' is not implemented yet for C backend",
-		                value.callee->name.lexeme));
+		                intrinsicCallAst.callee->name.lexeme));
 		break;
 	}
 	case ray::compiler::syntax::common::IntrinsicType::INTR_UNKNOWN:
-		messageBag.error(value.callee->name,
+		messageBag.error(intrinsicCallAst.callee->name,
 		                 std::format("'{}' is not a valid intrinsic",
-		                             value.callee->name.lexeme));
+		                             intrinsicCallAst.callee->name.lexeme));
 		break;
 	}
 }

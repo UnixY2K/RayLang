@@ -122,7 +122,7 @@ int main(int argc, char **argv) {
 			for (auto error : messageBag.getErrors()) {
 				std::cerr << error;
 			}
-			return 1;
+			//return 1;
 		}
 
 		passes::TypeScanner typeScanner(sourceFile, *dataModel, moduleStore);
