@@ -3,36 +3,30 @@
 #include <format>
 #include <iterator>
 #include <memory>
-#include <ranges>
 
 #include <ray/compiler/directives/compilerDirective.hpp>
 #include <ray/compiler/directives/linkageDirective.hpp>
 #include <ray/compiler/lang/type.hpp>
+#include <ray/compiler/lexer/token.hpp>
 #include <ray/compiler/passes/resolver.hpp>
 #include <ray/compiler/passes/symbol_mangler.hpp>
+#include <ray/compiler/syntax/rst/Statement.hpp>
 
 namespace ray::compiler::passes {
 
 void Resolver::resolve(
     const std::vector<std::unique_ptr<syntax::ast::Statement>> &statements) {
 
-	for (const auto &statement : statements) {
-		statement->visit(*this);
+	rootBlock.statements.clear();
+	for (const auto &childStatement : statements) {
+		auto statement = resolveStatement(*childStatement);
+		rootBlock.statements.push_back(std::move(statement));
 	}
 
 	for (auto &directive : directivesStack) {
 		messageBag.warning(directive->getToken(),
 		                   std::format("unused compiler directive {}",
 		                               directive->directiveName()));
-	}
-
-	if (!(typeStack | std::views::filter([](const lang::Type &type) {
-		      return type.getKind() != lang::TypeKind::abstract;
-	      })).empty()) {
-		Token errorToken{Token::TokenType::TOKEN_EOF,
-		                 std::string(Token::glyph(Token::TokenType::TOKEN_EOF)),
-		                 0, 0};
-		messageBag.bug(errorToken, std::format("type stack evaluation error"));
 	}
 }
 
@@ -64,7 +58,8 @@ void Resolver::visitFunctionStatement(
 	messageBag.error(functionAst.getToken(),
 	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
 }
-void Resolver::visitTraitMethodStatement(const syntax::ast::TraitMethod &value) {
+void Resolver::visitTraitMethodStatement(
+    const syntax::ast::TraitMethod &value) {
 	messageBag.error(value.getToken(),
 	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
 }
@@ -124,8 +119,14 @@ void Resolver::visitStructStatement(const syntax::ast::Struct &structAst) {
 		messageBag.error(structAst.getToken(), "could not declare struct");
 	}
 
+	std::unique_ptr<syntax::rst::Struct> structRST =
+	    std::make_unique<syntax::rst::Struct>(syntax::rst::Struct(
+	        structAst.name, structAst.publicVisibility, structAst.declaration,
+	        {}, structAst.memberVisibility, structAst.token));
+
 	// don´t bother with declarations
 	if (structAst.declaration) {
+		statementStack.push_back(std::move(structRST));
 		return;
 	}
 
@@ -141,25 +142,22 @@ void Resolver::visitStructStatement(const syntax::ast::Struct &structAst) {
 		return;
 	}
 
-	auto &structObj = structObjRes.value().get();
-	std::vector<lang::StructMember> members;
-
 	for (const auto &member : structAst.members) {
-		member.visit(*this);
-		if (structMemberStack.empty()) {
+		auto resolvedRST = resolveStatement(member);
+		auto memberRST = dynamic_cast<syntax::rst::Member *>(resolvedRST.get());
+		if (!memberRST) {
 			messageBag.bug(
 			    member.getToken(),
 			    std::format("could not get struct member data for '{}'",
 			                member.name.getLexeme()));
 			continue;
 		}
-		auto memberObj = structMemberStack.back();
-		structMemberStack.pop_back();
+		
 
-		members.push_back(memberObj);
+		// TODO: move the pointer and add it to the membersRST
 	}
 
-	structObj.members = members;
+	statementStack.push_back(std::move(structRST));
 }
 void Resolver::visitTraitStatement(const syntax::ast::Trait &value) {
 	messageBag.error(value.getToken(),
@@ -183,36 +181,38 @@ void Resolver::visitCompDirectiveStatement(
 		              : directive::LinkageDirective::ManglingType::Unknown
 		        : directive::LinkageDirective::ManglingType::Default,
 		    directiveToken);
-		if (compDirectiveAst.child) {
-			auto childValue = compDirectiveAst.child.get();
-			if (dynamic_cast<syntax::ast::Function *>(childValue) ||
-			    dynamic_cast<syntax::ast::Struct *>(childValue)) {
-				size_t startDirectives = directivesStack.size();
-				size_t originalTop = directivesStackTop + 1;
-				directivesStackTop = startDirectives;
-				directivesStack.push_back(
-				    std::make_unique<directive::LinkageDirective>(directive));
-				auto directiveType = resolveType(*compDirectiveAst.child);
-				typeStack.push_back(directiveType);
-
-				if (directivesStack.size() != startDirectives) {
-					messageBag.bug(childValue->getToken(),
-					               "unprocessed compiler directives");
-				}
-
-				directivesStackTop = originalTop;
-			} else {
-				messageBag.error(
-				    childValue->getToken(),
-				    std::format(
-				        "{} child expression must be a function or a struct.",
-				        directive.directiveName()));
-			}
-		} else {
+		if (!compDirectiveAst.child) {
 			messageBag.error(compDirectiveAst.getToken(),
 			                 std::format("{} must have a child expression.",
 			                             directive.directiveName()));
+			return;
 		}
+
+		auto childValue = compDirectiveAst.child.get();
+		if (!dynamic_cast<syntax::ast::Function *>(childValue) &&
+		    !dynamic_cast<syntax::ast::Struct *>(childValue)) {
+			messageBag.error(
+			    childValue->getToken(),
+			    std::format(
+			        "{} child expression must be a function or a struct.",
+			        directive.directiveName()));
+			return;
+		}
+
+		size_t startDirectives = directivesStack.size();
+		size_t originalTop = directivesStackTop + 1;
+		directivesStackTop = startDirectives;
+		directivesStack.push_back(
+		    std::make_unique<directive::LinkageDirective>(directive));
+		auto statementRST = resolveStatement(*compDirectiveAst.child);
+		if (directivesStack.size() != startDirectives) {
+			messageBag.bug(childValue->getToken(),
+			               "unprocessed compiler directives");
+		}
+		directivesStackTop = originalTop;
+
+		statementStack.push_back(std::move(statementRST));
+
 	} else {
 		messageBag.error(
 		    compDirectiveAst.getToken(),
@@ -299,64 +299,40 @@ void Resolver::visitParameterExpression(const syntax::ast::Parameter &value) {
 	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
 }
 
-lang::Type Resolver::resolveType(const syntax::ast::Statement &statement) {
-	auto types = resolveTypes(statement);
+std::unique_ptr<syntax::rst::Statement>
+Resolver::resolveStatement(const syntax::ast::Statement &statementAST) {
+	auto statements = resolveStatements(statementAST);
 
-	if (types.size() > 1) {
-		// check wether the return types coerce
-		for (size_t i = 1; i < types.size(); i++) {
-			if (!types[0].coercercesInto(types[i])) {
-				messageBag.bug(
-				    statement.getToken(),
-				    std::format(
-				        "'{}' return types does not match for expected '{}' vs '{}'",
-				        statement.variantName(), types[0].name, types[i].name));
-			}
-		}
+	std::unique_ptr<syntax::rst::Statement> returnStatement;
+	if (statements.size() > 1) {
+		returnStatement = std::make_unique<syntax::rst::Block>(
+		    syntax::rst::Block(std::move(statements), statementAST.getToken()));
+	} else if (statements.size() > 0) {
+		returnStatement = std::move(statements[0]);
+	} else {
+		messageBag.bug(
+		    statementAST.getToken(),
+		    std::format(
+		        "'{}' statement did not yield an RST statement, making empty block RST statement",
+		        statementAST.variantName()));
+		returnStatement = std::make_unique<syntax::rst::Block>(
+		    syntax::rst::Block{{}, statementAST.getToken()});
 	}
 
-	return types.size() > 0 ? types[0] : lang::Type::defineStmtType();
+	return returnStatement;
 }
-lang::Type Resolver::resolveType(const syntax::ast::Expression &expression) {
-	auto types = resolveTypes(expression);
 
-	if (types.size() > 1) {
-		messageBag.bug(expression.getToken(),
-		               std::format("'{}' yield multiple values",
-		                           expression.variantName()));
+std::vector<std::unique_ptr<syntax::rst::Statement>>
+Resolver::resolveStatements(const syntax::ast::Statement &statementAST) {
+	std::vector<std::unique_ptr<syntax::rst::Statement>> returnStatements;
+	size_t tsSize = statementStack.size();
+	statementAST.visit(*this);
+	while (statementStack.size() > tsSize) {
+		auto returnStatement = std::move(statementStack.back());
+		statementStack.pop_back();
+		returnStatements.push_back(std::move(returnStatement));
 	}
-
-	return types.size() > 0 ? types[0] : lang::Type::defineUnknownType();
-}
-std::vector<lang::Type>
-Resolver::resolveTypes(const syntax::ast::Statement &statement) {
-	std::vector<lang::Type> returnTypes;
-	size_t tsSize = typeStack.size();
-	statement.visit(*this);
-	while (typeStack.size() > tsSize) {
-		auto returnType = typeStack.back();
-		typeStack.pop_back();
-		returnTypes.push_back(returnType);
-	}
-	return returnTypes;
-}
-std::vector<lang::Type>
-Resolver::resolveTypes(const syntax::ast::Expression &expression) {
-	std::vector<lang::Type> returnTypes;
-	size_t tsSize = typeStack.size();
-	expression.visit(*this);
-	while (typeStack.size() > tsSize) {
-		auto returnType = typeStack.back();
-		typeStack.pop_back();
-		returnTypes.push_back(returnType);
-	}
-	if (returnTypes.size() < 1) {
-		messageBag.bug(expression.getToken(),
-		               std::format("'{}' did not resolve a type",
-		                           expression.variantName()));
-		typeStack.push_back(lang::Type::defineUnknownType());
-	}
-	return returnTypes;
+	return returnStatements;
 }
 
 std::vector<std::unique_ptr<directive::CompilerDirective>>

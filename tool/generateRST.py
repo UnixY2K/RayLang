@@ -144,6 +144,7 @@ def main():
          "NamedType		= Token name, bool isMutable",
          "Cast			= std::unique_ptr<Expression> expression, std::unique_ptr<Expression> type",
          "Parameter		= Token name, std::unique_ptr<Expression> type",
+         "PlaceHolder   = "
 		]) 
     defineRST(outputDir, "Statement", "ray::compiler::syntax::rst",
         ["ray/compiler/syntax/rst/Expression.hpp", "unordered_map", "string", "vector", "optional"],
@@ -158,6 +159,7 @@ def main():
          "Member		= Token name, std::unique_ptr<Expression> type, bool is_mutable, std::optional<std::unique_ptr<Expression>> initializer",
          "While			= std::unique_ptr<Expression> condition, std::unique_ptr<Statement> body",
          "Struct		= Token name, bool publicVisibility, bool declaration, std::vector<Member> members, std::vector<bool> memberVisibility",
+         "Placeholder   = "
         ]) 
     
     pass

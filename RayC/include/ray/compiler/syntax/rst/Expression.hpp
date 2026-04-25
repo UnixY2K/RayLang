@@ -26,6 +26,7 @@ class PointerType;
 class NamedType;
 class Cast;
 class Parameter;
+class PlaceHolder;
 class ExpressionVisitor {
   public:
 	virtual void visitVariableExpression(const Variable& value) = 0;
@@ -47,6 +48,7 @@ class ExpressionVisitor {
 	virtual void visitNamedTypeExpression(const NamedType& value) = 0;
 	virtual void visitCastExpression(const Cast& value) = 0;
 	virtual void visitParameterExpression(const Parameter& value) = 0;
+	virtual void visitPlaceHolderExpression(const PlaceHolder& value) = 0;
 	virtual ~ExpressionVisitor() = default;
 };
 
@@ -472,6 +474,20 @@ class Parameter : public Expression {
 	}
 
 	const std::string_view variantName() const override { return "Parameter"; }
+
+	const Token& getToken() const override { return token; };
+};
+class PlaceHolder : public Expression {
+  public:
+	Token token;
+
+	PlaceHolder(Token token) {}
+
+	void visit(ExpressionVisitor& visitor) const override {
+		visitor.visitPlaceHolderExpression(*this);
+	}
+
+	const std::string_view variantName() const override { return "PlaceHolder"; }
 
 	const Token& getToken() const override { return token; };
 };

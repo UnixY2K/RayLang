@@ -7,6 +7,7 @@
 #include <ray/compiler/environment/dataModel/dataModel.hpp>
 #include <ray/compiler/lang/moduleStore.hpp>
 #include <ray/compiler/lang/sourceUnit.hpp>
+#include <ray/compiler/lexer/token.hpp>
 #include <ray/compiler/message_bag.hpp>
 #include <ray/compiler/passes/typeScanner.hpp>
 #include <ray/compiler/syntax/ast/Expression.hpp>
@@ -23,7 +24,6 @@ class Resolver : public syntax::ast::StatementVisitor,
 	std::vector<std::unique_ptr<directive::CompilerDirective>> directivesStack;
 	size_t directivesStackTop = 0;
 
-	std::vector<lang::Type> typeStack;
 	std::vector<lang::StructMember> structMemberStack;
 	std::vector<lang::Method> traitMethodStack;
 
@@ -33,13 +33,19 @@ class Resolver : public syntax::ast::StatementVisitor,
 	lang::ModuleStore &currentModuleStore;
 	std::reference_wrapper<lang::Scope> currentScope;
 
+	syntax::rst::Block rootBlock;
+
+	std::vector<std::unique_ptr<syntax::rst::Statement>> statementStack;
+	std::vector<std::unique_ptr<syntax::rst::Expression>> expressionStack;
+
   public:
 	Resolver(std::string filePath, const environment::DataModel &dataModel,
 	         lang::ModuleStore &moduleStore)
 	    : messageBag("RESOLVER", filePath), directivesStack(),
 	      currentDataModel(dataModel), currentSourceUnit(),
 	      currentModuleStore(moduleStore),
-	      currentScope(currentSourceUnit.rootScope) {}
+	      currentScope(currentSourceUnit.rootScope),
+	      rootBlock({}, Token::makeEOFToken()) {}
 
 	void resolve(
 	    const std::vector<std::unique_ptr<syntax::ast::Statement>> &statements);
@@ -94,16 +100,10 @@ class Resolver : public syntax::ast::StatementVisitor,
 	void visitCastExpression(const syntax::ast::Cast &value) override;
 	void visitParameterExpression(const syntax::ast::Parameter &value) override;
 
-	lang::Type resolveType(const syntax::ast::Statement &statement);
-	lang::Type resolveType(const syntax::ast::Expression &expression);
-	std::vector<lang::Type>
-	resolveTypes(const syntax::ast::Statement &statement);
-	std::vector<lang::Type>
-	resolveTypes(const syntax::ast::Expression &expression);
-	// only used when you do not care about returned types but
-	// want to traverse the items to perform checks and discovery of types
-	void discardTypes(const syntax::ast::Statement &statement);
-	void discardTypes(const syntax::ast::Expression &expression);
+	std::unique_ptr<syntax::rst::Statement>
+	resolveStatement(const syntax::ast::Statement &statement);
+	std::vector<std::unique_ptr<syntax::rst::Statement>>
+	resolveStatements(const syntax::ast::Statement &statement);
 
 	std::optional<lang::Type> findScalarTypeInfo(const std::string_view lexeme);
 	lang::Type findTypeInfo(const std::string_view lexeme);

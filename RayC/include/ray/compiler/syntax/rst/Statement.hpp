@@ -21,6 +21,7 @@ class VarDecl;
 class Member;
 class While;
 class Struct;
+class Placeholder;
 class StatementVisitor {
   public:
 	virtual void visitBlockStatement(const Block& value) = 0;
@@ -33,6 +34,7 @@ class StatementVisitor {
 	virtual void visitMemberStatement(const Member& value) = 0;
 	virtual void visitWhileStatement(const While& value) = 0;
 	virtual void visitStructStatement(const Struct& value) = 0;
+	virtual void visitPlaceholderStatement(const Placeholder& value) = 0;
 	virtual ~StatementVisitor() = default;
 };
 
@@ -275,6 +277,20 @@ class Struct : public Statement {
 	}
 
 	const std::string_view variantName() const override { return "Struct"; }
+
+	const Token& getToken() const override { return token; };
+};
+class Placeholder : public Statement {
+  public:
+	Token token;
+
+	Placeholder(Token token) {}
+
+	void visit(StatementVisitor& visitor) const override {
+		visitor.visitPlaceholderStatement(*this);
+	}
+
+	const std::string_view variantName() const override { return "Placeholder"; }
 
 	const Token& getToken() const override { return token; };
 };
