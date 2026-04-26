@@ -1,4 +1,3 @@
-#include "ray/compiler/environment/dataModel/dataModel.hpp"
 #include <cassert>
 #include <cstddef>
 #include <cstdio>
@@ -8,6 +7,7 @@
 #include <string_view>
 #include <vector>
 
+#include <ray/compiler/environment/dataModel/dataModel.hpp>
 #include <ray/compiler/lang/functionDefinition.hpp>
 #include <ray/compiler/lang/scope.hpp>
 #include <ray/compiler/lang/struct.hpp>

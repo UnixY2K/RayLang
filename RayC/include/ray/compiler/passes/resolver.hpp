@@ -101,9 +101,14 @@ class Resolver : public syntax::ast::StatementVisitor,
 	void visitParameterExpression(const syntax::ast::Parameter &value) override;
 
 	std::unique_ptr<syntax::rst::Statement>
-	resolveStatement(const syntax::ast::Statement &statement);
+	resolveStatement(const syntax::ast::Statement &statementAST);
 	std::vector<std::unique_ptr<syntax::rst::Statement>>
-	resolveStatements(const syntax::ast::Statement &statement);
+	resolveStatements(const syntax::ast::Statement &statementAST);
+
+	std::unique_ptr<syntax::rst::Expression>
+	resolveExpression(const syntax::ast::Expression &expressionAST);
+	std::vector<std::unique_ptr<syntax::rst::Expression>>
+	resolveExpressions(const syntax::ast::Expression &expressionAST);
 
 	std::optional<lang::Type> findScalarTypeInfo(const std::string_view lexeme);
 	lang::Type findTypeInfo(const std::string_view lexeme);

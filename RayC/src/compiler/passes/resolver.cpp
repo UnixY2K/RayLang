@@ -3,6 +3,7 @@
 #include <format>
 #include <iterator>
 #include <memory>
+#include <optional>
 
 #include <ray/compiler/directives/compilerDirective.hpp>
 #include <ray/compiler/directives/linkageDirective.hpp>
@@ -10,6 +11,7 @@
 #include <ray/compiler/lexer/token.hpp>
 #include <ray/compiler/passes/resolver.hpp>
 #include <ray/compiler/passes/symbol_mangler.hpp>
+#include <ray/compiler/syntax/rst/Expression.hpp>
 #include <ray/compiler/syntax/rst/Statement.hpp>
 
 namespace ray::compiler::passes {
@@ -48,15 +50,28 @@ void Resolver::visitExpressionStmtStatement(
 	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
 }
 void Resolver::visitFunctionStatement(
-    const syntax::ast::Function &functionAst) {
+    const syntax::ast::Function &functionAST) {
 
 	auto directives = collectCompilerDirectives();
+	auto functionRST = std::make_unique<syntax::rst::Function>(
+	    syntax::rst::Function(functionAST.name, functionAST.publicVisibility,
+	                          {}, std::nullopt, {}, functionAST.token));
 
-	// TODO: add to the current generated AST the function and declare it in the
-	// current scope so it can be found by the type system at a later step
+	for (const auto &paramAST : functionAST.params) {
+		auto paramExpression = resolveExpression(paramAST);
+		syntax::rst::Parameter paramRST(
+		    paramAST.name, std::move(paramExpression), paramAST.token);
+		functionRST->params.push_back(std::move(paramRST));
+	}
 
-	messageBag.error(functionAst.getToken(),
-	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
+	auto returnExpression = resolveExpression(*functionAST.returnType);
+
+	if (functionAST.body.has_value()) {
+		auto functionBodyRST = resolveStatement(*functionAST.body->get());
+		functionRST->body = std::move(functionBodyRST);
+	}
+
+	statementStack.push_back(std::move(functionRST));
 }
 void Resolver::visitTraitMethodStatement(
     const syntax::ast::TraitMethod &value) {
@@ -334,6 +349,42 @@ Resolver::resolveStatements(const syntax::ast::Statement &statementAST) {
 		returnStatements.push_back(std::move(returnStatement));
 	}
 	return returnStatements;
+}
+
+std::unique_ptr<syntax::rst::Expression>
+Resolver::resolveExpression(const syntax::ast::Expression &expressionAST) {
+	auto expressions = resolveExpressions(expressionAST);
+
+	std::unique_ptr<syntax::rst::Expression> returnExpression;
+	if (expressions.size() > 1) {
+		returnExpression =
+		    std::make_unique<syntax::rst::TupleType>(syntax::rst::TupleType(
+		        false, std::move(expressions), expressionAST.getToken()));
+	} else if (expressions.size() > 0) {
+		returnExpression = std::move(expressions[0]);
+	} else {
+		messageBag.bug(
+		    expressionAST.getToken(),
+		    std::format(
+		        "'{}' expression did not yield an RST expression, making empty tuple RST expression",
+		        expressionAST.variantName()));
+		returnExpression = std::make_unique<syntax::rst::TupleType>(
+		    syntax::rst::TupleType{false, {}, expressionAST.getToken()});
+	}
+
+	return returnExpression;
+}
+std::vector<std::unique_ptr<syntax::rst::Expression>>
+Resolver::resolveExpressions(const syntax::ast::Expression &expressionAST) {
+	std::vector<std::unique_ptr<syntax::rst::Expression>> returnExpressions;
+	size_t tsSize = expressionStack.size();
+	expressionAST.visit(*this);
+	while (expressionStack.size() > tsSize) {
+		auto returnExpression = std::move(expressionStack.back());
+		expressionStack.pop_back();
+		returnExpressions.push_back(std::move(returnExpression));
+	}
+	return returnExpressions;
 }
 
 std::vector<std::unique_ptr<directive::CompilerDirective>>
