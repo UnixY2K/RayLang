@@ -143,18 +143,19 @@ void Resolver::visitStructStatement(const syntax::ast::Struct &structAst) {
 	}
 
 	for (const auto &member : structAst.members) {
-		auto resolvedRST = resolveStatement(member);
-		auto memberRST = dynamic_cast<syntax::rst::Member *>(resolvedRST.get());
-		if (!memberRST) {
+		auto resolvedStatementRST = resolveStatement(member);
+		auto memberRSTPtr =
+		    dynamic_cast<syntax::rst::Member *>(resolvedStatementRST.get());
+		if (!memberRSTPtr) {
 			messageBag.bug(
 			    member.getToken(),
 			    std::format("could not get struct member data for '{}'",
 			                member.name.getLexeme()));
 			continue;
 		}
-		
-
 		// TODO: move the pointer and add it to the membersRST
+		structRST->members.push_back(
+		    syntax::rst::Member(std::move(*memberRSTPtr)));
 	}
 
 	statementStack.push_back(std::move(structRST));
