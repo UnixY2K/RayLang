@@ -73,14 +73,14 @@ void TypeScanner::visitBlockStatement(const syntax::ast::Block &blockAst) {
 
 	currentScope = parentScope;
 }
-void TypeScanner::visitTerminalExprStatement(
-    const syntax::ast::TerminalExpr &terminalExprAst) {
+void TypeScanner::visitTerminalExpressionStatement(
+    const syntax::ast::TerminalExpression &terminalExprAst) {
 	if (terminalExprAst.expression.has_value()) {
 		terminalExprAst.expression->get()->visit(*this);
 	}
 }
-void TypeScanner::visitExpressionStmtStatement(
-    const syntax::ast::ExpressionStmt &expressionStmtAst) {
+void TypeScanner::visitExpressionStatementStatement(
+    const syntax::ast::ExpressionStatement &expressionStmtAst) {
 	expressionStmtAst.expression->visit(*this);
 }
 void TypeScanner::visitFunctionStatement(

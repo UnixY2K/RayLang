@@ -52,9 +52,9 @@ class TypeScanner : public syntax::ast::StatementVisitor,
   private:
 	void visitBlockStatement(const syntax::ast::Block &value) override;
 	void
-	visitTerminalExprStatement(const syntax::ast::TerminalExpr &value) override;
-	void visitExpressionStmtStatement(
-	    const syntax::ast::ExpressionStmt &value) override;
+	visitTerminalExpressionStatement(const syntax::ast::TerminalExpression &value) override;
+	void visitExpressionStatementStatement(
+	    const syntax::ast::ExpressionStatement &value) override;
 	void visitFunctionStatement(const syntax::ast::Function &value) override;
 	void
 	visitTraitMethodStatement(const syntax::ast::TraitMethod &value) override;

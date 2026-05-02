@@ -242,8 +242,8 @@ std::unique_ptr<syntax::ast::Statement> Parser::forStatement() {
 		std::vector<std::unique_ptr<syntax::ast::Statement>> bodyStatements;
 		bodyStatements.push_back(std::move(body));
 		auto incrementToken = increment->getToken();
-		bodyStatements.push_back(std::make_unique<syntax::ast::ExpressionStmt>(
-		    syntax::ast::ExpressionStmt{
+		bodyStatements.push_back(std::make_unique<syntax::ast::ExpressionStatement>(
+		    syntax::ast::ExpressionStatement{
 		        std::move(increment),
 		        incrementToken,
 		    }));
@@ -455,11 +455,11 @@ std::unique_ptr<syntax::ast::Statement> Parser::expressionStatement() {
 	auto expr = expression();
 	auto exprToken = expr->getToken();
 	if (match({Token::TokenType::TOKEN_SEMICOLON})) {
-		return std::make_unique<syntax::ast::ExpressionStmt>(
-		    syntax::ast::ExpressionStmt(std::move(expr), exprToken));
+		return std::make_unique<syntax::ast::ExpressionStatement>(
+		    syntax::ast::ExpressionStatement(std::move(expr), exprToken));
 	}
-	return std::make_unique<syntax::ast::TerminalExpr>(
-	    syntax::ast::TerminalExpr(std::move(expr), exprToken));
+	return std::make_unique<syntax::ast::TerminalExpression>(
+	    syntax::ast::TerminalExpression(std::move(expr), exprToken));
 }
 syntax::ast::Function Parser::function(bool publicVisiblity) {
 
@@ -524,7 +524,7 @@ std::vector<std::unique_ptr<syntax::ast::Statement>> Parser::block() {
 	// add a terminal statement to the block if the last statement is not a
 	// terminal statement
 	if (statements.size() < 1 ||
-	    dynamic_cast<syntax::ast::TerminalExpr *>(
+	    dynamic_cast<syntax::ast::TerminalExpression *>(
 	        statements[statements.size() - 1].get()) == nullptr) {
 	}
 	return statements;

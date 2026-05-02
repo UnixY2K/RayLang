@@ -1,3 +1,4 @@
+#include "ray/compiler/syntax/ast/Expression.hpp"
 #include <algorithm>
 #include <cstddef>
 #include <format>
@@ -13,6 +14,7 @@
 #include <ray/compiler/passes/symbol_mangler.hpp>
 #include <ray/compiler/syntax/rst/Expression.hpp>
 #include <ray/compiler/syntax/rst/Statement.hpp>
+#include <utility>
 
 namespace ray::compiler::passes {
 
@@ -35,19 +37,43 @@ void Resolver::resolve(
 bool Resolver::hasFailed() const { return messageBag.failed(); }
 const MessageBag &Resolver::getMessageBag() const { return messageBag; }
 
-void Resolver::visitBlockStatement(const syntax::ast::Block &value) {
-	messageBag.error(value.getToken(),
-	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
+void Resolver::visitBlockStatement(const syntax::ast::Block &blockAST) {
+	std::vector<std::unique_ptr<syntax::rst::Statement>> statementsRST;
+
+	for (const auto &statementAST : blockAST.statements) {
+		auto statementRST = resolveStatement(*statementAST);
+		statementsRST.push_back(std::move(statementRST));
+	}
+
+	auto blockRST = std::make_unique<syntax::rst::Block>(
+	    syntax::rst::Block(std::move(statementsRST), blockAST.token));
+	statementStack.push_back(std::move(blockRST));
 }
-void Resolver::visitTerminalExprStatement(
-    const syntax::ast::TerminalExpr &value) {
-	messageBag.error(value.getToken(),
-	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
+void Resolver::visitTerminalExpressionStatement(
+    const syntax::ast::TerminalExpression &terminalExpressionAST) {
+
+	auto expressionRST = terminalExpressionAST.expression.transform(
+	    [&](const auto &expressionPtr) {
+		    return resolveExpression(*expressionPtr);
+	    });
+
+	auto terminalExpressionRST =
+	    std::make_unique<syntax::rst::TerminalExpression>(
+	        syntax::rst::TerminalExpression(std::move(expressionRST),
+	                                        terminalExpressionAST.token));
+	statementStack.push_back(std::move(terminalExpressionRST));
 }
-void Resolver::visitExpressionStmtStatement(
-    const syntax::ast::ExpressionStmt &value) {
-	messageBag.error(value.getToken(),
-	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
+void Resolver::visitExpressionStatementStatement(
+    const syntax::ast::ExpressionStatement &expressionStatementAST) {
+
+	auto expressionRST = resolveExpression(*expressionStatementAST.expression);
+
+	auto expressionStatementRST =
+	    std::make_unique<syntax::rst::ExpressionStatement>(
+	        syntax::rst::ExpressionStatement(std::move(expressionRST),
+	                                         expressionStatementAST.token));
+
+	statementStack.push_back(std::move(expressionStatementRST));
 }
 void Resolver::visitFunctionStatement(
     const syntax::ast::Function &functionAST) {
@@ -66,10 +92,10 @@ void Resolver::visitFunctionStatement(
 
 	auto returnExpression = resolveExpression(*functionAST.returnType);
 
-	if (functionAST.body.has_value()) {
-		auto functionBodyRST = resolveStatement(*functionAST.body->get());
-		functionRST->body = std::move(functionBodyRST);
-	}
+	auto functionBodyRST = functionAST.body.transform(
+	    [&](const auto &bodyPtr) { return resolveStatement(*bodyPtr); });
+
+	functionRST->body = std::move(functionBodyRST);
 
 	statementStack.push_back(std::move(functionRST));
 }
@@ -78,25 +104,59 @@ void Resolver::visitTraitMethodStatement(
 	messageBag.error(value.getToken(),
 	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
 }
-void Resolver::visitIfStatement(const syntax::ast::If &value) {
-	messageBag.error(value.getToken(),
-	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
+void Resolver::visitIfStatement(const syntax::ast::If &ifAST) {
+	auto conditionRST = resolveExpression(*ifAST.condition);
+	auto thenBranchRST = resolveStatement(*ifAST.thenBranch);
+	auto elseBranchRST =
+	    ifAST.elseBranch.transform([&](const auto &elseBranchASTPtr) {
+		    return resolveStatement(*elseBranchASTPtr);
+	    });
+
+	auto ifRST = std::make_unique<syntax::rst::If>(
+	    syntax::rst::If(std::move(conditionRST), std::move(thenBranchRST),
+	                    std::move(elseBranchRST), ifAST.token));
+
+	statementStack.push_back(std::move(ifRST));
 }
-void Resolver::visitJumpStatement(const syntax::ast::Jump &value) {
-	messageBag.error(value.getToken(),
-	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
+void Resolver::visitJumpStatement(const syntax::ast::Jump &jumpAST) {
+	auto returnExpressionRST =
+	    jumpAST.returnValue.transform([&](const auto &returnExpressionASTPtr) {
+		    return resolveExpression(*returnExpressionASTPtr);
+	    });
+
+	auto jumpRST = std::make_unique<syntax::rst::Jump>(syntax::rst::Jump(
+	    jumpAST.keyword, std::move(returnExpressionRST), jumpAST.token));
+
+	statementStack.push_back(std::move(jumpRST));
 }
-void Resolver::visitVarDeclStatement(const syntax::ast::VarDecl &value) {
-	messageBag.error(value.getToken(),
-	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
+void Resolver::visitVarDeclStatement(
+    const syntax::ast::VarDecl &varDeclStatementAST) {
+	auto typeExpressionRST = resolveExpression(*varDeclStatementAST.type);
+	auto initializerExpressionRST = varDeclStatementAST.initializer.transform(
+	    [&](const auto &initializerASTPtr) {
+		    return resolveExpression(*initializerASTPtr);
+	    });
+
+	auto varDeclStatementRST =
+	    std::make_unique<syntax::rst::VarDecl>(syntax::rst::VarDecl(
+	        varDeclStatementAST.name, std::move(typeExpressionRST),
+	        varDeclStatementAST.is_mutable, std::move(initializerExpressionRST),
+	        varDeclStatementAST.token));
+
+	statementStack.push_back(std::move(varDeclStatementRST));
 }
 void Resolver::visitMemberStatement(const syntax::ast::Member &value) {
 	messageBag.error(value.getToken(),
 	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
 }
-void Resolver::visitWhileStatement(const syntax::ast::While &value) {
-	messageBag.error(value.getToken(),
-	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
+void Resolver::visitWhileStatement(const syntax::ast::While &whileAST) {
+
+	auto conditionRST = resolveExpression(*whileAST.condition);
+	auto bodyRST = resolveStatement(*whileAST.body);
+
+	auto whileRST = std::make_unique<syntax::rst::While>(syntax::rst::While(
+	    std::move(conditionRST), std::move(bodyRST), whileAST.token));
+	statementStack.push_back(std::move(whileRST));
 }
 void Resolver::visitStructStatement(const syntax::ast::Struct &structAst) {
 
@@ -235,42 +295,100 @@ void Resolver::visitCompDirectiveStatement(
 		    std::format("Unknown compiler directive '{}'.", directiveName));
 	}
 }
-void Resolver::visitVariableExpression(const syntax::ast::Variable &value) {
-	messageBag.error(value.getToken(),
-	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
+void Resolver::visitVariableExpression(
+    const syntax::ast::Variable &variableExpressionAST) {
+
+	auto variableExpressionRST =
+	    std::make_unique<syntax::rst::Variable>(syntax::rst::Variable(
+	        variableExpressionAST.name, variableExpressionAST.token));
+
+	expressionStack.push_back(std::move(variableExpressionRST));
 }
-void Resolver::visitIntrinsicExpression(const syntax::ast::Intrinsic &value) {
-	messageBag.error(value.getToken(),
-	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
+void Resolver::visitIntrinsicExpression(
+    const syntax::ast::Intrinsic &intrinsicAST) {
+
+	auto intrinsicRST =
+	    std::make_unique<syntax::rst::Intrinsic>(syntax::rst::Intrinsic(
+	        intrinsicAST.name, intrinsicAST.intrinsic, intrinsicAST.token));
+
+	expressionStack.push_back(std::move(intrinsicRST));
 }
-void Resolver::visitAssignExpression(const syntax::ast::Assign &value) {
-	messageBag.error(value.getToken(),
-	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
+void Resolver::visitAssignExpression(
+    const syntax::ast::Assign &assignExpressionAST) {
+	auto lhsExpressionRST = resolveExpression(*assignExpressionAST.lhs);
+	auto rhsExpressionRST = resolveExpression(*assignExpressionAST.rhs);
+
+	auto assignExpressionRST =
+	    std::make_unique<syntax::rst::Assign>(syntax::rst::Assign(
+	        std::move(lhsExpressionRST), assignExpressionAST.assignmentOp,
+	        std::move(rhsExpressionRST), assignExpressionAST.token));
+	expressionStack.push_back(std::move(assignExpressionRST));
 }
-void Resolver::visitBinaryExpression(const syntax::ast::Binary &value) {
-	messageBag.error(value.getToken(),
-	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
+void Resolver::visitBinaryExpression(
+    const syntax::ast::Binary &binaryExpressionAST) {
+
+	auto leftRST = resolveExpression(*binaryExpressionAST.left);
+	auto rightRST = resolveExpression(*binaryExpressionAST.right);
+
+	auto binaryExpressionRST = std::make_unique<syntax::rst::Binary>(
+	    syntax::rst::Binary(std::move(leftRST), binaryExpressionAST.op,
+	                        std::move(rightRST), binaryExpressionAST.token));
+
+	expressionStack.push_back(std::move(binaryExpressionRST));
 }
-void Resolver::visitCallExpression(const syntax::ast::Call &value) {
-	messageBag.error(value.getToken(),
-	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
+void Resolver::visitCallExpression(const syntax::ast::Call &callExpressionAST) {
+
+	auto calleeRST = resolveExpression(*callExpressionAST.callee);
+	std::vector<std::unique_ptr<syntax::rst::Expression>> argumentsRST;
+
+	for (const auto &argumentAST : callExpressionAST.arguments) {
+		auto argumentRST = resolveExpression(*argumentAST);
+		argumentsRST.push_back(std::move(argumentRST));
+	}
+
+	auto callExpressionRST = std::make_unique<syntax::rst::Call>(
+	    syntax::rst::Call(std::move(calleeRST), callExpressionAST.paren,
+	                      std::move(argumentsRST), callExpressionAST.token));
+
+	expressionStack.push_back(std::move(callExpressionRST));
 }
 void Resolver::visitIntrinsicCallExpression(
-    const syntax::ast::IntrinsicCall &value) {
-	messageBag.error(value.getToken(),
-	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
+    const syntax::ast::IntrinsicCall &intrinsicCallAST) {
+
+	auto calleeRST = resolveExpression(*intrinsicCallAST.callee);
+	std::vector<std::unique_ptr<syntax::rst::Expression>> argumentsRST;
+
+	for (const auto &argumentAST : intrinsicCallAST.arguments) {
+		auto argumentRST = resolveExpression(*argumentAST);
+		argumentsRST.push_back(std::move(argumentRST));
+	}
+
+	auto callExpressionRST = std::make_unique<syntax::rst::Call>(
+	    syntax::rst::Call(std::move(calleeRST), intrinsicCallAST.paren,
+	                      std::move(argumentsRST), intrinsicCallAST.token));
+
+	expressionStack.push_back(std::move(callExpressionRST));
 }
 void Resolver::visitGetExpression(const syntax::ast::Get &value) {
 	messageBag.error(value.getToken(),
 	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
 }
-void Resolver::visitGroupingExpression(const syntax::ast::Grouping &value) {
-	messageBag.error(value.getToken(),
-	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
+void Resolver::visitGroupingExpression(
+    const syntax::ast::Grouping &groupingExpressionAST) {
+	auto expressionRST = resolveExpression(*groupingExpressionAST.expression);
+
+	auto groupingExpressionRST =
+	    std::make_unique<syntax::rst::Grouping>(syntax::rst::Grouping(
+	        std::move(expressionRST), groupingExpressionAST.token));
+	expressionStack.push_back(std::move(groupingExpressionRST));
 }
-void Resolver::visitLiteralExpression(const syntax::ast::Literal &value) {
-	messageBag.error(value.getToken(),
-	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
+void Resolver::visitLiteralExpression(
+    const syntax::ast::Literal &literalExpressionAST) {
+	auto literalExpressionRST =
+	    std::make_unique<syntax::rst::Literal>(syntax::rst::Literal(
+	        literalExpressionAST.kind, literalExpressionAST.value,
+	        literalExpressionAST.token));
+	expressionStack.push_back(std::move(literalExpressionRST));
 }
 void Resolver::visitLogicalExpression(const syntax::ast::Logical &value) {
 	messageBag.error(value.getToken(),
@@ -280,39 +398,95 @@ void Resolver::visitSetExpression(const syntax::ast::Set &value) {
 	messageBag.error(value.getToken(),
 	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
 }
-void Resolver::visitUnaryExpression(const syntax::ast::Unary &value) {
-	messageBag.error(value.getToken(),
-	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
+void Resolver::visitUnaryExpression(
+    const syntax::ast::Unary &unaryExpressionAST) {
+	auto expressionRST = resolveExpression(*unaryExpressionAST.expr);
+
+	auto unaryExpressionRST = std::make_unique<syntax::rst::Unary>(
+	    syntax::rst::Unary(unaryExpressionAST.op, unaryExpressionAST.isPrefix,
+	                       std::move(expressionRST), unaryExpressionAST.token));
+	expressionStack.push_back(std::move(unaryExpressionRST));
 }
 void Resolver::visitArrayAccessExpression(
-    const syntax::ast::ArrayAccess &value) {
-	messageBag.error(value.getToken(),
-	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
+    const syntax::ast::ArrayAccess &arrayAccessExpressionAST) {
+
+	auto arrayExpressionRST =
+	    resolveExpression(*arrayAccessExpressionAST.array);
+	auto indexExpressionRST =
+	    resolveExpression(*arrayAccessExpressionAST.index);
+
+	auto arrayAccessExpressionRST =
+	    std::make_unique<syntax::rst::ArrayAccess>(syntax::rst::ArrayAccess(
+	        std::move(arrayExpressionRST), std::move(indexExpressionRST),
+	        arrayAccessExpressionAST.token));
+
+	expressionStack.push_back(std::move(arrayAccessExpressionRST));
 }
-void Resolver::visitArrayTypeExpression(const syntax::ast::ArrayType &value) {
-	messageBag.error(value.getToken(),
-	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
+void Resolver::visitArrayTypeExpression(
+    const syntax::ast::ArrayType &arrayTypeAST) {
+	auto subTypeRST = resolveExpression(*arrayTypeAST.subType);
+
+	auto arrayTypeRST =
+	    std::make_unique<syntax::rst::ArrayType>(syntax::rst::ArrayType(
+	        arrayTypeAST.isMutable, std::move(subTypeRST), arrayTypeAST.token));
+
+	expressionStack.push_back(std::move(arrayTypeRST));
 }
-void Resolver::visitTupleTypeExpression(const syntax::ast::TupleType &value) {
-	messageBag.error(value.getToken(),
-	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
+void Resolver::visitTupleTypeExpression(
+    const syntax::ast::TupleType &tupleTypeAST) {
+
+	std::vector<std::unique_ptr<syntax::rst::Expression>> subExpressionsRST;
+
+	for (const auto &subExpressionAST : tupleTypeAST.expressions) {
+		auto subExpressionRST = resolveExpression(*subExpressionAST);
+		subExpressionsRST.push_back(std::move(subExpressionRST));
+	}
+
+	auto tupleTypeRST =
+	    std::make_unique<syntax::rst::TupleType>(syntax::rst::TupleType(
+	        tupleTypeAST.isMutable, std::move(subExpressionsRST),
+	        tupleTypeAST.token));
+
+	expressionStack.push_back(std::move(tupleTypeRST));
 }
 void Resolver::visitPointerTypeExpression(
-    const syntax::ast::PointerType &value) {
-	messageBag.error(value.getToken(),
-	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
+    const syntax::ast::PointerType &pointerAST) {
+	auto subTypeExpr = resolveExpression(*pointerAST.subtype);
+
+	auto pointerRST =
+	    std::make_unique<syntax::rst::PointerType>(syntax::rst::PointerType(
+	        pointerAST.isMutable, std::move(subTypeExpr), pointerAST.token));
+
+	expressionStack.push_back(std::move(pointerRST));
 }
-void Resolver::visitNamedTypeExpression(const syntax::ast::NamedType &value) {
-	messageBag.error(value.getToken(),
-	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
+void Resolver::visitNamedTypeExpression(
+    const syntax::ast::NamedType &namedTypeAST) {
+
+	auto namedTypeRST = std::make_unique<syntax::rst::NamedType>(
+	    syntax::rst::NamedType(namedTypeAST.name, namedTypeAST.isMutable,
+	                           namedTypeAST.getToken()));
+
+	expressionStack.push_back(std::move(namedTypeRST));
 }
-void Resolver::visitCastExpression(const syntax::ast::Cast &value) {
-	messageBag.error(value.getToken(),
-	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
+void Resolver::visitCastExpression(const syntax::ast::Cast &castExpressionAST) {
+
+	auto expressionRST = resolveExpression(*castExpressionAST.expression);
+	auto typeRST = resolveExpression(*castExpressionAST.type);
+
+	auto castExpressionRST = std::make_unique<syntax::rst::Cast>(
+	    syntax::rst::Cast(std::move(expressionRST), std::move(typeRST),
+	                      castExpressionAST.token));
+
+	expressionStack.push_back(std::move(castExpressionRST));
 }
-void Resolver::visitParameterExpression(const syntax::ast::Parameter &value) {
-	messageBag.error(value.getToken(),
-	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
+void Resolver::visitParameterExpression(
+    const syntax::ast::Parameter &parameterAST) {
+	auto typeRST = resolveExpression(*parameterAST.type);
+
+	auto parameterRST =
+	    std::make_unique<syntax::rst::Parameter>(syntax::rst::Parameter(
+	        parameterAST.name, std::move(typeRST), parameterAST.token));
+	expressionStack.push_back(std::move(parameterRST));
 }
 
 std::unique_ptr<syntax::rst::Statement>

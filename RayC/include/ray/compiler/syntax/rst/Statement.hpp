@@ -12,8 +12,8 @@ namespace ray::compiler::syntax::rst {
 using CompDirectiveAttr = std::unordered_map<std::string, std::string>;
 
 class Block;
-class TerminalExpr;
-class ExpressionStmt;
+class TerminalExpression;
+class ExpressionStatement;
 class Function;
 class If;
 class Jump;
@@ -25,8 +25,8 @@ class Placeholder;
 class StatementVisitor {
   public:
 	virtual void visitBlockStatement(const Block& value) = 0;
-	virtual void visitTerminalExprStatement(const TerminalExpr& value) = 0;
-	virtual void visitExpressionStmtStatement(const ExpressionStmt& value) = 0;
+	virtual void visitTerminalExpressionStatement(const TerminalExpression& value) = 0;
+	virtual void visitExpressionStatementStatement(const ExpressionStatement& value) = 0;
 	virtual void visitFunctionStatement(const Function& value) = 0;
 	virtual void visitIfStatement(const If& value) = 0;
 	virtual void visitJumpStatement(const Jump& value) = 0;
@@ -64,39 +64,39 @@ class Block : public Statement {
 
 	const Token& getToken() const override { return token; };
 };
-class TerminalExpr : public Statement {
+class TerminalExpression : public Statement {
   public:
 	std::optional<std::unique_ptr<Expression>> expression;
 	Token token;
 
-	TerminalExpr(std::optional<std::unique_ptr<Expression>> expression,
+	TerminalExpression(std::optional<std::unique_ptr<Expression>> expression,
 	        Token token):
 		expression(std::move(expression)),
 		token(std::move(token)) {}
 
 	void visit(StatementVisitor& visitor) const override {
-		visitor.visitTerminalExprStatement(*this);
+		visitor.visitTerminalExpressionStatement(*this);
 	}
 
-	const std::string_view variantName() const override { return "TerminalExpr"; }
+	const std::string_view variantName() const override { return "TerminalExpression"; }
 
 	const Token& getToken() const override { return token; };
 };
-class ExpressionStmt : public Statement {
+class ExpressionStatement : public Statement {
   public:
 	std::unique_ptr<Expression> expression;
 	Token token;
 
-	ExpressionStmt(std::unique_ptr<Expression> expression,
+	ExpressionStatement(std::unique_ptr<Expression> expression,
 	        Token token):
 		expression(std::move(expression)),
 		token(std::move(token)) {}
 
 	void visit(StatementVisitor& visitor) const override {
-		visitor.visitExpressionStmtStatement(*this);
+		visitor.visitExpressionStatementStatement(*this);
 	}
 
-	const std::string_view variantName() const override { return "ExpressionStmt"; }
+	const std::string_view variantName() const override { return "ExpressionStatement"; }
 
 	const Token& getToken() const override { return token; };
 };

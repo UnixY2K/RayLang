@@ -85,8 +85,8 @@ void TypeChecker::visitBlockStatement(const syntax::ast::Block &block) {
 	typeStack.reserve(typeStack.size() + types.size());
 	typeStack.insert(typeStack.end(), types.begin(), types.end());
 }
-void TypeChecker::visitTerminalExprStatement(
-    const syntax::ast::TerminalExpr &terminalExpr) {
+void TypeChecker::visitTerminalExpressionStatement(
+    const syntax::ast::TerminalExpression &terminalExpr) {
 	if (terminalExpr.expression.has_value()) {
 		const auto &returnExpr = *terminalExpr.expression.value();
 		auto returnType = resolveType(returnExpr);
@@ -104,8 +104,8 @@ void TypeChecker::visitTerminalExprStatement(
 
 	typeStack.push_back(lang::Type::defineStmtType());
 }
-void TypeChecker::visitExpressionStmtStatement(
-    const syntax::ast::ExpressionStmt &exprStmt) {
+void TypeChecker::visitExpressionStatementStatement(
+    const syntax::ast::ExpressionStatement &exprStmt) {
 	// an expression statement consumes the type and does not return a type
 	// so it is an type of size 0 that cannot even be instatiated nor used
 	resolveType(*exprStmt.expression);

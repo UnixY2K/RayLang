@@ -123,16 +123,16 @@ void CTranspilerGenerator::visitBlockStatement(
 		}
 	}
 }
-void CTranspilerGenerator::visitTerminalExprStatement(
-    const syntax::ast::TerminalExpr &terminalExpr) {
+void CTranspilerGenerator::visitTerminalExpressionStatement(
+    const syntax::ast::TerminalExpression &terminalExpr) {
 	if (terminalExpr.expression.has_value()) {
 		output << std::format("{}return ", currentIdent());
 		terminalExpr.expression->get()->visit(*this);
 		output << std::format(";\n");
 	}
 }
-void CTranspilerGenerator::visitExpressionStmtStatement(
-    const syntax::ast::ExpressionStmt &expression) {
+void CTranspilerGenerator::visitExpressionStatementStatement(
+    const syntax::ast::ExpressionStatement &expression) {
 	output << currentIdent();
 	expression.expression->visit(*this);
 	output << std::format(";\n", currentIdent());

@@ -162,19 +162,19 @@ def main():
              "ray/compiler/syntax/ast/Expression.hpp"
             ],
             ["CompDirectiveAttr = std::unordered_map<std::string, std::string>"],
-            ["Block			= std::vector<std::unique_ptr<Statement>> statements",
-             "TerminalExpr	= std::optional<std::unique_ptr<Expression>> expression",
-             "ExpressionStmt= std::unique_ptr<Expression> expression",
-             "Function		= Token name, bool publicVisibility, std::vector<Parameter> params, std::optional<std::unique_ptr<Statement>> body, std::unique_ptr<ast::Expression> returnType",
-			 "TraitMethod 	= Token name, bool publicVisibility, std::vector<Parameter> params, std::optional<std::unique_ptr<Statement>> body, std::unique_ptr<ast::Expression> returnType",
-             "If			= std::unique_ptr<Expression> condition, std::unique_ptr<Statement> thenBranch, std::optional<std::unique_ptr<Statement>> elseBranch",
-             "Jump			= Token keyword, std::optional<std::unique_ptr<Expression>> returnValue",
-             "VarDecl		= Token name, std::unique_ptr<Expression> type, bool is_mutable, std::optional<std::unique_ptr<Expression>> initializer",
-             "Member		= Token name, std::unique_ptr<Expression> type, bool is_mutable, std::optional<std::unique_ptr<Expression>> initializer",
-             "While			= std::unique_ptr<Expression> condition, std::unique_ptr<Statement> body",
-             "Struct		= Token name, bool publicVisibility, bool declaration, std::vector<Member> members, std::vector<bool> memberVisibility",
-			 "Trait			= Token name, bool publicVisibility, std::vector<TraitMethod> methods",
-             "CompDirective	= Token name, CompDirectiveAttr values, std::unique_ptr<Statement> child"
+            ["Block					= std::vector<std::unique_ptr<Statement>> statements",
+             "TerminalExpression	= std::optional<std::unique_ptr<Expression>> expression",
+             "ExpressionStatement	= std::unique_ptr<Expression> expression",
+             "Function				= Token name, bool publicVisibility, std::vector<Parameter> params, std::optional<std::unique_ptr<Statement>> body, std::unique_ptr<ast::Expression> returnType",
+			 "TraitMethod 			= Token name, bool publicVisibility, std::vector<Parameter> params, std::optional<std::unique_ptr<Statement>> body, std::unique_ptr<ast::Expression> returnType",
+             "If					= std::unique_ptr<Expression> condition, std::unique_ptr<Statement> thenBranch, std::optional<std::unique_ptr<Statement>> elseBranch",
+             "Jump					= Token keyword, std::optional<std::unique_ptr<Expression>> returnValue",
+             "VarDecl				= Token name, std::unique_ptr<Expression> type, bool is_mutable, std::optional<std::unique_ptr<Expression>> initializer",
+             "Member				= Token name, std::unique_ptr<Expression> type, bool is_mutable, std::optional<std::unique_ptr<Expression>> initializer",
+             "While					= std::unique_ptr<Expression> condition, std::unique_ptr<Statement> body",
+             "Struct				= Token name, bool publicVisibility, bool declaration, std::vector<Member> members, std::vector<bool> memberVisibility",
+			 "Trait					= Token name, bool publicVisibility, std::vector<TraitMethod> methods",
+             "CompDirective			= Token name, CompDirectiveAttr values, std::unique_ptr<Statement> child"
             ])
 
 
