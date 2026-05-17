@@ -145,9 +145,18 @@ void Resolver::visitVarDeclStatement(
 
 	statementStack.push_back(std::move(varDeclStatementRST));
 }
-void Resolver::visitMemberStatement(const syntax::ast::Member &value) {
-	messageBag.error(value.getToken(),
-	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
+void Resolver::visitMemberStatement(const syntax::ast::Member &memberAST) {
+
+	auto expressionTypeRST = resolveExpression(*memberAST.type);
+	auto initializerExpressionRST =
+	    memberAST.initializer.transform([&](const auto &initializerAST) {
+		    return resolveExpression(*initializerAST);
+	    });
+	auto memberRST = std::make_unique<syntax::rst::Member>(syntax::rst::Member(
+	    memberAST.name, std::move(expressionTypeRST), memberAST.is_mutable,
+	    std::move(initializerExpressionRST), memberAST.getToken()));
+
+	statementStack.push_back(std::move(memberRST));
 }
 void Resolver::visitWhileStatement(const syntax::ast::While &whileAST) {
 

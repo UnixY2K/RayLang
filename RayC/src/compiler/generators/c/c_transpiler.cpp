@@ -39,7 +39,7 @@ void CTranspilerGenerator::resolve(
 
 	output << "#include <ray/ray_definitions.h>\n";
 	output << "#ifdef __cplusplus\n";
-	output << "RAY_C_LINKAGE {\n";
+	output << "RAYLANG_C_LINKAGE {\n";
 	output << "#endif\n";
 
 	std::string currentModule;
@@ -67,10 +67,10 @@ void CTranspilerGenerator::resolve(
 	     currentSourceUnit.get().getFunctions()) {
 		// main should be extern c++
 		if (functionDeclaration.mangledName == "main") {
-			output << "RAY_DEFAULT_LINKAGE ";
+			output << "RAYLANG_DEFAULT_LINKAGE ";
 		}
 		if (!functionDeclaration.publicVisibility) {
-			output << "RAYLANG_MACRO_LINK_LOCAL ";
+			output << "RAYLANG_LINK_LOCAL ";
 			output << "static ";
 		}
 		visitType(functionDeclaration.signature.returnType);
@@ -166,12 +166,12 @@ void CTranspilerGenerator::visitFunctionStatement(
 		output << identTabs;
 		// main has special rules to linking that we must follow
 		if (functionName == "main") {
-			output << "RAY_DEFAULT_LINKAGE ";
+			output << "RAYLANG_DEFAULT_LINKAGE ";
 		} else {
 			if (function.publicVisibility) {
-				output << "RAYLANG_MACRO_LINK_EXPORT ";
+				output << "RAYLANG_LINK_EXPORT ";
 			} else {
-				output << "RAYLANG_MACRO_LINK_LOCAL ";
+				output << "RAYLANG_LINK_LOCAL ";
 				output << "static ";
 			}
 		}
