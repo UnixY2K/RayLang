@@ -1,5 +1,6 @@
 #pragma once
 #include <ray/compiler/syntax/rst/Expression.hpp>
+#include <ray/compiler/directives/compilerDirective.hpp>
 #include <unordered_map>
 #include <string>
 #include <vector>
@@ -107,6 +108,7 @@ class Function : public Statement {
 	std::vector<Parameter> params;
 	std::optional<std::unique_ptr<Statement>> body;
 	std::unique_ptr<rst::Expression> returnType;
+	std::vector<std::unique_ptr<directive::CompilerDirective>> compilerDirectives;
 	Token token;
 
 	Function(Token name,
@@ -114,12 +116,14 @@ class Function : public Statement {
 	        std::vector<Parameter> params,
 	        std::optional<std::unique_ptr<Statement>> body,
 	        std::unique_ptr<rst::Expression> returnType,
+	        std::vector<std::unique_ptr<directive::CompilerDirective>> compilerDirectives,
 	        Token token):
 		name(std::move(name)),
 		publicVisibility(std::move(publicVisibility)),
 		params(std::move(params)),
 		body(std::move(body)),
 		returnType(std::move(returnType)),
+		compilerDirectives(std::move(compilerDirectives)),
 		token(std::move(token)) {}
 
 	void visit(StatementVisitor& visitor) const override {

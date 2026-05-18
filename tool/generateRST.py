@@ -147,12 +147,12 @@ def main():
          "PlaceHolder   = "
 		]) 
     defineRST(outputDir, "Statement", "ray::compiler::syntax::rst",
-        ["ray/compiler/syntax/rst/Expression.hpp", "unordered_map", "string", "vector", "optional"],
+        ["ray/compiler/syntax/rst/Expression.hpp", "ray/compiler/directives/compilerDirective.hpp", "unordered_map", "string", "vector", "optional"],
         ["CompDirectiveAttr = std::unordered_map<std::string, std::string>"],
         ["Block					= std::vector<std::unique_ptr<Statement>> statements",
          "TerminalExpression	= std::optional<std::unique_ptr<Expression>> expression",
          "ExpressionStatement	= std::unique_ptr<Expression> expression",
-         "Function				= Token name, bool publicVisibility, std::vector<Parameter> params, std::optional<std::unique_ptr<Statement>> body, std::unique_ptr<rst::Expression> returnType",
+         "Function				= Token name, bool publicVisibility, std::vector<Parameter> params, std::optional<std::unique_ptr<Statement>> body, std::unique_ptr<rst::Expression> returnType, std::vector<std::unique_ptr<directive::CompilerDirective>> compilerDirectives",
          "If					= std::unique_ptr<Expression> condition, std::unique_ptr<Statement> thenBranch, std::optional<std::unique_ptr<Statement>> elseBranch",
          "Jump					= Token keyword, std::optional<std::unique_ptr<Expression>> returnValue",
          "VarDecl				= Token name, std::unique_ptr<Expression> type, bool is_mutable, std::optional<std::unique_ptr<Expression>> initializer",

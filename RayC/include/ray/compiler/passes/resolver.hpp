@@ -114,7 +114,7 @@ class Resolver : public syntax::ast::StatementVisitor,
 	lang::Type findTypeInfo(const std::string_view lexeme);
 
 	std::optional<lang::FunctionDeclaration>
-	resolveFunctionDeclaration(const syntax::ast::Function &functionExpr);
+	resolveFunctionDeclaration(const syntax::rst::Function &functionExpr);
 
 	std::vector<std::unique_ptr<directive::CompilerDirective>>
 	collectCompilerDirectives();
