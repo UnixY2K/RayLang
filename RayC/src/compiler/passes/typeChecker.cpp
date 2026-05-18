@@ -583,7 +583,7 @@ void TypeChecker::visitVariableExpression(
 	                 std::format("unknown symbol '{}'",
 	                             variableExprAst.getToken().getLexeme()));
 
-	// we did not find anything so do not bother and report an error
+	typeStack.push_back(lang::Type::defineUnknownType());
 	return;
 }
 void TypeChecker::visitIntrinsicExpression(
