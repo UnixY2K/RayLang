@@ -15,6 +15,7 @@
 #include <ray/compiler/parser/parser.hpp>
 
 #include <ray/compiler/passes/resolver.hpp>
+#include <ray/compiler/passes/rst/typeChecker.hpp>
 #include <ray/compiler/passes/typeChecker.hpp>
 #include <ray/compiler/passes/typeScanner.hpp>
 
@@ -122,7 +123,7 @@ int main(int argc, char **argv) {
 			for (auto error : messageBag.getErrors()) {
 				std::cerr << error;
 			}
-			//return 1;
+			// return 1;
 		}
 
 		passes::TypeScanner typeScanner(sourceFile, *dataModel, moduleStore);
@@ -140,10 +141,11 @@ int main(int argc, char **argv) {
 			return 1;
 		}
 
-		passes::TypeChecker typeChecker(sourceFile, moduleStore, *dataModel,
-		                                typeScanner.getCurrentSourceUnit());
+		passes::rst::TypeChecker typeChecker(
+		    sourceFile, moduleStore, *dataModel,
+		    typeScanner.getCurrentSourceUnit());
 
-		typeChecker.resolve(statements);
+		typeChecker.resolve(resolver.getRootBlock());
 		if (typeChecker.hasFailed()) {
 			std::cerr << std::format("{}: {}\n", "Error"_red,
 			                         "typeChecker failed");
