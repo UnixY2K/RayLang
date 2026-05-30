@@ -1,6 +1,7 @@
 #pragma once
 #include <optional>
 #include <string>
+#include <string_view>
 #include <unordered_map>
 #include <vector>
 
@@ -29,8 +30,12 @@ class Scope {
 
   public:
 	Scope(
+	    const std::string_view scopeName,
 	    std::optional<std::reference_wrapper<Scope>> parentScope = std::nullopt)
-	    : parentScope(parentScope) {}
+	    : scopeName(scopeName), parentScope(parentScope) {}
+	Scope(
+	    std::optional<std::reference_wrapper<Scope>> parentScope = std::nullopt)
+	    : Scope("", parentScope) {}
 
 	bool bindStruct(Struct &&structRef);
 	bool bindTrait(Trait &&traitRef);

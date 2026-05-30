@@ -25,6 +25,8 @@ class SourceUnit {
   public:
 	Scope rootScope;
 
+	SourceUnit() : rootScope("root") {}
+
 	[[nodiscard("must check declaration result")]]
 	bool declareLocalVariable(const Symbol symbol, Scope &scope);
 	[[nodiscard("must check declaration result")]]

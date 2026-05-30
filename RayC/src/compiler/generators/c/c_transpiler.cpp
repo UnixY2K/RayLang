@@ -31,7 +31,8 @@ CTranspilerGenerator::CTranspilerGenerator(
     std::string filePath, const lang::SourceUnit &sourceUnit,
     const environment::DataModel &dataModel)
     : messageBag("C-BACKEND", filePath), currentSourceUnit(sourceUnit),
-      currentScope(sourceUnit.rootScope), currentDataModel(dataModel) {}
+      currentScope(currentSourceUnit.get().rootScope),
+      currentDataModel(dataModel) {}
 
 void CTranspilerGenerator::resolve(
     const std::vector<std::unique_ptr<syntax::ast::Statement>> &statement) {
@@ -800,24 +801,20 @@ CTranspilerGenerator::findCallableName(const syntax::ast::Call &callable,
 	// once the type checker performs the binding
 
 	std::string key(name);
-	const std::string functionName =
+	const auto functionName =
 	    currentScope.get()
 	        .findLocalFunctionDeclaration(name)
-	        .transform(
-	            [&callable](
-	                const std::vector<
-	                    util::soft_reference<lang::FunctionDeclaration>>
-	                    &functionDeclarations) -> std::optional<std::string> {
-		            for (const auto &function : functionDeclarations) {
-			            const auto &functionObject = function.getObject();
-			            if (functionObject->get().signature.parameters.size() ==
-			                callable.arguments.size()) {
-				            return functionObject->get().mangledName;
-			            }
-		            }
-		            return std::nullopt;
-	            })
-	        ->value_or(std::string());
+	        .transform([&callable](const auto &functionDeclarations) {
+		        for (const auto &function : functionDeclarations) {
+			        const auto &functionObject = function.getObject();
+			        if (functionObject->get().signature.parameters.size() ==
+			            callable.arguments.size()) {
+				        return functionObject->get().mangledName;
+			        }
+		        }
+		        return std::string();
+	        })
+	        .value_or(std::string());
 
 	return functionName;
 }
