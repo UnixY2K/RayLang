@@ -4,7 +4,9 @@
 
 namespace ray::compiler::passes::rst {
 
-void TypeChecker::resolve(syntax::rst::Block &rootBlock) {}
+void TypeChecker::resolve(syntax::rst::Block &rootBlock) {
+	rootBlock.visit(*this);
+}
 
 bool TypeChecker::hasFailed() const { return messageBag.failed(); }
 const std::vector<std::string> TypeChecker::getErrors() const {
@@ -14,9 +16,21 @@ const std::vector<std::string> TypeChecker::getWarnings() const {
 	return messageBag.getWarnings();
 }
 
-void TypeChecker::visitBlockStatement(const syntax::rst::Block &value) {
-	messageBag.error(value.getToken(),
-	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
+void TypeChecker::visitBlockStatement(const syntax::rst::Block &blockRST) {
+
+	std::vector<lang::Type> types;
+	for (const auto &statement : blockRST.statements) {
+		auto stmtTypes = resolveTypes(*statement);
+		types.reserve(types.size() + stmtTypes.size());
+		for (const auto &type : stmtTypes) {
+			if (type != lang::Type::defineStmtType()) {
+				types.push_back(type);
+			}
+		}
+	}
+
+	typeStack.reserve(typeStack.size() + types.size());
+	typeStack.insert(typeStack.end(), types.begin(), types.end());
 }
 void TypeChecker::visitTerminalExpressionStatement(
     const syntax::rst::TerminalExpression &value) {
@@ -151,6 +165,70 @@ void TypeChecker::visitPlaceHolderExpression(
     const syntax::rst::PlaceHolder &value) {
 	messageBag.error(value.getToken(),
 	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
+}
+
+std::optional<lang::Type>
+TypeChecker::resolveType(const syntax::rst::Statement &statement) {
+	auto types = resolveTypes(statement);
+
+	if (types.size() > 1) {
+		// check wether the return types coerce
+		for (size_t i = 1; i < types.size(); i++) {
+			if (!types[0].coercercesInto(types[i])) {
+				messageBag.bug(
+				    statement.getToken(),
+				    std::format(
+				        "'{}' return types does not match for expected '{}' vs '{}'",
+				        statement.variantName(), types[0].name, types[i].name));
+			}
+		}
+	}
+
+	return types.size() > 0 ? std::optional<lang::Type>(types[0])
+	                        : std::nullopt;
+}
+std::optional<lang::Type>
+TypeChecker::resolveType(const syntax::rst::Expression &expression) {
+	auto types = resolveTypes(expression);
+
+	if (types.size() > 1) {
+		messageBag.bug(expression.getToken(),
+		               std::format("'{}' yield multiple values",
+		                           expression.variantName()));
+	}
+
+	return types.size() > 0 ? std::optional<lang::Type>(types[0])
+	                        : std::nullopt;
+}
+std::vector<lang::Type>
+TypeChecker::resolveTypes(const syntax::rst::Statement &statement) {
+	std::vector<lang::Type> returnTypes;
+	size_t tsSize = typeStack.size();
+	statement.visit(*this);
+	while (typeStack.size() > tsSize) {
+		auto returnType = typeStack.back();
+		typeStack.pop_back();
+		returnTypes.push_back(returnType);
+	}
+	return returnTypes;
+}
+std::vector<lang::Type>
+TypeChecker::resolveTypes(const syntax::rst::Expression &expression) {
+	std::vector<lang::Type> returnTypes;
+	size_t tsSize = typeStack.size();
+	expression.visit(*this);
+	while (typeStack.size() > tsSize) {
+		auto returnType = typeStack.back();
+		typeStack.pop_back();
+		returnTypes.push_back(returnType);
+	}
+	if (returnTypes.size() < 1) {
+		messageBag.bug(expression.getToken(),
+		               std::format("'{}' did not resolve a type",
+		                           expression.variantName()));
+		typeStack.push_back(lang::Type::defineUnknownType());
+	}
+	return returnTypes;
 }
 
 } // namespace ray::compiler::passes::rst

@@ -134,7 +134,7 @@ int main(int argc, char **argv) {
 		// errors
 		if (typeScanner.hasFailed()) {
 			std::cerr << std::format("{}: {}\n", "Error"_red,
-			                         "typeChecker failed");
+			                         "typeScanner failed");
 			for (auto typeScannerError : typeScanner.getErrors()) {
 				std::cerr << typeScannerError;
 			}

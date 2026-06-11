@@ -81,5 +81,14 @@ class TypeChecker : public syntax::rst::StatementVisitor,
 	void visitParameterExpression(const syntax::rst::Parameter &value) override;
 	void
 	visitPlaceHolderExpression(const syntax::rst::PlaceHolder &value) override;
+
+	std::optional<lang::Type>
+	resolveType(const syntax::rst::Statement &statement);
+	std::optional<lang::Type>
+	resolveType(const syntax::rst::Expression &expression);
+	std::vector<lang::Type>
+	resolveTypes(const syntax::rst::Statement &statement);
+	std::vector<lang::Type>
+	resolveTypes(const syntax::rst::Expression &expression);
 };
 } // namespace ray::compiler::passes::rst
