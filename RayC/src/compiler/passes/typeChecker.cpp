@@ -129,7 +129,7 @@ void TypeChecker::visitFunctionStatement(
 			                 "could not declare function");
 		}
 
-		auto definition = lang::FunctionDefinition{
+		auto definition = lang::AstFunctionDefinition{
 		    .declaration = functionDeclaration,
 		    .function = functionExprAst,
 		};

@@ -107,7 +107,7 @@ class Function : public Statement {
 	bool publicVisibility;
 	std::vector<Parameter> params;
 	std::optional<std::unique_ptr<Statement>> body;
-	std::unique_ptr<rst::Expression> returnType;
+	std::optional<std::unique_ptr<rst::Expression>> returnType;
 	std::vector<std::unique_ptr<directive::CompilerDirective>> compilerDirectives;
 	Token token;
 
@@ -115,7 +115,7 @@ class Function : public Statement {
 	        bool publicVisibility,
 	        std::vector<Parameter> params,
 	        std::optional<std::unique_ptr<Statement>> body,
-	        std::unique_ptr<rst::Expression> returnType,
+	        std::optional<std::unique_ptr<rst::Expression>> returnType,
 	        std::vector<std::unique_ptr<directive::CompilerDirective>> compilerDirectives,
 	        Token token):
 		name(std::move(name)),

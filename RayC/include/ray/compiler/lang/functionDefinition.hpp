@@ -1,12 +1,13 @@
 #pragma once
 #include <functional>
 #include <string>
+#include <vector>
 
 #include <ray/compiler/environment/dataModel/dataModel.hpp>
 #include <ray/compiler/lang/type.hpp>
 #include <ray/compiler/syntax/ast/Statement.hpp>
+#include <ray/compiler/syntax/rst/Statement.hpp>
 #include <ray/util/copy_ptr.hpp>
-#include <vector>
 
 namespace ray::compiler::lang {
 
@@ -47,6 +48,11 @@ struct FunctionDeclaration {
 };
 
 struct FunctionDefinition {
+	FunctionDeclaration declaration;
+	std::reference_wrapper<const syntax::rst::Function> function;
+};
+
+struct AstFunctionDefinition {
 	FunctionDeclaration declaration;
 	std::reference_wrapper<const syntax::ast::Function> function;
 };

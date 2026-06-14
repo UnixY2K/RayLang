@@ -1,4 +1,6 @@
 #pragma once
+#include "ray/compiler/lang/functionDefinition.hpp"
+#include <optional>
 #include <ray/compiler/environment/dataModel/dataModel.hpp>
 #include <ray/compiler/lang/moduleStore.hpp>
 #include <ray/compiler/lang/sourceUnit.hpp>
@@ -90,5 +92,15 @@ class TypeChecker : public syntax::rst::StatementVisitor,
 	resolveTypes(const syntax::rst::Statement &statement);
 	std::vector<lang::Type>
 	resolveTypes(const syntax::rst::Expression &expression);
+
+	std::optional<lang::FunctionDeclaration>
+	resolveFunctionDeclaration(const syntax::rst::Function &functionRST);
+
+	// gets the current scope
+	lang::Scope &getCurrentScope();
+	// makes a new child scope and sets it as the root scope
+	lang::Scope &makeChildScope();
+	// pops until found the passed scope, if not found makes an error
+	bool popScope(lang::Scope &scope);
 };
 } // namespace ray::compiler::passes::rst
