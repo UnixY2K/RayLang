@@ -93,6 +93,9 @@ class TypeChecker : public syntax::rst::StatementVisitor,
 	std::vector<lang::Type>
 	resolveTypes(const syntax::rst::Expression &expression);
 
+	std::optional<lang::Type> findScalarTypeInfo(const std::string_view lexeme);
+	std::optional<lang::Type> findTypeInfo(const std::string_view lexeme);
+
 	std::optional<lang::FunctionDeclaration>
 	resolveFunctionDeclaration(const syntax::rst::Function &functionRST);
 

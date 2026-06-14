@@ -386,7 +386,7 @@ void TypeChecker::visitWhileStatement(const syntax::ast::While &whileStmt) {
 }
 void TypeChecker::visitStructStatement(const syntax::ast::Struct &structAst) {
 
-	std::string currentModule;
+	std::string currentModule = "root";
 
 	std::optional<directive::LinkageDirective> linkageDirective;
 
@@ -456,7 +456,7 @@ void TypeChecker::visitStructStatement(const syntax::ast::Struct &structAst) {
 	typeStack.push_back(structType);
 }
 void TypeChecker::visitTraitStatement(const syntax::ast::Trait &traitAst) {
-	std::string currentModule;
+	std::string currentModule = "root";
 
 	std::string traitName = std::string(traitAst.name.getLexeme());
 	std::string mangledTraitName =
@@ -1130,7 +1130,7 @@ TypeChecker::findTypeInfo(const std::string_view typeName) {
 std::optional<lang::FunctionDeclaration>
 TypeChecker::resolveFunctionDeclaration(
     const syntax::ast::Function &functionAst) {
-	std::string currentModule;
+	std::string currentModule = "root";
 
 	std::optional<directive::LinkageDirective> linkageDirective;
 

@@ -43,7 +43,7 @@ void CTranspilerGenerator::resolve(
 	output << "RAYLANG_C_LINKAGE {\n";
 	output << "#endif\n";
 
-	std::string currentModule;
+	std::string currentModule = "root";
 	output << "#pragma region struct_declarations\n";
 	for (auto const &[structId, structDeclaration] :
 	     currentSourceUnit.get().getStructs()) {
@@ -141,7 +141,7 @@ void CTranspilerGenerator::visitExpressionStatementStatement(
 void CTranspilerGenerator::visitFunctionStatement(
     const syntax::ast::Function &function) {
 	std::string identTabs = currentIdent();
-	std::string currentModule;
+	std::string currentModule = "root";
 
 	std::optional<directive::LinkageDirective> linkageDirective;
 
@@ -296,7 +296,7 @@ void CTranspilerGenerator::visitWhileStatement(
 }
 void CTranspilerGenerator::visitStructStatement(
     const syntax::ast::Struct &value) {
-	std::string currentModule;
+	std::string currentModule = "root";
 	std::optional<directive::LinkageDirective> linkageDirective;
 
 	for (size_t i = directivesStack.size(); i > top; i--) {

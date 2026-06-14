@@ -92,6 +92,7 @@ void Resolver::visitFunctionStatement(
 	}
 
 	auto returnExpression = resolveExpression(*functionAST.returnType);
+	functionRST->returnType = std::move(returnExpression);
 
 	auto functionBodyRST = functionAST.body.transform(
 	    [&](const auto &bodyPtr) { return resolveStatement(*bodyPtr); });
@@ -201,7 +202,7 @@ void Resolver::visitStructStatement(const syntax::ast::Struct &structAst) {
 	}
 
 	auto structName = structAst.name.getLexeme();
-	std::string currentModule;
+	std::string currentModule = "root";
 	std::string mangledStructName =
 	    passes::mangling::NameMangler().mangleStruct(currentModule, structAst,
 	                                                 linkageDirective);
@@ -587,7 +588,7 @@ Resolver::resolveExpressions(const syntax::ast::Expression &expressionAST) {
 
 std::optional<lang::FunctionDeclaration> Resolver::resolveFunctionDeclaration(
     const syntax::rst::Function &functionExprRST) {
-	std::string currentModule;
+	std::string currentModule = "root";
 
 	const auto &compilerDirectives = functionExprRST.compilerDirectives;
 	std::optional<directive::LinkageDirective> linkageDirective;

@@ -85,7 +85,7 @@ void TypeScanner::visitExpressionStatementStatement(
 }
 void TypeScanner::visitFunctionStatement(
     const syntax::ast::Function &functionAst) {
-	std::string currentModule;
+	std::string currentModule = "root";
 
 	std::optional<directive::LinkageDirective> linkageDirective;
 
@@ -115,7 +115,7 @@ void TypeScanner::visitFunctionStatement(
 }
 void TypeScanner::visitTraitMethodStatement(
     const syntax::ast::TraitMethod &methodAst) {
-	std::string currentModule;
+	std::string currentModule = "root";
 
 	std::optional<directive::LinkageDirective> linkageDirective;
 
@@ -217,7 +217,7 @@ void TypeScanner::visitStructStatement(const syntax::ast::Struct &structAst) {
 	}
 
 	auto structName = structAst.name.getLexeme();
-	std::string currentModule;
+	std::string currentModule = "root";
 	std::string mangledStructName =
 	    passes::mangling::NameMangler().mangleStruct(currentModule, structAst,
 	                                                 linkageDirective);
@@ -289,7 +289,7 @@ void TypeScanner::visitTraitStatement(const syntax::ast::Trait &traitAst) {
 	}
 
 	auto traitName = traitAst.name.getLexeme();
-	std::string currentModule;
+	std::string currentModule = "root";
 	std::string mangledStructName =
 	    passes::mangling::NameMangler().mangleTrait(currentModule, traitAst);
 
@@ -761,7 +761,7 @@ void TypeScanner::discoverStruct(const syntax::ast::Struct &structAst) {
 	}
 
 	std::string structName = std::string(structAst.name.getLexeme());
-	std::string currentModule;
+	std::string currentModule = "root";
 	std::string mangledStructName =
 	    passes::mangling::NameMangler().mangleStruct(currentModule, structAst,
 	                                                 linkageDirective);

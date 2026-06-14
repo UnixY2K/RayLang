@@ -1,3 +1,4 @@
+#include "ray/compiler/lang/type.hpp"
 #include <format>
 
 #include <ray/compiler/directives/linkageDirective.hpp>
@@ -224,18 +225,35 @@ void TypeChecker::visitPointerTypeExpression(
 	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
 }
 void TypeChecker::visitNamedTypeExpression(
-    const syntax::rst::NamedType &value) {
-	messageBag.error(value.getToken(),
-	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
+    const syntax::rst::NamedType &typeRST) {
+	auto result = findTypeInfo(typeRST.name.lexeme);
+	if (result.has_value()) {
+		lang::Type obtainedType = result.value();
+		obtainedType.isMutable = typeRST.isMutable;
+		typeStack.push_back(obtainedType);
+	} else {
+		messageBag.error(
+		    typeRST.getToken(),
+		    std::format("type not found for {}", typeRST.name.lexeme));
+		typeStack.push_back(lang::Type::defineUnknownType());
+	}
 }
 void TypeChecker::visitCastExpression(const syntax::rst::Cast &value) {
 	messageBag.error(value.getToken(),
 	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
 }
 void TypeChecker::visitParameterExpression(
-    const syntax::rst::Parameter &value) {
-	messageBag.error(value.getToken(),
-	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
+    const syntax::rst::Parameter &parameterRST) {
+	const auto type = resolveType(*parameterRST.type.get());
+	if (!type.has_value()) {
+		messageBag.error(
+		    parameterRST.getToken(),
+		    std::format("parameter '{}' does not have a known type",
+		                parameterRST.name.getLexeme()));
+		return;
+	}
+
+	typeStack.push_back(type.value());
 }
 void TypeChecker::visitPlaceHolderExpression(
     const syntax::rst::PlaceHolder &value) {
@@ -307,10 +325,31 @@ TypeChecker::resolveTypes(const syntax::rst::Expression &expression) {
 	return returnTypes;
 }
 
+std::optional<lang::Type>
+TypeChecker::findScalarTypeInfo(const std::string_view lexeme) {
+	return currentDataModel.get().findScalarType(lexeme);
+}
+std::optional<lang::Type>
+TypeChecker::findTypeInfo(const std::string_view typeName) {
+	auto scalarType = findScalarTypeInfo(typeName);
+	if (scalarType) {
+		return scalarType;
+	}
+	// a defined type in the source unit cannot shadow a primitive/scalar type
+	auto foundStruct = currentSourceUnit.findStruct(typeName, currentScope);
+	if (foundStruct.has_value()) {
+		return currentDataModel.get().defineStructType(
+		    foundStruct.value().get().structID, foundStruct.value().get().name,
+		    0);
+	}
+
+	return std::nullopt;
+}
+
 std::optional<lang::FunctionDeclaration>
 TypeChecker::resolveFunctionDeclaration(
     const syntax::rst::Function &functionRST) {
-	std::string currentModule;
+	std::string currentModule = "root";
 
 	std::optional<directive::LinkageDirective> linkageDirective;
 
@@ -359,12 +398,14 @@ TypeChecker::resolveFunctionDeclaration(
 		});
 	}
 
-	auto functionReturnType = functionRST.returnType.transform(
-	    [&](const auto &returnType) { return resolveType(*returnType); });
-	if (!functionReturnType.has_value()) {
-		return std::nullopt;
-	}
-	auto returnType = functionReturnType->value();
+	auto functionReturnType =
+	    functionRST.returnType
+	        .transform([&](const auto &returnType) {
+		        return resolveType(*returnType)
+		            .value_or(lang::Type::defineUnknownType());
+	        }).value_or(lang::Type::defineUnknownType());
+
+	auto returnType = functionReturnType;
 	switch (returnType.getKind()) {
 
 	case lang::TypeKind::abstract: {
