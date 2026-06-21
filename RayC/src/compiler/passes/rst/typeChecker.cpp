@@ -114,7 +114,7 @@ void TypeChecker::visitFunctionStatement(
 				messageBag.error(
 				    functionRST.body->get()->getToken(),
 				    std::format(
-				        "inner body return type does not match with function return: '{}' vs '{}'",
+				        "unmatched body return type with (body)'{}' vs (declaration)'{}'",
 				        type.name,
 				        functionDeclaration.signature.returnType.name));
 			}
@@ -355,8 +355,9 @@ void TypeChecker::visitCallExpression(const syntax::rst::Call &callExprRst) {
 				messageBag.error(
 				    callerParamExpr.getToken(),
 				    std::format(
-				        "argument #'{}' does not coerce the expected type {} vs {}",
-				        i, callerParamType.name, calleeParamType.name));
+				        "argument #{} '{}' does not coerce the expected type (caller){} vs (callee){}",
+				        i, callExprRst.getToken().getLexeme(),
+				        callerParamType.name, calleeParamType.name));
 				continue;
 			}
 		}
