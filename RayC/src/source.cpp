@@ -143,7 +143,7 @@ int main(int argc, char **argv) {
 
 		passes::rst::TypeChecker typeChecker(
 		    sourceFile, moduleStore, *dataModel,
-		    typeScanner.getCurrentSourceUnit());
+		    resolver.getCurrentSourceUnit());
 
 		typeChecker.resolve(resolver.getRootBlock());
 		if (typeChecker.hasFailed()) {

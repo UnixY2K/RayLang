@@ -1,7 +1,8 @@
-#include "ray/compiler/lang/type.hpp"
+#include <cassert>
 #include <format>
 
 #include <ray/compiler/directives/linkageDirective.hpp>
+#include <ray/compiler/lang/type.hpp>
 #include <ray/compiler/passes/rst/typeChecker.hpp>
 #include <ray/compiler/passes/symbol_mangler.hpp>
 
@@ -36,9 +37,23 @@ void TypeChecker::visitBlockStatement(const syntax::rst::Block &blockRST) {
 	typeStack.insert(typeStack.end(), types.begin(), types.end());
 }
 void TypeChecker::visitTerminalExpressionStatement(
-    const syntax::rst::TerminalExpression &value) {
-	messageBag.error(value.getToken(),
-	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
+    const syntax::rst::TerminalExpression &terminalExpressionRST) {
+	if (terminalExpressionRST.expression.has_value()) {
+		const auto &returnExpr = *terminalExpressionRST.expression.value();
+		auto returnType = resolveType(returnExpr);
+		if (returnType.has_value()) {
+			typeStack.push_back(returnType.value());
+		} else {
+			messageBag.error(
+			    returnExpr.getToken(),
+			    std::format("{} child expression did not yield a value '{}'",
+			                terminalExpressionRST.variantName(),
+			                returnExpr.variantName()));
+		}
+		return;
+	}
+
+	typeStack.push_back(lang::Type::defineStmtType());
 }
 void TypeChecker::visitExpressionStatementStatement(
     const syntax::rst::ExpressionStatement &value) {
@@ -56,25 +71,14 @@ void TypeChecker::visitFunctionStatement(
 		                functionRST.name.getLexeme()));
 	} else {
 		const auto functionDeclaration = declarationResult.value();
-		if (!currentSourceUnit.declareFunction(functionDeclaration,
-		                                       currentScope)) {
-			messageBag.error(functionRST.getToken(),
-			                 "could not declare function");
-		}
-
-		auto definition = lang::FunctionDefinition{
-		    .declaration = functionDeclaration,
-		    .function = functionRST,
-		};
-		std::vector<util::copy_ptr<lang::Type>> paramTypes;
-		for (const auto &param : functionDeclaration.signature.parameters) {
-			paramTypes.push_back(
-			    util::copy_ptr<lang::Type>(param.parameterType));
-		}
 
 		// declaration was already defined, so it does not require to be defined
 		// again, just the body
 		if (functionRST.body.has_value()) {
+			auto definition = lang::FunctionDefinition{
+			    .declaration = functionDeclaration,
+			    .function = functionRST,
+			};
 
 			lang::Scope &parentScope = currentScope;
 			currentScope = currentScope.get().makeChildScope();
@@ -118,14 +122,50 @@ void TypeChecker::visitFunctionStatement(
 			currentScope = parentScope;
 		}
 
+		std::vector<util::copy_ptr<lang::Type>> paramTypes;
+		for (const auto &param : functionDeclaration.signature.parameters) {
+			paramTypes.push_back(
+			    util::copy_ptr<lang::Type>(param.parameterType));
+		}
+
 		auto functionType = currentDataModel.get().defineFunctionType(
 		    functionDeclaration.signature.returnType, paramTypes);
 		typeStack.push_back(functionType);
 	}
 }
-void TypeChecker::visitIfStatement(const syntax::rst::If &value) {
-	messageBag.error(value.getToken(),
-	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
+void TypeChecker::visitIfStatement(const syntax::rst::If &ifStmtRST) {
+	auto conditionType = resolveType(*ifStmtRST.condition);
+	if (!conditionType.has_value()) {
+		messageBag.error(ifStmtRST.condition->getToken(),
+		                 "non boolean condition");
+	} else {
+		auto boolType = findScalarTypeInfo("bool");
+		// for now lets just stricly validate if is the same
+		// TODO: enable coercions
+		if (!(conditionType->coercercesInto(boolType.value()))) {
+			messageBag.error(ifStmtRST.condition->getToken(),
+			                 "condition does not coerce into a bool type");
+		}
+	}
+	auto thenRType = resolveType(*ifStmtRST.thenBranch);
+	auto thenType = thenRType.has_value() ? thenRType.value()
+	                                      : lang::Type::defineStmtType();
+	if (ifStmtRST.elseBranch.has_value()) {
+		auto elseRType = resolveType(*ifStmtRST.elseBranch.value());
+		auto elseType = elseRType.has_value() ? elseRType.value()
+		                                      : lang::Type::defineStmtType();
+		// the types should match
+		if (!(thenType == elseType)) {
+			messageBag.error(
+			    ifStmtRST.getToken(),
+			    std::format("code branches have different types ({}|{})",
+			                thenType.name, elseType.name));
+		}
+	}
+
+	// return whatever our internal evaluation yield
+
+	typeStack.push_back(thenType);
 }
 void TypeChecker::visitJumpStatement(const syntax::rst::Jump &value) {
 	messageBag.error(value.getToken(),
@@ -154,9 +194,55 @@ void TypeChecker::visitPlaceholderStatement(
 }
 
 // expression visitor
-void TypeChecker::visitVariableExpression(const syntax::rst::Variable &value) {
-	messageBag.error(value.getToken(),
-	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
+void TypeChecker::visitVariableExpression(
+    const syntax::rst::Variable &variableExprRst) {
+	auto foundVariable =
+	    getCurrentScope().findVariable(variableExprRst.name.lexeme);
+	if (foundVariable.has_value()) {
+		typeStack.push_back(foundVariable.value().getObject()->get().innerType);
+		return;
+	}
+
+	// we just keep a cound of at most 2 to see if we return its type pointer or
+	// an overloadedFunction Type
+	lang::Type functionType;
+	for (const auto &functionDeclarationRef :
+	     currentSourceUnit.findFunctionDeclarations(variableExprRst.name.lexeme,
+	                                                getCurrentScope())) {
+		assert(functionDeclarationRef.getObject().has_value());
+		const auto &functionDeclaration =
+		    functionDeclarationRef.getObject()->get();
+		if (!functionType.isInitialized()) {
+			// TODO: resolve function signature before getting its type
+			// as it may have not been evaluated yet
+			functionType =
+			    functionDeclaration.signature.getFunctionType(currentDataModel);
+		} else {
+			functionType =
+			    functionDeclaration.signature.getOverloadedFunctionType(
+			        currentDataModel);
+			break;
+		}
+	}
+
+	if (functionType.isInitialized()) {
+		typeStack.push_back(functionType);
+		return;
+	}
+
+	// check if is a known type
+	auto foundType = findTypeInfo(variableExprRst.name.getLexeme());
+	if (foundType.has_value()) {
+		typeStack.push_back(foundType.value());
+		return;
+	}
+
+	messageBag.error(variableExprRst.getToken(),
+	                 std::format("unknown symbol '{}'",
+	                             variableExprRst.getToken().getLexeme()));
+
+	typeStack.push_back(lang::Type::defineUnknownType());
+	return;
 }
 void TypeChecker::visitIntrinsicExpression(
     const syntax::rst::Intrinsic &value) {
@@ -167,13 +253,143 @@ void TypeChecker::visitAssignExpression(const syntax::rst::Assign &value) {
 	messageBag.error(value.getToken(),
 	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
 }
-void TypeChecker::visitBinaryExpression(const syntax::rst::Binary &value) {
-	messageBag.error(value.getToken(),
-	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
+void TypeChecker::visitBinaryExpression(
+    const syntax::rst::Binary &binaryExprRst) {
+	auto leftType = resolveType(*binaryExprRst.left);
+	auto rightType = resolveType(*binaryExprRst.right);
+
+	if (!(leftType.has_value() && rightType.has_value())) {
+		if (!leftType.has_value()) {
+			messageBag.error(
+			    binaryExprRst.left->getToken(),
+			    std::format("left expression did not yield a value"));
+		}
+
+		if (!rightType.has_value()) {
+			messageBag.error(
+			    binaryExprRst.right->getToken(),
+			    std::format("right expression did not yield a value"));
+		}
+		return;
+	}
+
+	auto op = binaryExprRst.op;
+	// TODO: once we start supporting operator overload this should be done
+	// by lookup of the overloads and get the return type of it
+	switch (op.type) {
+	case Token::TokenType::TOKEN_PLUS:
+	case Token::TokenType::TOKEN_MINUS:
+	case Token::TokenType::TOKEN_STAR:
+	case Token::TokenType::TOKEN_SLASH:
+	case Token::TokenType::TOKEN_PERCENT:
+	case Token::TokenType::TOKEN_AMPERSAND:
+	case Token::TokenType::TOKEN_PIPE:
+	case Token::TokenType::TOKEN_CARET:
+	case Token::TokenType::TOKEN_LESS_LESS:
+		// currently assume the the type is the same as left expression
+		// type
+		typeStack.push_back(leftType.value());
+		break;
+	case Token::TokenType::TOKEN_GREAT_GREAT:
+	case Token::TokenType::TOKEN_EQUAL_EQUAL:
+	case Token::TokenType::TOKEN_BANG_EQUAL:
+	case Token::TokenType::TOKEN_LESS:
+	case Token::TokenType::TOKEN_GREAT:
+	case Token::TokenType::TOKEN_LESS_EQUAL:
+	case Token::TokenType::TOKEN_GREAT_EQUAL:
+		typeStack.push_back(findScalarTypeInfo("bool").value());
+		break;
+	default:
+		messageBag.error(binaryExprRst.op,
+		                 std::format("'{}' is not a supported binary operation",
+		                             op.getLexeme()));
+	}
 }
-void TypeChecker::visitCallExpression(const syntax::rst::Call &value) {
-	messageBag.error(value.getToken(),
-	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
+void TypeChecker::visitCallExpression(const syntax::rst::Call &callExprRst) {
+	auto calleeTypeResult = resolveType(*callExprRst.callee);
+	if (!calleeTypeResult.has_value()) {
+		messageBag.error(
+		    callExprRst.getToken(),
+		    std::format("unknown callee type for {}",
+		                callExprRst.callee->getToken().getLexeme()));
+		return;
+	}
+	auto calleeType = calleeTypeResult.value();
+
+	switch (calleeType.getKind()) {
+
+	case lang::TypeKind::pointer: {
+		if (!calleeType.signature.has_value()) {
+			messageBag.error(
+			    callExprRst.getToken(),
+			    std::format(
+			        "expression does not have a valid signature for '{}'",
+			        callExprRst.getToken().getLexeme()));
+			break;
+		}
+		// valid signature
+		if (callExprRst.arguments.size() != calleeType.signature->size()) {
+			messageBag.error(
+			    callExprRst.getToken(),
+			    std::format(
+			        "parameter number mismatch for '{}', provided {}, but {} were required",
+			        callExprRst.getToken().getLexeme(),
+			        callExprRst.arguments.size(),
+			        calleeType.signature->size()));
+		}
+		for (size_t i = 0; i < callExprRst.arguments.size(); i++) {
+			const auto &callerParamExpr = *callExprRst.arguments[i];
+			const auto callerParamTypeResult = resolveType(callerParamExpr);
+			const auto &calleeParamType = *calleeType.signature.value()[i];
+
+			if (!callerParamTypeResult.has_value()) {
+				messageBag.error(
+				    callerParamExpr.getToken(),
+				    std::format("argument does not yield a valid type for '{}'",
+				                callerParamExpr.getToken().getLexeme()));
+				return;
+			}
+			const auto &callerParamType = callerParamTypeResult.value();
+
+			if (!callerParamType.coercercesInto(calleeParamType)) {
+				messageBag.error(
+				    callerParamExpr.getToken(),
+				    std::format(
+				        "argument #'{}' does not coerce the expected type {} vs {}",
+				        i, callerParamType.name, calleeParamType.name));
+				continue;
+			}
+		}
+
+		break;
+	}
+	case lang::TypeKind::scalar:
+	case lang::TypeKind::aggregate: {
+		messageBag.error(callExprRst.getToken(), "not valid call expression");
+		break;
+	}
+	case lang::TypeKind::abstract: {
+		if (calleeType.overloaded) {
+			messageBag.bug(
+			    callExprRst.getToken(),
+			    std::format("overloaded functions not supported yet"));
+			return;
+		}
+		break;
+	}
+	default: {
+		messageBag.bug(callExprRst.getToken(), "unsupported type call");
+		break;
+	}
+	}
+	if (!calleeType.subtype.has_value()) {
+		messageBag.bug(
+		    callExprRst.getToken(),
+		    std::format("expression does not have a return type for '{}'",
+		                callExprRst.getToken().getLexeme()));
+		return;
+	}
+	typeStack.push_back(*calleeType.subtype.value());
 }
 void TypeChecker::visitIntrinsicCallExpression(
     const syntax::rst::IntrinsicCall &value) {
@@ -188,9 +404,53 @@ void TypeChecker::visitGroupingExpression(const syntax::rst::Grouping &value) {
 	messageBag.error(value.getToken(),
 	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
 }
-void TypeChecker::visitLiteralExpression(const syntax::rst::Literal &value) {
-	messageBag.error(value.getToken(),
-	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
+void TypeChecker::visitLiteralExpression(
+    const syntax::rst::Literal &literalRST) {
+	switch (literalRST.kind.type) {
+
+	case Token::TokenType::TOKEN_STRING: {
+		const auto baseType =
+		    currentDataModel.get().findScalarType("u8").value();
+		// literal strings are not mutable
+		const auto arrayType =
+		    currentDataModel.get().definePointerType(baseType, false);
+		typeStack.push_back(arrayType);
+		break;
+	}
+	case Token::TokenType::TOKEN_NUMBER: {
+		auto type = currentDataModel.get().getNumberLiteralType(
+		    literalRST.token.lexeme);
+		if (!type.has_value()) {
+			messageBag.error(
+			    literalRST.getToken(),
+			    std::format("'{}' cannot be hold in any scalar number type",
+			                literalRST.getToken().getLexeme()));
+			return;
+		}
+		typeStack.push_back(type.value());
+		break;
+	}
+	case Token::TokenType::TOKEN_CHAR: {
+		// any char token is a u8 character, not a unicode encode character
+		// so only ASCII characters allowed
+		const std::string_view character = literalRST.value;
+		if (character.size() > 1) {
+			messageBag.error(
+			    literalRST.getToken(),
+			    std::format("'{}' is not a valid char literal type",
+			                literalRST.getToken().getLexeme()));
+			break;
+		}
+		typeStack.push_back(
+		    currentDataModel.get().findScalarType("u8").value());
+		break;
+	}
+	default:
+		messageBag.error(literalRST.getToken(),
+		                 std::format("'{}' is not a valid literal type",
+		                             literalRST.getToken().getLexeme()));
+		break;
+	}
 }
 void TypeChecker::visitLogicalExpression(const syntax::rst::Logical &value) {
 	messageBag.error(value.getToken(),
@@ -335,7 +595,8 @@ TypeChecker::findTypeInfo(const std::string_view typeName) {
 	if (scalarType) {
 		return scalarType;
 	}
-	// a defined type in the source unit cannot shadow a primitive/scalar type
+	// a defined type in the source unit cannot shadow a primitive/scalar
+	// type
 	auto foundStruct = currentSourceUnit.findStruct(typeName, currentScope);
 	if (foundStruct.has_value()) {
 		return currentDataModel.get().defineStructType(
@@ -403,7 +664,8 @@ TypeChecker::resolveFunctionDeclaration(
 	        .transform([&](const auto &returnType) {
 		        return resolveType(*returnType)
 		            .value_or(lang::Type::defineUnknownType());
-	        }).value_or(lang::Type::defineUnknownType());
+	        })
+	        .value_or(lang::Type::defineUnknownType());
 
 	auto returnType = functionReturnType;
 	switch (returnType.getKind()) {
@@ -436,8 +698,8 @@ TypeChecker::resolveFunctionDeclaration(
 		break;
 	}
 	case lang::TypeKind::pointer: {
-		// pointer type was already evaluated and thus should be already a known
-		// type
+		// pointer type was already evaluated and thus should be already a
+		// known type
 		break;
 	}
 	default: {
