@@ -102,11 +102,7 @@ SourceUnit::findStruct(const std::string_view structName,
 
 	auto foundStruct = currentScope.findLocalStruct(structName);
 	return foundStruct
-	    .transform([](util::soft_reference<Struct> structRef) {
-		    std::reference_wrapper<const Struct> valueRef =
-		        structRef.getObject().value();
-		    return structRef.getObject().value();
-	    })
+	    .transform([](auto structRef) { return structRef.getObject().value(); })
 	    .or_else([&] {
 		    return currentScope.getParentScope().and_then(
 		        [&](Scope &parentScope) {
@@ -120,11 +116,7 @@ SourceUnit::findTrait(const std::string_view traitName,
                       const Scope &currentScope) const {
 	auto foundTrait = currentScope.findLocalTrait(traitName);
 	return foundTrait
-	    .transform([](util::soft_reference<Trait> traitRef) {
-		    std::reference_wrapper<const Trait> valueRef =
-		        traitRef.getObject().value();
-		    return traitRef.getObject().value();
-	    })
+	    .transform([](auto traitRef) { return traitRef.getObject().value(); })
 	    .or_else([&] {
 		    return currentScope.getParentScope().and_then(
 		        [&](Scope &parentScope) {
