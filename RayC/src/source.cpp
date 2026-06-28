@@ -128,7 +128,7 @@ int main(int argc, char **argv) {
 
 		passes::TypeScanner typeScanner(sourceFile, *dataModel, moduleStore);
 
-		typeScanner.resolve(statements);
+		typeScanner.resolve(resolver.getRootBlock());
 		// TODO: once a propper typeScanner is set in place replace this so
 		// type checker errors can be reported along with the previous
 		// errors
@@ -141,9 +141,9 @@ int main(int argc, char **argv) {
 			return 1;
 		}
 
-		passes::rst::TypeChecker typeChecker(
-		    sourceFile, moduleStore, *dataModel,
-		    resolver.getCurrentSourceUnit());
+		passes::rst::TypeChecker typeChecker(sourceFile, moduleStore,
+		                                     *dataModel,
+		                                     resolver.getCurrentSourceUnit());
 
 		typeChecker.resolve(resolver.getRootBlock());
 		if (typeChecker.hasFailed()) {
