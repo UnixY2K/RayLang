@@ -7,6 +7,7 @@
 #include <optional>
 #include <ranges>
 #include <string_view>
+#include <vector>
 
 #include <ray/compiler/passes/typeScanner.hpp>
 
@@ -107,6 +108,25 @@ void TypeScanner::visitFunctionStatement(
 	        currentModule, functionRst, linkageDirective);
 
 	auto returnType = resolveType(*functionRst.returnType->get());
+	// update the function signature
+	auto &functionsTable = currentSourceUnit.getFunctions();
+	if (!functionsTable.contains(functionRst.functionId)) {
+		messageBag.bug(
+		    functionRst.getToken(),
+		    std::format("could not find internal function via ID#{} for '{}'",
+		                functionRst.functionId, mangledFunctionName));
+	} else {
+		auto &functionDeclaration = functionsTable.at(functionRst.functionId);
+		functionDeclaration.signature.returnType = returnType;
+		// also resolve the function parameter list
+		std::vector<lang::FunctionParameter> resolvedParameters;
+		for (size_t index = 0; index < functionRst.params.size(); index++) {
+			const auto &parameter = functionRst.params.at(index);
+			auto paramType = resolveType(parameter);
+			functionDeclaration.signature.parameters.at(index).parameterType = paramType;
+		}
+	}
+
 	if (functionRst.body.has_value()) {
 		discardTypes(*functionRst.body->get());
 	}

@@ -16,7 +16,7 @@ class TypeChecker : public syntax::rst::StatementVisitor,
 
 	std::vector<lang::Type> typeStack;
 
-	lang::SourceUnit currentSourceUnit;
+	lang::SourceUnit &currentSourceUnit;
 	std::reference_wrapper<lang::Scope> currentScope;
 	std::reference_wrapper<const environment::DataModel> currentDataModel;
 
@@ -25,7 +25,7 @@ class TypeChecker : public syntax::rst::StatementVisitor,
   public:
 	TypeChecker(std::string filePath, const lang::ModuleStore &moduleStore,
 	            const environment::DataModel &dataModel,
-	            const lang::SourceUnit &sourceUnit)
+	            lang::SourceUnit &sourceUnit)
 	    : messageBag("TYPE-CHECKER", filePath), typeStack(),
 	      currentSourceUnit(sourceUnit),
 	      currentScope(currentSourceUnit.rootScope),

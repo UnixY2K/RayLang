@@ -39,7 +39,7 @@ bool Scope::bindTrait(Trait &&traitObj) {
 bool Scope::bindFunctionDeclaration(
     std::string_view name,
     util::soft_reference<FunctionDeclaration> &functionDeclarationRef) {
-	auto functionDeclaration = functionDeclarationRef.getObject()->get();
+	auto &functionDeclaration = functionDeclarationRef.getObject()->get();
 	if (!functions.contains(functionDeclaration.name)) {
 		functions[functionDeclaration.name] =
 		    std::vector<util::soft_reference<FunctionDeclaration>>{};

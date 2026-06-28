@@ -26,12 +26,14 @@ class SourceUnit {
 	Scope rootScope;
 
 	SourceUnit() : rootScope("root") {}
+	SourceUnit(const SourceUnit&) = delete;
 
 	[[nodiscard("must check declaration result")]]
 	bool declareLocalVariable(const Symbol symbol, Scope &scope);
 	[[nodiscard("must check declaration result")]]
-	bool declareFunction(const FunctionDeclaration &functionDeclaration,
-	                     Scope &scope);
+	std::optional<std::reference_wrapper<const FunctionDeclaration>>
+	declareFunction(const FunctionDeclaration &functionDeclaration,
+	                Scope &scope);
 	[[nodiscard("must check struct declaration result")]]
 	bool declareStruct(const Struct &structobj, Scope &scope);
 	[[nodiscard("must check struct declaration result")]]
@@ -49,6 +51,9 @@ class SourceUnit {
 
 	const std::unordered_map<size_t, FunctionDeclaration> &
 	getFunctions() const {
+		return functions;
+	}
+	std::unordered_map<size_t, FunctionDeclaration> &getFunctions() {
 		return functions;
 	}
 	const std::unordered_map<size_t, Struct> &getStructs() const {

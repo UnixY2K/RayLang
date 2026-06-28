@@ -112,8 +112,10 @@ int main(int argc, char **argv) {
 		bool handled = false;
 
 		lang::ModuleStore moduleStore;
+		lang::SourceUnit sourceUnit;
 
-		passes::Resolver resolver(sourceFile, *dataModel, moduleStore);
+		passes::Resolver resolver(sourceFile, *dataModel, sourceUnit,
+		                          moduleStore);
 		resolver.resolve(statements);
 
 		if (resolver.hasFailed()) {
@@ -126,7 +128,8 @@ int main(int argc, char **argv) {
 			// return 1;
 		}
 
-		passes::TypeScanner typeScanner(sourceFile, *dataModel, moduleStore);
+		passes::TypeScanner typeScanner(sourceFile, *dataModel, sourceUnit,
+		                                moduleStore);
 
 		typeScanner.resolve(resolver.getRootBlock());
 		// TODO: once a propper typeScanner is set in place replace this so
@@ -141,9 +144,9 @@ int main(int argc, char **argv) {
 			return 1;
 		}
 
-		passes::rst::TypeChecker typeChecker(sourceFile, moduleStore,
-		                                     *dataModel,
-		                                     resolver.getCurrentSourceUnit());
+		passes::rst::TypeChecker typeChecker(
+		    sourceFile, moduleStore, *dataModel,
+		    sourceUnit);
 
 		typeChecker.resolve(resolver.getRootBlock());
 		if (typeChecker.hasFailed()) {

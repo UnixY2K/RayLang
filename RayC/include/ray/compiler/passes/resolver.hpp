@@ -29,7 +29,7 @@ class Resolver : public syntax::ast::StatementVisitor,
 
 	std::reference_wrapper<const environment::DataModel> currentDataModel;
 
-	lang::SourceUnit currentSourceUnit;
+	lang::SourceUnit &currentSourceUnit;
 	lang::ModuleStore &currentModuleStore;
 	std::reference_wrapper<lang::Scope> currentScope;
 
@@ -40,9 +40,9 @@ class Resolver : public syntax::ast::StatementVisitor,
 
   public:
 	Resolver(std::string filePath, const environment::DataModel &dataModel,
-	         lang::ModuleStore &moduleStore)
+	         lang::SourceUnit &sourceUnit, lang::ModuleStore &moduleStore)
 	    : messageBag("RESOLVER", filePath), directivesStack(),
-	      currentDataModel(dataModel), currentSourceUnit(),
+	      currentDataModel(dataModel), currentSourceUnit(sourceUnit),
 	      currentModuleStore(moduleStore),
 	      currentScope(currentSourceUnit.rootScope),
 	      rootBlock({}, Token::makeEOFToken()) {}
@@ -116,7 +116,7 @@ class Resolver : public syntax::ast::StatementVisitor,
 	lang::Type findTypeInfo(const std::string_view lexeme);
 
 	std::optional<lang::FunctionDeclaration>
-	resolveFunctionDeclaration(const syntax::rst::Function &functionExpr);
+	makeFunctionDeclaration(const syntax::rst::Function &functionExpr);
 
 	std::vector<std::unique_ptr<directive::CompilerDirective>>
 	collectCompilerDirectives();

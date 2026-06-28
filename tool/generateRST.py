@@ -152,7 +152,7 @@ def main():
         ["Block					= std::vector<std::unique_ptr<Statement>> statements",
          "TerminalExpression	= std::optional<std::unique_ptr<Expression>> expression",
          "ExpressionStatement	= std::unique_ptr<Expression> expression",
-         "Function				= Token name, bool publicVisibility, std::vector<Parameter> params, std::optional<std::unique_ptr<Statement>> body, std::optional<std::unique_ptr<rst::Expression>> returnType, std::vector<std::unique_ptr<directive::CompilerDirective>> compilerDirectives",
+         "Function				= Token name, size_t functionId, bool publicVisibility, std::vector<Parameter> params, std::optional<std::unique_ptr<Statement>> body, std::optional<std::unique_ptr<rst::Expression>> returnType, std::vector<std::unique_ptr<directive::CompilerDirective>> compilerDirectives",
          "If					= std::unique_ptr<Expression> condition, std::unique_ptr<Statement> thenBranch, std::optional<std::unique_ptr<Statement>> elseBranch",
          "Jump					= Token keyword, std::optional<std::unique_ptr<Expression>> returnValue",
          "VarDecl				= Token name, std::unique_ptr<Expression> type, bool is_mutable, std::optional<std::unique_ptr<Expression>> initializer",

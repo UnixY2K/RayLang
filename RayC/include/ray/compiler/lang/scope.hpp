@@ -39,6 +39,7 @@ class Scope {
 
 	bool bindStruct(Struct &&structRef);
 	bool bindTrait(Trait &&traitRef);
+	
 	bool bindFunctionDeclaration(
 	    std::string_view name,
 	    util::soft_reference<FunctionDeclaration> &functionDeclarationRef);

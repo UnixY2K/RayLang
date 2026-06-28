@@ -23,10 +23,11 @@ bool SourceUnit::declareLocalVariable(const Symbol symbol, Scope &scope) {
 
 	return scope.declareLocalVariable(variableSoftRef);
 }
-bool SourceUnit::declareFunction(const FunctionDeclaration &functionDeclaration,
-                                 Scope &scope) {
+std::optional<std::reference_wrapper<const FunctionDeclaration>>
+SourceUnit::declareFunction(const FunctionDeclaration &functionDeclaration,
+                            Scope &scope) {
 	auto val =
-	    this->functions.insert(std::make_pair(nextId, functionDeclaration));
+	    this->functions.emplace(std::make_pair(nextId, functionDeclaration));
 	assert(val.second);
 	auto &functionDeclarationRef = val.first->second;
 	functionDeclarationRef.functionID = nextId++;
@@ -34,8 +35,11 @@ bool SourceUnit::declareFunction(const FunctionDeclaration &functionDeclaration,
 	    util::soft_reference<lang::FunctionDeclaration>{
 	        functionDeclarationRef.functionID, functionDeclarationRef};
 
-	return scope.bindFunctionDeclaration(functionDeclaration.name,
-	                                     functionDeclarationSoftRef);
+	if (scope.bindFunctionDeclaration(functionDeclarationRef.name,
+	                                  functionDeclarationSoftRef)) {
+		return functionDeclarationRef;
+	}
+	return std::nullopt;
 }
 bool SourceUnit::declareStruct(const Struct &structObj, Scope &scope) {
 	assert(structObj.opaque);

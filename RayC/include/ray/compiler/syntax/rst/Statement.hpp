@@ -104,6 +104,7 @@ class ExpressionStatement : public Statement {
 class Function : public Statement {
   public:
 	Token name;
+	size_t functionId;
 	bool publicVisibility;
 	std::vector<Parameter> params;
 	std::optional<std::unique_ptr<Statement>> body;
@@ -112,6 +113,7 @@ class Function : public Statement {
 	Token token;
 
 	Function(Token name,
+	        size_t functionId,
 	        bool publicVisibility,
 	        std::vector<Parameter> params,
 	        std::optional<std::unique_ptr<Statement>> body,
@@ -119,6 +121,7 @@ class Function : public Statement {
 	        std::vector<std::unique_ptr<directive::CompilerDirective>> compilerDirectives,
 	        Token token):
 		name(std::move(name)),
+		functionId(std::move(functionId)),
 		publicVisibility(std::move(publicVisibility)),
 		params(std::move(params)),
 		body(std::move(body)),

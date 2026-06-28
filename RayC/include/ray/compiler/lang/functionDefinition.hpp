@@ -45,6 +45,18 @@ struct FunctionDeclaration {
 	std::string mangledName;
 	bool publicVisibility;
 	FunctionSignature signature;
+
+	FunctionDeclaration(size_t functionID, std::string name,
+	                    std::string mangledName, bool publicVisibility,
+	                    FunctionSignature signature)
+	    : functionID(functionID), name(name), mangledName(mangledName),
+	      publicVisibility(publicVisibility), signature(signature) {};
+
+	FunctionDeclaration(const FunctionDeclaration &other)
+	    : functionID(other.functionID), name(other.name),
+	      mangledName(other.mangledName),
+	      publicVisibility(other.publicVisibility),
+	      signature(other.signature) {};
 };
 
 struct FunctionDefinition {

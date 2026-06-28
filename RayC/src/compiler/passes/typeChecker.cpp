@@ -122,7 +122,7 @@ void TypeChecker::visitFunctionStatement(
 		    std::format("could not resolve function declaration for '{}'",
 		                functionExprAst.name.getLexeme()));
 	} else {
-		const auto functionDeclaration = declarationResult.value();
+		const auto &functionDeclaration = declarationResult.value();
 		if (!currentSourceUnit.declareFunction(functionDeclaration,
 		                                       currentScope)) {
 			messageBag.error(functionExprAst.getToken(),
@@ -1234,17 +1234,15 @@ TypeChecker::resolveFunctionDeclaration(
 		return std::nullopt;
 	}
 
-	auto declaration = lang::FunctionDeclaration{
-	    .name = std::string(functionAst.name.getLexeme()),
-	    .mangledName = mangledFunctionName,
-	    .publicVisibility = functionAst.publicVisibility,
-	    .signature =
-	        lang::FunctionSignature{
-	            .returnType = returnType,
-	            .parameters = parameters,
-	        },
-	};
-	return declaration;
+	auto declaration = lang::FunctionDeclaration(
+	    0, std::string(functionAst.name.getLexeme()), mangledFunctionName,
+	    functionAst.publicVisibility,
+
+	    lang::FunctionSignature{
+	        .returnType = returnType,
+	        .parameters = parameters,
+	    });
+	return std::make_optional<lang::FunctionDeclaration>(declaration);
 }
 
 lang::Scope &TypeChecker::getCurrentScope() { return currentScope.get(); }

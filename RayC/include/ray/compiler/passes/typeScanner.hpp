@@ -26,15 +26,15 @@ class TypeScanner : public syntax::rst::StatementVisitor,
 
 	std::reference_wrapper<const environment::DataModel> currentDataModel;
 
-	lang::SourceUnit currentSourceUnit;
+	lang::SourceUnit &currentSourceUnit;
 	lang::ModuleStore &currentModuleStore;
 	std::reference_wrapper<lang::Scope> currentScope;
 
   public:
 	TypeScanner(std::string filePath, const environment::DataModel &dataModel,
-	            lang::ModuleStore &moduleStore)
+	            lang::SourceUnit &sourceUnit, lang::ModuleStore &moduleStore)
 	    : messageBag("TYPE-SCANNER", filePath), directivesStack(),
-	      currentDataModel(dataModel), currentSourceUnit(),
+	      currentDataModel(dataModel), currentSourceUnit(sourceUnit),
 	      currentModuleStore(moduleStore),
 	      currentScope(currentSourceUnit.rootScope) {}
 

@@ -1,6 +1,8 @@
+#include "ray/compiler/lang/functionDefinition.hpp"
 #include <algorithm>
 #include <cstddef>
 #include <format>
+#include <functional>
 #include <iterator>
 #include <memory>
 #include <optional>
@@ -82,8 +84,8 @@ void Resolver::visitFunctionStatement(
 	auto directives = collectCompilerDirectives();
 	auto functionRST =
 	    std::make_unique<syntax::rst::Function>(syntax::rst::Function(
-	        functionAST.name, functionAST.publicVisibility, {}, std::nullopt,
-	        {}, std::move(directives), functionAST.token));
+	        functionAST.name, -1, functionAST.publicVisibility, {},
+	        std::nullopt, {}, std::move(directives), functionAST.token));
 
 	for (const auto &paramAST : functionAST.params) {
 		auto paramExpression = resolveExpression(paramAST);
@@ -99,20 +101,27 @@ void Resolver::visitFunctionStatement(
 	    [&](const auto &bodyPtr) { return resolveStatement(*bodyPtr); });
 
 	functionRST->body = std::move(functionBodyRST);
-	auto declarationResult = resolveFunctionDeclaration(*functionRST);
+	auto createdDeclarationResult = makeFunctionDeclaration(*functionRST);
 
-	if (!declarationResult.has_value()) {
+	if (!createdDeclarationResult.has_value()) {
 		messageBag.error(
 		    functionAST.getToken(),
 		    std::format("could not resolve function declaration for '{}'",
 		                functionAST.name.getLexeme()));
 	} else {
-		const auto functionDeclaration = declarationResult.value();
-		if (!currentSourceUnit.declareFunction(functionDeclaration,
-		                                       currentScope)) {
+		const auto &functionDeclaration = createdDeclarationResult.value();
+		auto declarationResult = currentSourceUnit.declareFunction(
+		    functionDeclaration, currentScope);
+		if (!declarationResult.has_value()) {
 			messageBag.error(functionAST.getToken(),
 			                 "could not declare function");
 		}
+		functionRST->functionId =
+		    declarationResult
+		        .transform([](const auto &functionDeclaration) {
+			        return functionDeclaration.get().functionID;
+		        })
+		        .value_or(-1);
 	}
 	statementStack.push_back(std::move(functionRST));
 }
@@ -587,7 +596,7 @@ Resolver::resolveExpressions(const syntax::ast::Expression &expressionAST) {
 	return returnExpressions;
 }
 
-std::optional<lang::FunctionDeclaration> Resolver::resolveFunctionDeclaration(
+std::optional<lang::FunctionDeclaration> Resolver::makeFunctionDeclaration(
     const syntax::rst::Function &functionExprRST) {
 	std::string currentModule = "root";
 
@@ -615,16 +624,13 @@ std::optional<lang::FunctionDeclaration> Resolver::resolveFunctionDeclaration(
 	    passes::mangling::NameMangler().mangleFunction(
 	        currentModule, functionExprRST, linkageDirective);
 
-	auto declaration = lang::FunctionDeclaration{
-	    .name = std::string(functionExprRST.name.getLexeme()),
-	    .mangledName = mangledFunctionName,
-	    .publicVisibility = functionExprRST.publicVisibility,
-	    .signature =
-	        lang::FunctionSignature{
-	            .returnType = lang::Type::defineUnknownType(),
-	            .parameters = parameters,
-	        },
-	};
+	auto declaration = lang::FunctionDeclaration(
+	    0, std::string(functionExprRST.name.getLexeme()), mangledFunctionName,
+	    functionExprRST.publicVisibility,
+	    lang::FunctionSignature{
+	        .returnType = lang::Type::defineUnknownType(),
+	        .parameters = parameters,
+	    });
 	return declaration;
 }
 

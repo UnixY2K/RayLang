@@ -1,3 +1,4 @@
+#include "ray/compiler/lang/functionDefinition.hpp"
 #include <cassert>
 #include <format>
 
@@ -70,15 +71,11 @@ void TypeChecker::visitFunctionStatement(
 		    std::format("could not resolve function declaration for '{}'",
 		                functionRST.name.getLexeme()));
 	} else {
-		const auto functionDeclaration = declarationResult.value();
+		const auto &functionDeclaration = declarationResult.value();
 
 		// declaration was already defined, so it does not require to be defined
 		// again, just the body
 		if (functionRST.body.has_value()) {
-			auto definition = lang::FunctionDefinition{
-			    .declaration = functionDeclaration,
-			    .function = functionRST,
-			};
 
 			lang::Scope &parentScope = currentScope;
 			currentScope = currentScope.get().makeChildScope();
@@ -717,16 +714,14 @@ TypeChecker::resolveFunctionDeclaration(
 		return std::nullopt;
 	}
 
-	auto declaration = lang::FunctionDeclaration{
-	    .name = std::string(functionRST.name.getLexeme()),
-	    .mangledName = mangledFunctionName,
-	    .publicVisibility = functionRST.publicVisibility,
-	    .signature =
-	        lang::FunctionSignature{
-	            .returnType = returnType,
-	            .parameters = parameters,
-	        },
-	};
+	auto declaration = lang::FunctionDeclaration(
+	    0, std::string(functionRST.name.getLexeme()), mangledFunctionName,
+	    functionRST.publicVisibility,
+
+	    lang::FunctionSignature{
+	        .returnType = returnType,
+	        .parameters = parameters,
+	    });
 	return declaration;
 }
 
