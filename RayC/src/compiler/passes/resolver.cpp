@@ -1,4 +1,3 @@
-#include "ray/compiler/lang/functionDefinition.hpp"
 #include <algorithm>
 #include <cstddef>
 #include <format>
@@ -12,6 +11,7 @@
 
 #include <ray/compiler/directives/compilerDirective.hpp>
 #include <ray/compiler/directives/linkageDirective.hpp>
+#include <ray/compiler/lang/functionDefinition.hpp>
 #include <ray/compiler/lang/type.hpp>
 #include <ray/compiler/lexer/token.hpp>
 #include <ray/compiler/passes/symbol_mangler.hpp>

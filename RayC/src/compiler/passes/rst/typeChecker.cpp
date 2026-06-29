@@ -1,8 +1,8 @@
-#include "ray/compiler/lang/functionDefinition.hpp"
 #include <cassert>
 #include <format>
 
 #include <ray/compiler/directives/linkageDirective.hpp>
+#include <ray/compiler/lang/functionDefinition.hpp>
 #include <ray/compiler/lang/type.hpp>
 #include <ray/compiler/passes/rst/typeChecker.hpp>
 #include <ray/compiler/passes/symbol_mangler.hpp>
@@ -57,9 +57,9 @@ void TypeChecker::visitTerminalExpressionStatement(
 	typeStack.push_back(lang::Type::defineStmtType());
 }
 void TypeChecker::visitExpressionStatementStatement(
-    const syntax::rst::ExpressionStatement &value) {
-	messageBag.error(value.getToken(),
-	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
+    const syntax::rst::ExpressionStatement &expressionStatementRST) {
+	resolveType(*expressionStatementRST.expression);
+	typeStack.push_back(lang::Type::defineStmtType());
 }
 void TypeChecker::visitFunctionStatement(
     const syntax::rst::Function &functionRST) {
@@ -164,25 +164,121 @@ void TypeChecker::visitIfStatement(const syntax::rst::If &ifStmtRST) {
 
 	typeStack.push_back(thenType);
 }
-void TypeChecker::visitJumpStatement(const syntax::rst::Jump &value) {
-	messageBag.error(value.getToken(),
-	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
+void TypeChecker::visitJumpStatement(
+    const syntax::rst::Jump &jumpStatementRST) {
+	// if our expression is a return we need to return its optional value
+	// for anything else we do not care about its type
+	if (jumpStatementRST.token.type == Token::TokenType::TOKEN_RETURN) {
+		if (jumpStatementRST.returnValue.has_value()) {
+			auto type = resolveType(*jumpStatementRST.returnValue.value());
+			if (type.has_value()) {
+				typeStack.push_back(type.value());
+				return;
+			}
+		}
+	}
+	typeStack.push_back(lang::Type::defineStmtType());
 }
-void TypeChecker::visitVarDeclStatement(const syntax::rst::VarDecl &value) {
-	messageBag.error(value.getToken(),
-	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
+void TypeChecker::visitVarDeclStatement(
+    const syntax::rst::VarDecl &variableDeclRST) {
+	auto variableType = lang::Type{};
+
+	if (variableDeclRST.type->getToken().type !=
+	    Token::TokenType::TOKEN_UNINITIALIZED) {
+		const auto &explicitType = variableDeclRST.type;
+		std::string_view typeName = explicitType->getToken().lexeme;
+		auto foundType = resolveType(*explicitType);
+		if (!foundType.has_value()) {
+			messageBag.error(
+			    variableDeclRST.type->getToken(),
+			    std::format("'{}' does not name an existing type", typeName));
+		} else {
+			variableType = foundType.value();
+		}
+	}
+
+	if (variableDeclRST.initializer.has_value()) {
+		auto &initializer = *variableDeclRST.initializer.value().get();
+		auto initType = resolveType(initializer);
+		if (!initType.has_value()) {
+			messageBag.error(
+			    initializer.getToken(),
+			    std::format(
+			        "inialization expression did not yield a type for '{}'",
+			        initializer.getToken().getLexeme()));
+		} else {
+			const auto initializationType = initType.value();
+			if (!variableType.isInitialized()) {
+				variableType = initializationType;
+			} else if (!initializationType.coercercesInto(variableType)) {
+				messageBag.error(
+				    variableDeclRST.getToken(),
+				    std::format(
+				        "variable initialization type does not match with explicit type for '{}': '{}' vs '{}'",
+				        variableDeclRST.getToken().getLexeme(),
+				        variableType.name, initializationType.name));
+			}
+		}
+	}
+
+	if (variableType.isInitialized()) {
+		lang::Symbol variableSymbol{
+		    .name = variableDeclRST.name.lexeme,
+		    .mangledName = variableDeclRST.name.lexeme,
+		    .innerType = variableType,
+		    .type = lang::Symbol::SymbolType::Parameter,
+		    .internal = false,
+		};
+
+		if (!currentSourceUnit.declareLocalVariable(variableSymbol,
+		                                            getCurrentScope())) {
+			messageBag.bug(variableDeclRST.getToken(),
+			               std::format("variable '{} 'could not be defined",
+			                           variableSymbol.name));
+		}
+		// typeStack.push_back(variableType);
+		return;
+	}
+
+	messageBag.error(
+	    variableDeclRST.getToken(),
+	    "variable does not have a valid type assigned nor an valid initialization");
 }
 void TypeChecker::visitMemberStatement(const syntax::rst::Member &value) {
 	messageBag.error(value.getToken(),
 	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
 }
-void TypeChecker::visitWhileStatement(const syntax::rst::While &value) {
-	messageBag.error(value.getToken(),
-	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
+void TypeChecker::visitWhileStatement(
+    const syntax::rst::While &whileStatementRST) {
+	auto conditionType = resolveType(*whileStatementRST.condition);
+	if (!conditionType.has_value()) {
+		messageBag.error(whileStatementRST.condition->getToken(),
+		                 "non boolean condition");
+	} else {
+		auto boolType = findScalarTypeInfo("bool");
+		// for now lets just stricly validate if is the same
+		// TODO: enable coercions
+		if (!(conditionType->coercercesInto(boolType.value()))) {
+			messageBag.error(whileStatementRST.condition->getToken(),
+			                 "condition does not coerce into a bool type");
+		}
+	}
+
+	const auto type = resolveType(*whileStatementRST.body)
+	                      .value_or(lang::Type::defineStmtType());
+
+	typeStack.push_back(type);
 }
-void TypeChecker::visitStructStatement(const syntax::rst::Struct &value) {
-	messageBag.error(value.getToken(),
-	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
+void TypeChecker::visitStructStatement(const syntax::rst::Struct &structRST) {
+	std::string currentModule = "root";
+
+	std::optional<directive::LinkageDirective> linkageDirective;
+
+	std::string structName = std::string(structRST.name.getLexeme());
+	std::string mangledStructName =
+	    passes::mangling::NameMangler().mangleStruct(currentModule, structRST,
+	                                                 linkageDirective);
+	// TODO: verify members of the struct
 }
 void TypeChecker::visitPlaceholderStatement(
     const syntax::rst::Placeholder &value) {
@@ -246,9 +342,51 @@ void TypeChecker::visitIntrinsicExpression(
 	messageBag.error(value.getToken(),
 	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
 }
-void TypeChecker::visitAssignExpression(const syntax::rst::Assign &value) {
-	messageBag.error(value.getToken(),
-	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
+void TypeChecker::visitAssignExpression(
+    const syntax::rst::Assign &assignExpresssionRST) {
+	auto leftType = resolveType(*assignExpresssionRST.lhs);
+	auto rightType = resolveType(*assignExpresssionRST.rhs);
+
+	if (!(leftType.has_value() && rightType.has_value())) {
+		if (!leftType.has_value()) {
+			messageBag.error(
+			    assignExpresssionRST.lhs->getToken(),
+			    std::format("left expression did not yield a value"));
+		}
+
+		if (!rightType.has_value()) {
+			messageBag.error(
+			    assignExpresssionRST.rhs->getToken(),
+			    std::format("right expression did not yield a value"));
+			return;
+		}
+		return;
+	}
+
+	auto op = assignExpresssionRST.assignmentOp;
+	// TODO: once we start supporting operator overload this should be done by
+	// lookup of the overloads and get the return type of it
+	switch (op.type) {
+	case Token::TokenType::TOKEN_EQUAL:
+	case Token::TokenType::TOKEN_PLUS_EQUAL:
+	case Token::TokenType::TOKEN_MINUS_EQUAL:
+	case Token::TokenType::TOKEN_STAR_EQUAL:
+	case Token::TokenType::TOKEN_SLASH_EQUAL:
+	case Token::TokenType::TOKEN_PERCENT_EQUAL:
+	case Token::TokenType::TOKEN_AMPERSAND_EQUAL:
+	case Token::TokenType::TOKEN_PIPE_EQUAL:
+	case Token::TokenType::TOKEN_CARET_EQUAL:
+	case Token::TokenType::TOKEN_LESS_LESS_EQUAL:
+	case Token::TokenType::TOKEN_GREAT_GREAT_EQUAL:
+		// for now just return the same type as lhs
+		typeStack.push_back(leftType.value());
+		break;
+	default:
+		messageBag.error(
+		    op, std::format("'{}' is not a supported assignment operation",
+		                    op.getLexeme()));
+		break;
+	}
 }
 void TypeChecker::visitBinaryExpression(
     const syntax::rst::Binary &binaryExprRst) {
@@ -398,9 +536,14 @@ void TypeChecker::visitGetExpression(const syntax::rst::Get &value) {
 	messageBag.error(value.getToken(),
 	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
 }
-void TypeChecker::visitGroupingExpression(const syntax::rst::Grouping &value) {
-	messageBag.error(value.getToken(),
-	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
+void TypeChecker::visitGroupingExpression(
+    const syntax::rst::Grouping &groupingRST) {
+	// the type of the grouping is just the child of the inner expression
+	auto innerType = resolveType(*groupingRST.expression);
+
+	if (innerType.has_value()) {
+		typeStack.push_back(innerType.value());
+	}
 }
 void TypeChecker::visitLiteralExpression(
     const syntax::rst::Literal &literalRST) {
@@ -458,29 +601,87 @@ void TypeChecker::visitSetExpression(const syntax::rst::Set &value) {
 	messageBag.error(value.getToken(),
 	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
 }
-void TypeChecker::visitUnaryExpression(const syntax::rst::Unary &value) {
-	messageBag.error(value.getToken(),
-	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
+void TypeChecker::visitUnaryExpression(
+    const syntax::rst::Unary &unaryExpressionRST) {
+	// TODO: assume that it returns the same type until we implement operator
+	// overload
+	// where we will treat each operator a a function
+
+	auto innerType = resolveType(*unaryExpressionRST.expr);
+	if (!innerType.has_value()) {
+		messageBag.error(unaryExpressionRST.getToken(),
+		                 "inner expression did not yield a type");
+		return;
+	}
+	typeStack.push_back(innerType.value());
 }
 void TypeChecker::visitArrayAccessExpression(
-    const syntax::rst::ArrayAccess &value) {
-	messageBag.error(value.getToken(),
-	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
+    const syntax::rst::ArrayAccess &arrayAccessExpressionRST) {
+	const auto accessedTypeR = resolveType(*arrayAccessExpressionRST.array);
+	if (!accessedTypeR.has_value()) {
+		messageBag.error(
+		    arrayAccessExpressionRST.array->getToken(),
+		    std::format(
+		        "could not evaluate type for {}",
+		        arrayAccessExpressionRST.array->getToken().getLexeme()));
+		return;
+	}
+	const auto accessedType = accessedTypeR.value();
+	// TODO: actually resolve with operator overload its return type
+	if (!accessedType.subtype.has_value()) {
+		messageBag.error(
+		    arrayAccessExpressionRST.array->getToken(),
+		    std::format(
+		        "could not evaluate sub type for {}",
+		        arrayAccessExpressionRST.array->getToken().getLexeme()));
+		return;
+	}
+	const auto subType = accessedType.subtype.value();
+
+	typeStack.push_back(*subType);
 }
 void TypeChecker::visitArrayTypeExpression(
-    const syntax::rst::ArrayType &value) {
-	messageBag.error(value.getToken(),
-	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
+    const syntax::rst::ArrayType &arrayTypeRST) {
+	auto innerType = resolveType(*arrayTypeRST.subType)
+	                     .value_or(lang::Type::defineUnknownType());
+	if (innerType == lang::Type::defineUnknownType()) {
+		messageBag.bug(arrayTypeRST.subType->getToken(),
+		               std::format("inner array type is unknown for '{}'",
+		                           arrayTypeRST.subType->getToken().lexeme));
+		return;
+	}
+	if (innerType.getKind() == lang::TypeKind::abstract) {
+		messageBag.error(arrayTypeRST.subType->getToken(),
+		                 "arrays cannot hold abstract types");
+		return;
+	}
+	lang::Type arrayType = currentDataModel.get().definePointerType(
+	    innerType, arrayTypeRST.isMutable);
+	typeStack.push_back(arrayType);
 }
 void TypeChecker::visitTupleTypeExpression(
-    const syntax::rst::TupleType &value) {
-	messageBag.error(value.getToken(),
-	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
+    const syntax::rst::TupleType &tupleRST) {
+	if (tupleRST.expressions.empty()) {
+		auto unitType = currentDataModel.get().getUnitType();
+		unitType.isMutable = tupleRST.isMutable;
+		typeStack.push_back(unitType);
+		return;
+	}
+
+	messageBag.bug(tupleRST.getToken(),
+	               std::format("{} not implemented for non empty tuples",
+	                           __PRETTY_FUNCTION__));
 }
 void TypeChecker::visitPointerTypeExpression(
-    const syntax::rst::PointerType &value) {
-	messageBag.error(value.getToken(),
-	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
+    const syntax::rst::PointerType &pointerTypeRST) {
+	auto subTypeResult = resolveType(*pointerTypeRST.subtype);
+	if (!subTypeResult.has_value()) {
+		messageBag.error(pointerTypeRST.token, "pointer subtype is unknown");
+		return;
+	}
+
+	typeStack.push_back(currentDataModel.get().definePointerType(
+	    subTypeResult.value(), pointerTypeRST.isMutable));
 }
 void TypeChecker::visitNamedTypeExpression(
     const syntax::rst::NamedType &typeRST) {
@@ -496,9 +697,19 @@ void TypeChecker::visitNamedTypeExpression(
 		typeStack.push_back(lang::Type::defineUnknownType());
 	}
 }
-void TypeChecker::visitCastExpression(const syntax::rst::Cast &value) {
-	messageBag.error(value.getToken(),
-	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
+void TypeChecker::visitCastExpression(const syntax::rst::Cast &castRST) {
+	// TODO: once operator overload is implemented add a cast for scalars
+	// and make cast expression an overloaded type, or just make an into
+	// trait if ever implemented
+	auto type = resolveType(*castRST.type);
+	if (!type.has_value()) {
+		messageBag.error(
+		    castRST.getToken(),
+		    std::format("cast expression type '{}' did not yield a known type",
+		                castRST.getToken().getLexeme()));
+		return;
+	}
+	typeStack.push_back(type.value());
 }
 void TypeChecker::visitParameterExpression(
     const syntax::rst::Parameter &parameterRST) {

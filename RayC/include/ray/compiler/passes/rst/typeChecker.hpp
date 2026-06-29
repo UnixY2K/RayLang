@@ -1,7 +1,8 @@
 #pragma once
-#include "ray/compiler/lang/functionDefinition.hpp"
 #include <optional>
+
 #include <ray/compiler/environment/dataModel/dataModel.hpp>
+#include <ray/compiler/lang/functionDefinition.hpp>
 #include <ray/compiler/lang/moduleStore.hpp>
 #include <ray/compiler/lang/sourceUnit.hpp>
 #include <ray/compiler/lexer/token.hpp>
