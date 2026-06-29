@@ -1,3 +1,9 @@
-Struct<T, A: > {
-	array: Array<T, A>
+struct RawVec<T> {
+    ptr: T*,
+    cap: usize,
+}
+
+struct Vector<T, A: usize> {
+	array: Array<T, A>,
+	len: usize
 }
