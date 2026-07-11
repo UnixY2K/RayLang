@@ -120,6 +120,9 @@ std::optional<std::unique_ptr<syntax::ast::Statement>> Parser::declaration() {
 			}
 			return std::make_unique<syntax::ast::VarDecl>(varDeclaration());
 		}
+		if (match({Token::TokenType::TOKEN_PACKAGE})) {
+			return packageStatement();
+		}
 		return statement();
 	} catch (ParseException &e) {
 		synchronize();
@@ -208,6 +211,16 @@ std::unique_ptr<syntax::ast::Statement> Parser::statement() {
 
 	return expressionStatement();
 }
+std::unique_ptr<syntax::ast::Package> Parser::packageStatement() {
+	Token keyword = previous();
+	Token name =
+	    consume(Token::TokenType::TOKEN_IDENTIFIER, "Expect package name.");
+
+	consume(Token::TokenType::TOKEN_SEMICOLON,
+	        "Expect ';' after variable declaration.");
+	return std::make_unique<syntax::ast::Package>(
+	    syntax::ast::Package{name, keyword});
+}
 std::unique_ptr<syntax::ast::Statement> Parser::forStatement() {
 	auto forExprToken = previous();
 	consume(Token::TokenType::TOKEN_LEFT_PAREN, "Expect '(' after 'for'.");
@@ -242,11 +255,12 @@ std::unique_ptr<syntax::ast::Statement> Parser::forStatement() {
 		std::vector<std::unique_ptr<syntax::ast::Statement>> bodyStatements;
 		bodyStatements.push_back(std::move(body));
 		auto incrementToken = increment->getToken();
-		bodyStatements.push_back(std::make_unique<syntax::ast::ExpressionStatement>(
-		    syntax::ast::ExpressionStatement{
-		        std::move(increment),
-		        incrementToken,
-		    }));
+		bodyStatements.push_back(
+		    std::make_unique<syntax::ast::ExpressionStatement>(
+		        syntax::ast::ExpressionStatement{
+		            std::move(increment),
+		            incrementToken,
+		        }));
 		body = std::make_unique<syntax::ast::Block>(syntax::ast::Block{
 		    std::move(bodyStatements),
 		    incrementToken,
@@ -999,7 +1013,8 @@ void Parser::synchronize() {
 		case Token::TokenType::TOKEN_STRUCT:
 		case Token::TokenType::TOKEN_TRAIT:
 		case Token::TokenType::TOKEN_ENUM:
-		case Token::TokenType::TOKEN_VARIANT: {
+		case Token::TokenType::TOKEN_VARIANT:
+		case Token::TokenType::TOKEN_PACKAGE: {
 			return;
 		}
 		default: {

@@ -270,20 +270,16 @@ void TypeChecker::visitWhileStatement(
 	typeStack.push_back(type);
 }
 void TypeChecker::visitStructStatement(const syntax::rst::Struct &structRST) {
-	std::string currentModule = "root";
-
 	std::optional<directive::LinkageDirective> linkageDirective;
 
 	std::string structName = std::string(structRST.name.getLexeme());
 	std::string mangledStructName =
-	    passes::mangling::NameMangler().mangleStruct(currentModule, structRST,
+	    passes::mangling::NameMangler().mangleStruct(currentSourceUnit.packageName, structRST,
 	                                                 linkageDirective);
 	// TODO: verify members of the struct
 }
 void TypeChecker::visitPlaceholderStatement(
     const syntax::rst::Placeholder &value) {
-	messageBag.error(value.getToken(),
-	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
 }
 
 // expression visitor
@@ -819,8 +815,6 @@ TypeChecker::findTypeInfo(const std::string_view typeName) {
 std::optional<lang::FunctionDeclaration>
 TypeChecker::resolveFunctionDeclaration(
     const syntax::rst::Function &functionRST) {
-	std::string currentModule = "root";
-
 	std::optional<directive::LinkageDirective> linkageDirective;
 
 	for (auto &directive : functionRST.compilerDirectives) {
@@ -837,7 +831,7 @@ TypeChecker::resolveFunctionDeclaration(
 	}
 	std::string mangledFunctionName =
 	    passes::mangling::NameMangler().mangleFunction(
-	        currentModule, functionRST, linkageDirective);
+	        currentSourceUnit.packageName, functionRST, linkageDirective);
 
 	std::vector<lang::FunctionParameter> parameters;
 	bool failed = false;

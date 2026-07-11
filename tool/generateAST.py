@@ -174,7 +174,8 @@ def main():
              "While					= std::unique_ptr<Expression> condition, std::unique_ptr<Statement> body",
              "Struct				= Token name, bool publicVisibility, bool declaration, std::vector<Member> members, std::vector<bool> memberVisibility",
 			 "Trait					= Token name, bool publicVisibility, std::vector<TraitMethod> methods",
-             "CompDirective			= Token name, CompDirectiveAttr values, std::unique_ptr<Statement> child"
+             "CompDirective			= Token name, CompDirectiveAttr values, std::unique_ptr<Statement> child",
+             "Package				= Token packageName",
             ])
 
 

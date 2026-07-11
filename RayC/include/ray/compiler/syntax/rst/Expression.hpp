@@ -481,7 +481,7 @@ class PlaceHolder : public Expression {
   public:
 	Token token;
 
-	PlaceHolder(Token token) {}
+	PlaceHolder(Token token): token(std::move(token)) {}
 
 	void visit(ExpressionVisitor& visitor) const override {
 		visitor.visitPlaceHolderExpression(*this);

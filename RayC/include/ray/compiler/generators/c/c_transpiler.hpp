@@ -72,6 +72,7 @@ class CTranspilerGenerator : public syntax::ast::StatementVisitor,
 	void visitTraitStatement(const syntax::ast::Trait &value) override;
 	void visitCompDirectiveStatement(
 	    const syntax::ast::CompDirective &value) override;
+	void visitPackageStatement(const syntax::ast::Package &value) override;
 	// Expression
 	void visitVariableExpression(const syntax::ast::Variable &value) override;
 	void visitIntrinsicExpression(const syntax::ast::Intrinsic &value) override;

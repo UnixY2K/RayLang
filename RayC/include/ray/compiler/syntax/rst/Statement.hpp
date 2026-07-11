@@ -291,7 +291,7 @@ class Placeholder : public Statement {
   public:
 	Token token;
 
-	Placeholder(Token token) {}
+	Placeholder(Token token): token(std::move(token)) {}
 
 	void visit(StatementVisitor& visitor) const override {
 		visitor.visitPlaceholderStatement(*this);

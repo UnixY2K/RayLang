@@ -43,7 +43,6 @@ void CTranspilerGenerator::resolve(
 	output << "RAYLANG_C_LINKAGE {\n";
 	output << "#endif\n";
 
-	std::string currentModule = "root";
 	output << "#pragma region struct_declarations\n";
 	for (auto const &[structId, structDeclaration] :
 	     currentSourceUnit.get().getStructs()) {
@@ -141,7 +140,6 @@ void CTranspilerGenerator::visitExpressionStatementStatement(
 void CTranspilerGenerator::visitFunctionStatement(
     const syntax::ast::Function &function) {
 	std::string identTabs = currentIdent();
-	std::string currentModule = "root";
 
 	std::optional<directive::LinkageDirective> linkageDirective;
 
@@ -158,8 +156,8 @@ void CTranspilerGenerator::visitFunctionStatement(
 		}
 		directivesStack.pop_back();
 	}
-	std::string functionName =
-	    nameMangler.mangleFunction(currentModule, function, linkageDirective);
+	std::string functionName = nameMangler.mangleFunction(
+	    currentSourceUnit.get().packageName, function, linkageDirective);
 
 	// ignore any function declaration
 	if (function.body.has_value()) {
@@ -296,7 +294,6 @@ void CTranspilerGenerator::visitWhileStatement(
 }
 void CTranspilerGenerator::visitStructStatement(
     const syntax::ast::Struct &value) {
-	std::string currentModule = "root";
 	std::optional<directive::LinkageDirective> linkageDirective;
 
 	for (size_t i = directivesStack.size(); i > top; i--) {
@@ -316,8 +313,8 @@ void CTranspilerGenerator::visitStructStatement(
 	// TODO: remove this once the full logic of struct using type data is
 	// implemented
 	return;
-	const std::string mangledStructName =
-	    nameMangler.mangleStruct(currentModule, value, linkageDirective);
+	const std::string mangledStructName = nameMangler.mangleStruct(
+	    currentSourceUnit.get().packageName, value, linkageDirective);
 
 	// we just ignore any struct declaration
 	// as they were declared before
@@ -399,6 +396,11 @@ void CTranspilerGenerator::visitCompDirectiveStatement(
 		    std::format("Unknown compiler directive '{}'.", directiveName));
 	}
 }
+void CTranspilerGenerator::visitPackageStatement(
+    const syntax::ast::Package &value) {
+	// TODO: convert the transpiler to use the RST instead
+}
+
 // Expression
 void CTranspilerGenerator::visitVariableExpression(
     const syntax::ast::Variable &variable) {

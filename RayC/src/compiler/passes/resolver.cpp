@@ -1,3 +1,4 @@
+#include "ray/compiler/syntax/ast/Statement.hpp"
 #include <algorithm>
 #include <cstddef>
 #include <format>
@@ -212,10 +213,9 @@ void Resolver::visitStructStatement(const syntax::ast::Struct &structAst) {
 	}
 
 	auto structName = structAst.name.getLexeme();
-	std::string currentModule = "root";
 	std::string mangledStructName =
-	    passes::mangling::NameMangler().mangleStruct(currentModule, structAst,
-	                                                 linkageDirective);
+	    passes::mangling::NameMangler().mangleStruct(
+	        currentSourceUnit.packageName, structAst, linkageDirective);
 
 	auto &scope = currentScope.get();
 
@@ -329,6 +329,16 @@ void Resolver::visitCompDirectiveStatement(
 		    compDirectiveAst.getToken(),
 		    std::format("Unknown compiler directive '{}'.", directiveName));
 	}
+}
+void Resolver::visitPackageStatement(const syntax::ast::Package &package) {
+	if (!currentSourceUnit.packageName.empty()) {
+		messageBag.error(package.getToken(),
+		                 "package name cannot be defined multiple times");
+		return;
+	}
+	currentSourceUnit.packageName = package.packageName.lexeme;
+	statementStack.push_back(std::make_unique<syntax::rst::Placeholder>(
+	    syntax::rst::Placeholder(package.getToken())));
 }
 void Resolver::visitVariableExpression(
     const syntax::ast::Variable &variableExpressionAST) {
@@ -598,7 +608,6 @@ Resolver::resolveExpressions(const syntax::ast::Expression &expressionAST) {
 
 std::optional<lang::FunctionDeclaration> Resolver::makeFunctionDeclaration(
     const syntax::rst::Function &functionExprRST) {
-	std::string currentModule = "root";
 
 	const auto &compilerDirectives = functionExprRST.compilerDirectives;
 	std::optional<directive::LinkageDirective> linkageDirective;
@@ -622,7 +631,7 @@ std::optional<lang::FunctionDeclaration> Resolver::makeFunctionDeclaration(
 
 	std::string mangledFunctionName =
 	    passes::mangling::NameMangler().mangleFunction(
-	        currentModule, functionExprRST, linkageDirective);
+	        currentSourceUnit.packageName, functionExprRST, linkageDirective);
 
 	auto declaration = lang::FunctionDeclaration(
 	    0, std::string(functionExprRST.name.getLexeme()), mangledFunctionName,

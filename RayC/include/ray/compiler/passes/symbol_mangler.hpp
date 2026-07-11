@@ -13,25 +13,25 @@ class NameMangler {
 
   public:
 	std::string mangleFunction(
-	    std::string_view module, const syntax::rst::Function &function,
+	    std::string_view package, const syntax::rst::Function &function,
 	    std::optional<directive::LinkageDirective> &linkageDirective);
 	std::string
-	mangleStruct(std::string_view module,
-	            const syntax::rst::Struct &structDefinition,
-	            std::optional<directive::LinkageDirective> &linkageDirective);
+	mangleStruct(std::string_view package,
+	             const syntax::rst::Struct &structDefinition,
+	             std::optional<directive::LinkageDirective> &linkageDirective);
 
 	std::string mangleFunction(
-	    std::string_view module, const syntax::ast::Function &function,
+	    std::string_view package, const syntax::ast::Function &function,
 	    std::optional<directive::LinkageDirective> &linkageDirective);
 	std::string
-	mangleMethod(std::string_view module,
+	mangleMethod(std::string_view package,
 	             const syntax::ast::TraitMethod &method,
 	             std::optional<directive::LinkageDirective> &linkageDirective);
 	std::string
-	mangleStruct(std::string_view module,
+	mangleStruct(std::string_view package,
 	             const syntax::ast::Struct &structDefinition,
 	             std::optional<directive::LinkageDirective> &linkageDirective);
-	std::string mangleTrait(std::string_view module,
+	std::string mangleTrait(std::string_view package,
 	                        const syntax::ast::Trait &traitDefinition);
 };
 } // namespace ray::compiler::passes::mangling

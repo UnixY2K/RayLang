@@ -85,7 +85,6 @@ void TypeScanner::visitExpressionStatementStatement(
 }
 void TypeScanner::visitFunctionStatement(
     const syntax::rst::Function &functionRst) {
-	std::string currentModule = "root";
 
 	std::optional<directive::LinkageDirective> linkageDirective;
 
@@ -105,7 +104,7 @@ void TypeScanner::visitFunctionStatement(
 	}
 	std::string mangledFunctionName =
 	    passes::mangling::NameMangler().mangleFunction(
-	        currentModule, functionRst, linkageDirective);
+	        currentSourceUnit.packageName, functionRst, linkageDirective);
 
 	auto returnType = resolveType(*functionRst.returnType->get());
 	// update the function signature
@@ -123,7 +122,8 @@ void TypeScanner::visitFunctionStatement(
 		for (size_t index = 0; index < functionRst.params.size(); index++) {
 			const auto &parameter = functionRst.params.at(index);
 			auto paramType = resolveType(parameter);
-			functionDeclaration.signature.parameters.at(index).parameterType = paramType;
+			functionDeclaration.signature.parameters.at(index).parameterType =
+			    paramType;
 		}
 	}
 
@@ -189,10 +189,9 @@ void TypeScanner::visitStructStatement(const syntax::rst::Struct &structRst) {
 	}
 
 	auto structName = structRst.name.getLexeme();
-	std::string currentModule = "root";
 	std::string mangledStructName =
-	    passes::mangling::NameMangler().mangleStruct(currentModule, structRst,
-	                                                 linkageDirective);
+	    passes::mangling::NameMangler().mangleStruct(
+	        currentSourceUnit.packageName, structRst, linkageDirective);
 	auto &scope = currentScope.get();
 	if (!currentSourceUnit.declareStruct(
 	        lang::Struct{
@@ -621,10 +620,9 @@ void TypeScanner::discoverStruct(const syntax::rst::Struct &structRst) {
 	}
 
 	std::string structName = std::string(structRst.name.getLexeme());
-	std::string currentModule = "root";
 	std::string mangledStructName =
-	    passes::mangling::NameMangler().mangleStruct(currentModule, structRst,
-	                                                 linkageDirective);
+	    passes::mangling::NameMangler().mangleStruct(
+	        currentSourceUnit.packageName, structRst, linkageDirective);
 
 	auto &scope = currentScope.get();
 

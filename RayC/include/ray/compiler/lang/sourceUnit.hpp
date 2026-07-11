@@ -24,9 +24,10 @@ class SourceUnit {
 
   public:
 	Scope rootScope;
+	std::string packageName;
 
 	SourceUnit() : rootScope("root") {}
-	SourceUnit(const SourceUnit&) = delete;
+	SourceUnit(const SourceUnit &) = delete;
 
 	[[nodiscard("must check declaration result")]]
 	bool declareLocalVariable(const Symbol symbol, Scope &scope);

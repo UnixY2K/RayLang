@@ -96,7 +96,7 @@ def defineType(baseName: str, clazz: dict[str]):
         initializerList.append("token(std::move(token))")
         stringList.append(",\n\t\t".join(initializerList))
     else:
-        stringList.append(")")
+        stringList.append("): token(std::move(token))")
     stringList.append(" {}\n\n")
     stringList.append(f"\tvoid visit({baseName}Visitor& visitor) const override {{\n\t\tvisitor.visit{clazz["Name"]}{baseName}(*this);\n\t}}\n\n")
     stringList.append(f"\tconst std::string_view variantName() const override {{ return \"{clazz["Name"]}\"; }}\n\n")

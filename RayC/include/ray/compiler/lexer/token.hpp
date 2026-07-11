@@ -83,11 +83,12 @@ struct Token {
 		TOKEN_MUT,      // mut
 		TOKEN_STRUCT,   // struct
 		TOKEN_TRAIT,    // trait
-		TOKEN_WITH,     // with, ex: with {init block} defer {clean block};
-		TOKEN_DEFER,    // defer, ex: defer {cleanup block};
+		TOKEN_WITH,     // with, ex: with {init expression} {use expression} defer {clean expression};
+		TOKEN_DEFER,    // defer, ex: defer {cleanup expression};
 		TOKEN_ENUM,     // enum (C like enum)
 		TOKEN_VARIANT,  // variant (tagged enum)
 		TOKEN_AS,       // as, ex: 2 as isize
+		TOKEN_PACKAGE,	// define source file package: ex package fibonacci;
 		// other
 		TOKEN_ERROR, // when a token failed to parse
 		TOKEN_EOF    // EOF

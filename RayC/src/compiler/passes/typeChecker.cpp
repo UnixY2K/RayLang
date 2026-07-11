@@ -385,9 +385,6 @@ void TypeChecker::visitWhileStatement(const syntax::ast::While &whileStmt) {
 	typeStack.push_back(type);
 }
 void TypeChecker::visitStructStatement(const syntax::ast::Struct &structAst) {
-
-	std::string currentModule = "root";
-
 	std::optional<directive::LinkageDirective> linkageDirective;
 
 	for (size_t i = directivesStack.size(); i > directivesStackTop; i--) {
@@ -406,8 +403,8 @@ void TypeChecker::visitStructStatement(const syntax::ast::Struct &structAst) {
 
 	std::string structName = std::string(structAst.name.getLexeme());
 	std::string mangledStructName =
-	    passes::mangling::NameMangler().mangleStruct(currentModule, structAst,
-	                                                 linkageDirective);
+	    passes::mangling::NameMangler().mangleStruct(
+	        currentSourceUnit.packageName, structAst, linkageDirective);
 
 	// TODO: rework this section to just verify the existing struct
 	return;
@@ -456,11 +453,9 @@ void TypeChecker::visitStructStatement(const syntax::ast::Struct &structAst) {
 	typeStack.push_back(structType);
 }
 void TypeChecker::visitTraitStatement(const syntax::ast::Trait &traitAst) {
-	std::string currentModule = "root";
-
 	std::string traitName = std::string(traitAst.name.getLexeme());
-	std::string mangledTraitName =
-	    passes::mangling::NameMangler().mangleTrait(currentModule, traitAst);
+	std::string mangledTraitName = passes::mangling::NameMangler().mangleTrait(
+	    currentSourceUnit.packageName, traitAst);
 
 	size_t traitId;
 	auto foundTrait = currentSourceUnit.findTrait(traitName, currentScope);
@@ -1130,8 +1125,6 @@ TypeChecker::findTypeInfo(const std::string_view typeName) {
 std::optional<lang::FunctionDeclaration>
 TypeChecker::resolveFunctionDeclaration(
     const syntax::ast::Function &functionAst) {
-	std::string currentModule = "root";
-
 	std::optional<directive::LinkageDirective> linkageDirective;
 
 	for (size_t i = directivesStack.size(); i > directivesStackTop; i--) {
@@ -1150,7 +1143,7 @@ TypeChecker::resolveFunctionDeclaration(
 	}
 	std::string mangledFunctionName =
 	    passes::mangling::NameMangler().mangleFunction(
-	        currentModule, functionAst, linkageDirective);
+	        currentSourceUnit.packageName, functionAst, linkageDirective);
 
 	std::vector<lang::FunctionParameter> parameters;
 	bool failed = false;

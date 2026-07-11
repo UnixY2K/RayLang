@@ -38,6 +38,7 @@ class Parser {
 	std::unique_ptr<syntax::ast::Statement>
 	traitDeclaration(bool publicVisibility);
 	std::unique_ptr<syntax::ast::Statement> statement();
+	std::unique_ptr<syntax::ast::Package> packageStatement();
 	std::unique_ptr<syntax::ast::Statement> forStatement();
 	std::unique_ptr<syntax::ast::Statement> ifStatement();
 	std::unique_ptr<syntax::ast::Statement> returnStatement();

@@ -9,7 +9,7 @@ namespace ray::compiler::passes::mangling {
 using namespace terminal::literals;
 
 std::string NameMangler::mangleFunction(
-    std::string_view module, const syntax::rst::Function &function,
+    std::string_view package, const syntax::rst::Function &function,
     std::optional<directive::LinkageDirective> &linkageDirective) {
 	if (linkageDirective) {
 		if (!linkageDirective->overrideName.empty()) {
@@ -33,11 +33,11 @@ std::string NameMangler::mangleFunction(
 		}
 	}
 	return std::format("_rayMv{}_T{}_M{}_{}_N{}_{}", manglerVersion, "F",
-	                   module.size(), module, function.name.lexeme.size(),
+	                   package.size(), package, function.name.lexeme.size(),
 	                   function.name.lexeme);
 }
 std::string NameMangler::mangleStruct(
-    std::string_view module, const syntax::rst::Struct &structDefinition,
+    std::string_view package, const syntax::rst::Struct &structDefinition,
     std::optional<directive::LinkageDirective> &linkageDirective) {
 	if (linkageDirective) {
 		if (!linkageDirective->overrideName.empty()) {
@@ -61,13 +61,13 @@ std::string NameMangler::mangleStruct(
 		}
 	}
 	return std::format("_rayMv{}_T{}_M{}_{}_N{}_{}", manglerVersion, "S",
-	                   module.size(), module,
+	                   package.size(), package,
 	                   structDefinition.name.lexeme.size(),
 	                   structDefinition.name.lexeme);
 }
 
 std::string NameMangler::mangleFunction(
-    std::string_view module, const syntax::ast::Function &function,
+    std::string_view package, const syntax::ast::Function &function,
     std::optional<directive::LinkageDirective> &linkageDirective) {
 	if (linkageDirective) {
 		if (!linkageDirective->overrideName.empty()) {
@@ -91,11 +91,11 @@ std::string NameMangler::mangleFunction(
 		}
 	}
 	return std::format("_rayMv{}_T{}_M{}_{}_N{}_{}", manglerVersion, "F",
-	                   module.size(), module, function.name.lexeme.size(),
+	                   package.size(), package, function.name.lexeme.size(),
 	                   function.name.lexeme);
 }
 std::string NameMangler::mangleMethod(
-    std::string_view module, const syntax::ast::TraitMethod &method,
+    std::string_view package, const syntax::ast::TraitMethod &method,
     std::optional<directive::LinkageDirective> &linkageDirective) {
 	if (linkageDirective) {
 		if (!linkageDirective->overrideName.empty()) {
@@ -119,11 +119,11 @@ std::string NameMangler::mangleMethod(
 		}
 	}
 	return std::format("_rayMv{}_T{}_M{}_{}_N{}_{}", manglerVersion, "F",
-	                   module.size(), module, method.name.lexeme.size(),
+	                   package.size(), package, method.name.lexeme.size(),
 	                   method.name.lexeme);
 }
 std::string NameMangler::mangleStruct(
-    std::string_view module, const syntax::ast::Struct &structDefinition,
+    std::string_view package, const syntax::ast::Struct &structDefinition,
     std::optional<directive::LinkageDirective> &linkageDirective) {
 	if (linkageDirective) {
 		if (!linkageDirective->overrideName.empty()) {
@@ -147,16 +147,16 @@ std::string NameMangler::mangleStruct(
 		}
 	}
 	return std::format("_rayMv{}_T{}_M{}_{}_N{}_{}", manglerVersion, "S",
-	                   module.size(), module,
+	                   package.size(), package,
 	                   structDefinition.name.lexeme.size(),
 	                   structDefinition.name.lexeme);
 }
 
 std::string
-NameMangler::mangleTrait(std::string_view module,
+NameMangler::mangleTrait(std::string_view package,
                          const syntax::ast::Trait &traitDefinition) {
 	return std::format("_rayMv{}_T{}_M{}_{}_N{}_{}_VTable", manglerVersion, "S",
-	                   module.size(), module,
+	                   package.size(), package,
 	                   traitDefinition.name.lexeme.size(),
 	                   traitDefinition.name.lexeme);
 }

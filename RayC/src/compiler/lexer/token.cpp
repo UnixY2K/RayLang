@@ -101,6 +101,7 @@ Token::TokenType Token::fromString(std::string_view str) {
 	    {"enum", Token::TokenType::TOKEN_ENUM},         // enum
 	    {"variant", Token::TokenType::TOKEN_VARIANT},   // variant
 	    {"as", Token::TokenType::TOKEN_AS},             // as
+	    {"package", Token::TokenType::TOKEN_PACKAGE},   // package
 	};
 	std::string key{str};
 	return map.contains(key) ? map.at(key) : TokenType::TOKEN_ERROR;
@@ -260,6 +261,8 @@ std::string_view Token::toString(TokenType token) {
 		return "TOKEN_VARIANT";
 	case TokenType::TOKEN_AS:
 		return "TOKEN_AS";
+	case TokenType::TOKEN_PACKAGE:
+		return "TOKEN_PACKAGE";
 	// other
 	case TokenType::TOKEN_ERROR:
 		return "TOKEN_ERROR";
@@ -422,6 +425,8 @@ std::string_view Token::glyph(TokenType token) {
 		return "variant";
 	case TokenType::TOKEN_AS:
 		return "as";
+	case TokenType::TOKEN_PACKAGE:
+		return "package";
 	// other
 	case TokenType::TOKEN_ERROR:
 		return "<{TOKEN_ERROR}>";

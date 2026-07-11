@@ -23,6 +23,7 @@ class While;
 class Struct;
 class Trait;
 class CompDirective;
+class Package;
 
 class StatementVisitor {
   public:
@@ -39,6 +40,7 @@ class StatementVisitor {
 	virtual void visitStructStatement(const Struct& value) = 0;
 	virtual void visitTraitStatement(const Trait& value) = 0;
 	virtual void visitCompDirectiveStatement(const CompDirective& value) = 0;
+	virtual void visitPackageStatement(const Package& value) = 0;
 	virtual ~StatementVisitor() = default;
 };
 
@@ -359,6 +361,24 @@ class CompDirective : public Statement {
 	}
 
 	const std::string_view variantName() const override { return "CompDirective"; }
+
+	const Token& getToken() const override { return token; };
+};
+class Package : public Statement {
+  public:
+	Token packageName;
+	Token token;
+
+	Package(Token packageName,
+	        Token token):
+		packageName(std::move(packageName)),
+		token(std::move(token)) {}
+
+	void visit(StatementVisitor& visitor) const override {
+		visitor.visitPackageStatement(*this);
+	}
+
+	const std::string_view variantName() const override { return "Package"; }
 
 	const Token& getToken() const override { return token; };
 };
