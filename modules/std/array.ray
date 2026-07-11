@@ -1,3 +1,4 @@
-struct Array{
-	buffer: 
-};
+pub struct Array{
+	ptr: *mut (); 
+	cap: usize;
+}
