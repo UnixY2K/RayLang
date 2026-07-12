@@ -16,8 +16,7 @@
 
 #include <ray/compiler/passes/resolver.hpp>
 #include <ray/compiler/passes/rst/typeChecker.hpp>
-#include <ray/compiler/passes/typeChecker.hpp>
-#include <ray/compiler/passes/typeScanner.hpp>
+#include <ray/compiler/passes/rst/typeScanner.hpp>
 
 #include <ray/compiler/backend/c/c_transpiler.hpp>
 

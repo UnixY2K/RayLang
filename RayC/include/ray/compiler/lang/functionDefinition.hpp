@@ -64,9 +64,4 @@ struct FunctionDefinition {
 	std::reference_wrapper<const syntax::rst::Function> function;
 };
 
-struct AstFunctionDefinition {
-	FunctionDeclaration declaration;
-	std::reference_wrapper<const syntax::ast::Function> function;
-};
-
 } // namespace ray::compiler::lang

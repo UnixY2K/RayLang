@@ -9,7 +9,7 @@
 #include <string_view>
 #include <vector>
 
-#include <ray/compiler/passes/typeScanner.hpp>
+#include <ray/compiler/passes/rst/typeScanner.hpp>
 
 #include <ray/compiler/environment/dataModel/dataModel.hpp>
 #include <ray/compiler/lang/functionDefinition.hpp>

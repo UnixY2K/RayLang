@@ -23,7 +23,6 @@ rayc_srcs = [
 	'src/compiler/passes/rst/typeScanner.cpp',
 	'src/compiler/passes/resolver.cpp',
 	'src/compiler/passes/symbol_mangler.cpp',
-	'src/compiler/passes/typeChecker.cpp',
 	'src/compiler/message_bag.cpp',
 	'src/source.cpp',
 ]

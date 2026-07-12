@@ -239,9 +239,62 @@ void TypeChecker::visitVarDeclStatement(
 	    variableDeclRST.getToken(),
 	    "variable does not have a valid type assigned nor an valid initialization");
 }
-void TypeChecker::visitMemberStatement(const syntax::rst::Member &value) {
-	messageBag.error(value.getToken(),
-	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
+void TypeChecker::visitMemberStatement(const syntax::rst::Member &memberRST) {
+	auto variableType = lang::Type{};
+
+	if (memberRST.type->getToken().type !=
+	    Token::TokenType::TOKEN_UNINITIALIZED) {
+		const auto &explicitType = memberRST.type;
+		std::string_view typeName = explicitType->getToken().lexeme;
+		auto foundType = resolveType(*explicitType);
+		if (!foundType.has_value()) {
+			messageBag.error(
+			    memberRST.type->getToken(),
+			    std::format("'{}' does not name an existing type", typeName));
+		} else {
+			variableType = foundType.value();
+		}
+	}
+
+	if (memberRST.initializer.has_value()) {
+		auto &initializer = *memberRST.initializer.value().get();
+		auto initType = resolveType(initializer);
+		if (!initType.has_value()) {
+			messageBag.error(
+			    initializer.getToken(),
+			    std::format(
+			        "inialization expression did not yield a type for '{}'",
+			        initializer.getToken().getLexeme()));
+		} else {
+			const auto initializationType = initType.value();
+			if (!variableType.isInitialized()) {
+				variableType = initializationType;
+			} else if (!initializationType.coercercesInto(variableType)) {
+				messageBag.error(
+				    memberRST.getToken(),
+				    std::format(
+				        "member initialization type does not match with explicit type for '{}': '{}' vs '{}'",
+				        memberRST.getToken().getLexeme(), variableType.name,
+				        initializationType.name));
+			}
+		}
+	}
+
+	if (variableType.isInitialized()) {
+		lang::Symbol variableSymbol{
+		    .name = memberRST.name.lexeme,
+		    .mangledName = "",
+		    .innerType = variableType,
+		    .type = lang::Symbol::SymbolType::Parameter,
+		    .internal = false,
+		};
+		typeStack.push_back(variableType);
+		return;
+	}
+
+	messageBag.error(
+	    memberRST.getToken(),
+	    "variable does not have a type assigned nor an valid initialization");
 }
 void TypeChecker::visitWhileStatement(
     const syntax::rst::While &whileStatementRST) {
@@ -329,8 +382,9 @@ void TypeChecker::visitVariableExpression(
 }
 void TypeChecker::visitIntrinsicExpression(
     const syntax::rst::Intrinsic &value) {
-	messageBag.error(value.getToken(),
-	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
+	messageBag.bug(value.getToken(),
+	               std::format("visit method not implemented for {}",
+	                           value.variantName()));
 }
 void TypeChecker::visitAssignExpression(
     const syntax::rst::Assign &assignExpresssionRST) {
@@ -518,9 +572,55 @@ void TypeChecker::visitCallExpression(const syntax::rst::Call &callExprRst) {
 	typeStack.push_back(*calleeType.subtype.value());
 }
 void TypeChecker::visitIntrinsicCallExpression(
-    const syntax::rst::IntrinsicCall &value) {
-	messageBag.error(value.getToken(),
-	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
+    const syntax::rst::IntrinsicCall &intrinsicCallRST) {
+	switch (intrinsicCallRST.callee->intrinsic) {
+	case ray::compiler::syntax::common::IntrinsicType::INTR_SIZEOF: {
+		if (intrinsicCallRST.arguments.size() != 1) {
+			messageBag.error(
+			    intrinsicCallRST.callee->name,
+			    std::format(
+			        "{} intrinsic expects 1 argument but {} got provided",
+			        intrinsicCallRST.callee->name.lexeme,
+			        intrinsicCallRST.arguments.size()));
+			break;
+		}
+		auto param = intrinsicCallRST.arguments[0].get();
+		auto paramType = resolveType(*param);
+
+		if (!paramType.has_value()) {
+			messageBag.error(
+			    param->getToken(),
+			    std::format("'{}' does not hold a valid known type information",
+			                param->getToken().getLexeme()));
+			break;
+		}
+		typeStack.push_back(this->currentDataModel.get().getScalarType(
+		    environment::DataModel::ScalarTypeKind::usizeScalar));
+
+		break;
+	}
+	case ray::compiler::syntax::common::IntrinsicType::INTR_IMPORT: {
+		if (intrinsicCallRST.arguments.size() != 1) {
+			messageBag.error(intrinsicCallRST.callee->name,
+			                 std::format("{} intrinsic expects 1 "
+			                             "argument but {} got provided",
+			                             intrinsicCallRST.callee->name.lexeme,
+			                             intrinsicCallRST.arguments.size()));
+		} else {
+			auto moduleType = lang::Type::defineModuleType();
+			// TODO: create a module provided to idenity known module data
+			typeStack.push_back(moduleType);
+		}
+
+		break;
+	}
+	case ray::compiler::syntax::common::IntrinsicType::INTR_UNKNOWN: {
+		messageBag.error(intrinsicCallRST.callee->name,
+		                 std::format("'{}' is not a valid intrinsic",
+		                             intrinsicCallRST.callee->name.lexeme));
+		break;
+	}
+	}
 }
 void TypeChecker::visitGetExpression(const syntax::rst::Get &value) {
 	messageBag.error(value.getToken(),
@@ -583,13 +683,46 @@ void TypeChecker::visitLiteralExpression(
 		break;
 	}
 }
-void TypeChecker::visitLogicalExpression(const syntax::rst::Logical &value) {
-	messageBag.error(value.getToken(),
-	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
+void TypeChecker::visitLogicalExpression(
+    const syntax::rst::Logical &locicalRST) {
+	auto leftType = resolveType(*locicalRST.left);
+	auto rightType = resolveType(*locicalRST.right);
+
+	if (!(leftType.has_value() && rightType.has_value())) {
+		if (!leftType.has_value()) {
+			messageBag.error(
+			    locicalRST.left->getToken(),
+			    std::format("left expression did not yield a value"));
+		}
+
+		if (!rightType.has_value()) {
+			messageBag.error(
+			    locicalRST.right->getToken(),
+			    std::format("right expression did not yield a value"));
+		}
+		return;
+	}
+
+	auto op = locicalRST.op;
+	// TODO: once we start supporting operator overload this should be done by
+	// lookup of the overloads and get the return type of it
+	switch (op.type) {
+
+	case Token::TokenType::TOKEN_AMPERSAND_AMPERSAND:
+	case Token::TokenType::TOKEN_PIPE_PIPE:
+		typeStack.push_back(findScalarTypeInfo("bool").value());
+		break;
+	default:
+		messageBag.error(
+		    locicalRST.op,
+		    std::format("'{}' is not a supported logical operation",
+		                op.getLexeme()));
+	}
 }
 void TypeChecker::visitSetExpression(const syntax::rst::Set &value) {
-	messageBag.error(value.getToken(),
-	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
+	messageBag.bug(value.getToken(),
+	               std::format("visit method not implemented for {}",
+	                           value.variantName()));
 }
 void TypeChecker::visitUnaryExpression(
     const syntax::rst::Unary &unaryExpressionRST) {
@@ -716,8 +849,9 @@ void TypeChecker::visitParameterExpression(
 }
 void TypeChecker::visitPlaceHolderExpression(
     const syntax::rst::PlaceHolder &value) {
-	messageBag.error(value.getToken(),
-	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
+	// a placeholder is just to place things irrelevant on the RST, just ignore
+	// them and set them as statements
+	typeStack.push_back(lang::Type::defineStmtType());
 }
 
 std::optional<lang::Type>

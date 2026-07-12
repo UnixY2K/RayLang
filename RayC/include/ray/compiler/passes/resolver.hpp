@@ -9,7 +9,7 @@
 #include <ray/compiler/lang/sourceUnit.hpp>
 #include <ray/compiler/lexer/token.hpp>
 #include <ray/compiler/message_bag.hpp>
-#include <ray/compiler/passes/typeScanner.hpp>
+#include <ray/compiler/passes/rst/typeScanner.hpp>
 #include <ray/compiler/syntax/ast/Expression.hpp>
 #include <ray/compiler/syntax/ast/Statement.hpp>
 #include <ray/compiler/syntax/rst/Expression.hpp>
