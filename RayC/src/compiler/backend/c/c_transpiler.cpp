@@ -71,7 +71,11 @@ void CTranspilerGenerator::resolve(const syntax::rst::Block &blockRST) {
 			output << "RAYLANG_LINK_LOCAL ";
 			output << "static ";
 		} else {
-			output << "RAYLANG_LINK_EXPORT ";
+			// TODO: either expose a way to query the function RST and get the
+			// linkage directive or get if the function is either imported or
+			// exported, for now just dont define it under declaration
+
+			// output << "RAYLANG_LINK_EXPORT ";
 		}
 		visitType(functionDeclaration.signature.returnType);
 
