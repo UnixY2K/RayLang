@@ -20,7 +20,7 @@
 #include <ray/compiler/syntax/ast/Expression.hpp>
 #include <ray/compiler/syntax/ast/Statement.hpp>
 
-namespace ray::compiler::generator::c {
+namespace ray::compiler::backend::c {
 
 class CTranspilerGenerator : public syntax::ast::StatementVisitor,
                              public syntax::ast::ExpressionVisitor {

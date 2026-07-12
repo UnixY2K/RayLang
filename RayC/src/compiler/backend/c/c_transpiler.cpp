@@ -9,7 +9,7 @@
 
 #include <ray/compiler/directives/compilerDirective.hpp>
 #include <ray/compiler/directives/linkageDirective.hpp>
-#include <ray/compiler/generators/c/c_transpiler.hpp>
+#include <ray/compiler/backend/c/c_transpiler.hpp>
 #include <ray/compiler/lang/functionDefinition.hpp>
 #include <ray/compiler/lang/struct.hpp>
 #include <ray/compiler/lang/type.hpp>
@@ -21,7 +21,7 @@
 #include <ray/compiler/syntax/common/intrinsic.hpp>
 #include <ray/util/soft_reference.hpp>
 
-namespace ray::compiler::generator::c {
+namespace ray::compiler::backend::c {
 
 std::string CTranspilerGenerator::currentIdent() const {
 	return std::string(ident, '\t');

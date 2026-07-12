@@ -5,9 +5,10 @@ rayc_srcs = [
 	'src/cli/options.cpp',
 	'src/cli/terminal.cpp',
 	'src/compiler/syntax/common/intrinsic.cpp',
+	#backend target output
+	'src/compiler/backend/c/c_transpiler.cpp',
+	#environment data
 	'src/compiler/environment/dataModel/dataModel.cpp',
-	# generators/targets outputs
-	'src/compiler/generators/c/c_transpiler.cpp',
 	# lang
 	'src/compiler/lang/scope.cpp',
 	'src/compiler/lang/sourceUnit.cpp',

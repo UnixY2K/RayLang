@@ -19,7 +19,7 @@
 #include <ray/compiler/passes/typeChecker.hpp>
 #include <ray/compiler/passes/typeScanner.hpp>
 
-#include <ray/compiler/generators/c/c_transpiler.hpp>
+#include <ray/compiler/backend/c/c_transpiler.hpp>
 
 #include <ray/compiler/lang/moduleStore.hpp>
 #include <ray/compiler/lang/sourceUnit.hpp>
@@ -164,7 +164,7 @@ int main(int argc, char **argv) {
 		switch (opts.target) {
 		case cli::Options::TargetEnum::C_SOURCE: {
 			handled = true;
-			generator::c::CTranspilerGenerator CTranspilerGen(
+			backend::c::CTranspilerGenerator CTranspilerGen(
 			    sourceFile, typeChecker.getCurrentSourceUnit(), *dataModel);
 
 			CTranspilerGen.resolve(statements);
