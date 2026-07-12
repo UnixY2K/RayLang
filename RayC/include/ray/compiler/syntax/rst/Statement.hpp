@@ -264,6 +264,7 @@ class Struct : public Statement {
 	bool declaration;
 	std::vector<Member> members;
 	std::vector<bool> memberVisibility;
+	std::vector<std::unique_ptr<directive::CompilerDirective>> compilerDirectives;
 	Token token;
 
 	Struct(Token name,
@@ -271,12 +272,14 @@ class Struct : public Statement {
 	        bool declaration,
 	        std::vector<Member> members,
 	        std::vector<bool> memberVisibility,
+	        std::vector<std::unique_ptr<directive::CompilerDirective>> compilerDirectives,
 	        Token token):
 		name(std::move(name)),
 		publicVisibility(std::move(publicVisibility)),
 		declaration(std::move(declaration)),
 		members(std::move(members)),
 		memberVisibility(std::move(memberVisibility)),
+		compilerDirectives(std::move(compilerDirectives)),
 		token(std::move(token)) {}
 
 	void visit(StatementVisitor& visitor) const override {

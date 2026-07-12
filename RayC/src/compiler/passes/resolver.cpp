@@ -1,5 +1,5 @@
-#include "ray/compiler/syntax/ast/Statement.hpp"
 #include <algorithm>
+#include <cassert>
 #include <cstddef>
 #include <format>
 #include <functional>
@@ -16,7 +16,6 @@
 #include <ray/compiler/lang/type.hpp>
 #include <ray/compiler/lexer/token.hpp>
 #include <ray/compiler/passes/symbol_mangler.hpp>
-#include <ray/compiler/syntax/ast/Expression.hpp>
 #include <ray/compiler/syntax/rst/Expression.hpp>
 #include <ray/compiler/syntax/rst/Statement.hpp>
 
@@ -90,9 +89,9 @@ void Resolver::visitFunctionStatement(
 
 	for (const auto &paramAST : functionAST.params) {
 		auto paramExpression = resolveExpression(paramAST);
-		syntax::rst::Parameter paramRST(
-		    paramAST.name, std::move(paramExpression), paramAST.token);
-		functionRST->params.push_back(std::move(paramRST));
+		assert(dynamic_cast<syntax::rst::Parameter *>(paramExpression.get()));
+		auto &paramRef = static_cast<syntax::rst::Parameter&>(*paramExpression);
+		functionRST->params.push_back(std::move(paramRef));
 	}
 
 	auto returnExpression = resolveExpression(*functionAST.returnType);
@@ -232,7 +231,8 @@ void Resolver::visitStructStatement(const syntax::ast::Struct &structAst) {
 	std::unique_ptr<syntax::rst::Struct> structRST =
 	    std::make_unique<syntax::rst::Struct>(syntax::rst::Struct(
 	        structAst.name, structAst.publicVisibility, structAst.declaration,
-	        {}, structAst.memberVisibility, structAst.token));
+	        {}, structAst.memberVisibility, std::move(compilerDirectives),
+	        structAst.token));
 
 	// don´t bother with declarations
 	if (structAst.declaration) {
@@ -408,9 +408,13 @@ void Resolver::visitIntrinsicCallExpression(
 		argumentsRST.push_back(std::move(argumentRST));
 	}
 
-	auto callExpressionRST = std::make_unique<syntax::rst::Call>(
-	    syntax::rst::Call(std::move(calleeRST), intrinsicCallAST.paren,
-	                      std::move(argumentsRST), intrinsicCallAST.token));
+	assert(dynamic_cast<syntax::rst::Intrinsic *>(calleeRST.get()));
+	auto intrinsicCalleeRST = std::unique_ptr<syntax::rst::Intrinsic>(
+	    static_cast<syntax::rst::Intrinsic *>(calleeRST.release()));
+	auto callExpressionRST =
+	    std::make_unique<syntax::rst::IntrinsicCall>(syntax::rst::IntrinsicCall(
+	        std::move(intrinsicCalleeRST), intrinsicCallAST.paren,
+	        std::move(argumentsRST), intrinsicCallAST.token));
 
 	expressionStack.push_back(std::move(callExpressionRST));
 }

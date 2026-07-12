@@ -14,12 +14,7 @@ void TypeChecker::resolve(syntax::rst::Block &rootBlock) {
 }
 
 bool TypeChecker::hasFailed() const { return messageBag.failed(); }
-const std::vector<std::string> TypeChecker::getErrors() const {
-	return messageBag.getErrors();
-}
-const std::vector<std::string> TypeChecker::getWarnings() const {
-	return messageBag.getWarnings();
-}
+const MessageBag &TypeChecker::getMessageBag() const { return messageBag; }
 
 void TypeChecker::visitBlockStatement(const syntax::rst::Block &blockRST) {
 
@@ -274,13 +269,12 @@ void TypeChecker::visitStructStatement(const syntax::rst::Struct &structRST) {
 
 	std::string structName = std::string(structRST.name.getLexeme());
 	std::string mangledStructName =
-	    passes::mangling::NameMangler().mangleStruct(currentSourceUnit.packageName, structRST,
-	                                                 linkageDirective);
+	    passes::mangling::NameMangler().mangleStruct(
+	        currentSourceUnit.packageName, structRST, linkageDirective);
 	// TODO: verify members of the struct
 }
 void TypeChecker::visitPlaceholderStatement(
-    const syntax::rst::Placeholder &value) {
-}
+    const syntax::rst::Placeholder &value) {}
 
 // expression visitor
 void TypeChecker::visitVariableExpression(

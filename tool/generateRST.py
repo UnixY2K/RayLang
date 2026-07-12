@@ -158,7 +158,7 @@ def main():
          "VarDecl				= Token name, std::unique_ptr<Expression> type, bool is_mutable, std::optional<std::unique_ptr<Expression>> initializer",
          "Member				= Token name, std::unique_ptr<Expression> type, bool is_mutable, std::optional<std::unique_ptr<Expression>> initializer",
          "While					= std::unique_ptr<Expression> condition, std::unique_ptr<Statement> body",
-         "Struct				= Token name, bool publicVisibility, bool declaration, std::vector<Member> members, std::vector<bool> memberVisibility",
+         "Struct				= Token name, bool publicVisibility, bool declaration, std::vector<Member> members, std::vector<bool> memberVisibility, std::vector<std::unique_ptr<directive::CompilerDirective>> compilerDirectives",
          "Placeholder   		= "
         ]) 
     

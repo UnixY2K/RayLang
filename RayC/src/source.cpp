@@ -144,20 +144,21 @@ int main(int argc, char **argv) {
 			return 1;
 		}
 
-		passes::rst::TypeChecker typeChecker(
-		    sourceFile, moduleStore, *dataModel,
-		    sourceUnit);
+		passes::rst::TypeChecker typeChecker(sourceFile, moduleStore,
+		                                     *dataModel, sourceUnit);
 
 		typeChecker.resolve(resolver.getRootBlock());
 		if (typeChecker.hasFailed()) {
 			std::cerr << std::format("{}: {}\n", "Error"_red,
 			                         "typeChecker failed");
-			for (auto typeCheckerError : typeChecker.getErrors()) {
+			for (auto typeCheckerError :
+			     typeChecker.getMessageBag().getErrors()) {
 				std::cerr << typeCheckerError;
 			}
 			return 1;
 		}
-		for (auto typeCheckerWarning : typeChecker.getWarnings()) {
+		for (auto typeCheckerWarning :
+		     typeChecker.getMessageBag().getWarnings()) {
 			std::cerr << typeCheckerWarning;
 		}
 
@@ -167,7 +168,7 @@ int main(int argc, char **argv) {
 			backend::c::CTranspilerGenerator CTranspilerGen(
 			    sourceFile, typeChecker.getCurrentSourceUnit(), *dataModel);
 
-			CTranspilerGen.resolve(statements);
+			CTranspilerGen.resolve(resolver.getRootBlock());
 			if (CTranspilerGen.hasFailed()) {
 				std::cerr << std::format("{}: {}\n", "Error"_red,
 				                         "CSourceGen failed");

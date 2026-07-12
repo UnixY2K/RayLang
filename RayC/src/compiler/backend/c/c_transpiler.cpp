@@ -7,17 +7,16 @@
 #include <string>
 #include <string_view>
 
+#include <ray/compiler/backend/c/c_transpiler.hpp>
+
 #include <ray/compiler/directives/compilerDirective.hpp>
 #include <ray/compiler/directives/linkageDirective.hpp>
-#include <ray/compiler/backend/c/c_transpiler.hpp>
 #include <ray/compiler/lang/functionDefinition.hpp>
 #include <ray/compiler/lang/struct.hpp>
 #include <ray/compiler/lang/type.hpp>
 #include <ray/compiler/lexer/token.hpp>
 #include <ray/compiler/message_bag.hpp>
 #include <ray/compiler/passes/symbol_mangler.hpp>
-#include <ray/compiler/syntax/ast/Expression.hpp>
-#include <ray/compiler/syntax/ast/Statement.hpp>
 #include <ray/compiler/syntax/common/intrinsic.hpp>
 #include <ray/util/soft_reference.hpp>
 
@@ -34,8 +33,7 @@ CTranspilerGenerator::CTranspilerGenerator(
       currentScope(currentSourceUnit.get().rootScope),
       currentDataModel(dataModel) {}
 
-void CTranspilerGenerator::resolve(
-    const std::vector<std::unique_ptr<syntax::ast::Statement>> &statement) {
+void CTranspilerGenerator::resolve(const syntax::rst::Block &blockRST) {
 	output.clear();
 
 	output << "#include <ray/ray_definitions.h>\n";
@@ -72,6 +70,8 @@ void CTranspilerGenerator::resolve(
 		if (!functionDeclaration.publicVisibility) {
 			output << "RAYLANG_LINK_LOCAL ";
 			output << "static ";
+		} else {
+			output << "RAYLANG_LINK_EXPORT ";
 		}
 		visitType(functionDeclaration.signature.returnType);
 
@@ -90,21 +90,11 @@ void CTranspilerGenerator::resolve(
 	}
 	output << "#pragma endregion function_declarations\n";
 	// ident++;
-	for (const auto &stmt : statement) {
-		stmt->visit(*this);
-	}
+	transpile(blockRST);
 	// ident--;
 	output << "#ifdef __cplusplus\n";
 	output << "}\n";
 	output << "#endif\n";
-
-	if (!this->directivesStack.empty()) {
-		for (auto &directive : directivesStack) {
-			messageBag.warning(directive->getToken(),
-			                   std::format("unused compiler directive {}",
-			                               directive->directiveName()));
-		}
-	}
 }
 
 bool CTranspilerGenerator::hasFailed() const { return messageBag.failed(); }
@@ -116,7 +106,7 @@ std::string CTranspilerGenerator::getOutput() const { return output.str(); }
 
 // Statement
 void CTranspilerGenerator::visitBlockStatement(
-    const syntax::ast::Block &block) {
+    const syntax::rst::Block &block) {
 	if (block.statements.size() > 0) {
 		for (auto &statement : block.statements) {
 			statement->visit(*this);
@@ -124,7 +114,7 @@ void CTranspilerGenerator::visitBlockStatement(
 	}
 }
 void CTranspilerGenerator::visitTerminalExpressionStatement(
-    const syntax::ast::TerminalExpression &terminalExpr) {
+    const syntax::rst::TerminalExpression &terminalExpr) {
 	if (terminalExpr.expression.has_value()) {
 		output << std::format("{}return ", currentIdent());
 		terminalExpr.expression->get()->visit(*this);
@@ -132,19 +122,18 @@ void CTranspilerGenerator::visitTerminalExpressionStatement(
 	}
 }
 void CTranspilerGenerator::visitExpressionStatementStatement(
-    const syntax::ast::ExpressionStatement &expression) {
+    const syntax::rst::ExpressionStatement &expression) {
 	output << currentIdent();
 	expression.expression->visit(*this);
 	output << std::format(";\n", currentIdent());
 }
 void CTranspilerGenerator::visitFunctionStatement(
-    const syntax::ast::Function &function) {
+    const syntax::rst::Function &functionRST) {
 	std::string identTabs = currentIdent();
 
 	std::optional<directive::LinkageDirective> linkageDirective;
 
-	for (size_t i = directivesStack.size(); i > top; i--) {
-		auto &directive = directivesStack[i - i];
+	for (const auto &directive : functionRST.compilerDirectives) {
 		if (auto foundLinkDirective =
 		        dynamic_cast<directive::LinkageDirective *>(directive.get())) {
 			linkageDirective = *foundLinkDirective;
@@ -154,20 +143,19 @@ void CTranspilerGenerator::visitFunctionStatement(
 			    std::format("unmatched compiler directive '{}' for function.",
 			                directive->directiveName()));
 		}
-		directivesStack.pop_back();
 	}
 	std::string functionName = nameMangler.mangleFunction(
-	    currentSourceUnit.get().packageName, function, linkageDirective);
+	    currentSourceUnit.get().packageName, functionRST, linkageDirective);
 
 	// ignore any function declaration
-	if (function.body.has_value()) {
+	if (functionRST.body.has_value()) {
 
 		output << identTabs;
 		// main has special rules to linking that we must follow
 		if (functionName == "main") {
 			output << "RAYLANG_DEFAULT_LINKAGE ";
 		} else {
-			if (function.publicVisibility) {
+			if (functionRST.publicVisibility) {
 				output << "RAYLANG_LINK_EXPORT ";
 			} else {
 				output << "RAYLANG_LINK_LOCAL ";
@@ -175,33 +163,31 @@ void CTranspilerGenerator::visitFunctionStatement(
 			}
 		}
 
-		function.returnType->visit(*this);
+		if (functionRST.returnType) {
+			assert(functionRST.returnType->get());
+			transpile(**functionRST.returnType);
+		}
 
 		output << std::format(" {}(", functionName);
-		for (size_t index = 0; index < function.params.size(); ++index) {
-			const auto &parameter = function.params[index];
+		for (size_t index = 0; index < functionRST.params.size(); ++index) {
+			const auto &parameter = functionRST.params[index];
 			parameter.visit(*this);
-			if (index < function.params.size() - 1) {
+			if (index < functionRST.params.size() - 1) {
 				output << ", ";
 			}
 		}
 		output << ")";
 		output << " {\n";
-		if (function.body.has_value()) {
+		if (functionRST.body.has_value()) {
 			ident++;
-			function.body->get()->visit(*this);
+			functionRST.body->get()->visit(*this);
 			ident--;
 		}
 		output << std::format("{}}}\n", identTabs);
 	}
 }
-void CTranspilerGenerator::visitTraitMethodStatement(
-    const syntax::ast::TraitMethod &value) {
-	messageBag.error(value.getToken(),
-	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
-}
 void CTranspilerGenerator::visitIfStatement(
-    const syntax::ast::If &ifStatement) {
+    const syntax::rst::If &ifStatement) {
 	output << std::format("{}if (", currentIdent());
 	ifStatement.condition->visit(*this);
 	output << ") {\n";
@@ -217,7 +203,7 @@ void CTranspilerGenerator::visitIfStatement(
 		output << std::format("{}}}\n", currentIdent());
 	}
 }
-void CTranspilerGenerator::visitJumpStatement(const syntax::ast::Jump &jump) {
+void CTranspilerGenerator::visitJumpStatement(const syntax::rst::Jump &jump) {
 	std::string identTab = currentIdent();
 	switch (jump.keyword.type) {
 	case Token::TokenType::TOKEN_BREAK:
@@ -245,7 +231,7 @@ void CTranspilerGenerator::visitJumpStatement(const syntax::ast::Jump &jump) {
 	}
 }
 void CTranspilerGenerator::visitVarDeclStatement(
-    const syntax::ast::VarDecl &var) {
+    const syntax::rst::VarDecl &var) {
 	output << currentIdent();
 
 	var.type->visit(*this);
@@ -262,7 +248,7 @@ void CTranspilerGenerator::visitVarDeclStatement(
 	output << ";\n";
 }
 void CTranspilerGenerator::visitMemberStatement(
-    const syntax::ast::Member &var) {
+    const syntax::rst::Member &var) {
 	output << currentIdent();
 
 	var.type->visit(*this);
@@ -279,7 +265,7 @@ void CTranspilerGenerator::visitMemberStatement(
 	output << ";\n";
 }
 void CTranspilerGenerator::visitWhileStatement(
-    const syntax::ast::While &value) {
+    const syntax::rst::While &value) {
 	auto identTab = currentIdent();
 	output << std::format("{}while (", identTab);
 	auto currentIdent = ident;
@@ -293,11 +279,10 @@ void CTranspilerGenerator::visitWhileStatement(
 	output << std::format("{}}}\n", identTab);
 }
 void CTranspilerGenerator::visitStructStatement(
-    const syntax::ast::Struct &value) {
+    const syntax::rst::Struct &structRST) {
 	std::optional<directive::LinkageDirective> linkageDirective;
 
-	for (size_t i = directivesStack.size(); i > top; i--) {
-		auto &directive = directivesStack[i - i];
+	for (const auto &directive : structRST.compilerDirectives) {
 		if (auto foundLinkDirective =
 		        dynamic_cast<directive::LinkageDirective *>(directive.get())) {
 			linkageDirective = *foundLinkDirective;
@@ -307,27 +292,26 @@ void CTranspilerGenerator::visitStructStatement(
 			    std::format("unmatched compiler directive '{}' for function.",
 			                directive->directiveName()));
 		}
-		directivesStack.pop_back();
 	}
 
 	// TODO: remove this once the full logic of struct using type data is
 	// implemented
 	return;
 	const std::string mangledStructName = nameMangler.mangleStruct(
-	    currentSourceUnit.get().packageName, value, linkageDirective);
+	    currentSourceUnit.get().packageName, structRST, linkageDirective);
 
 	// we just ignore any struct declaration
 	// as they were declared before
-	if (!value.declaration) {
+	if (!structRST.declaration) {
 
 		output << std::format("{}typedef struct {}", currentIdent(),
 		                      mangledStructName);
 		output << " {\n";
 		ident++;
-		for (auto &member : value.members) {
+		for (auto &member : structRST.members) {
 			member.visit(*this);
 		}
-		if (value.members.empty()) {
+		if (structRST.members.empty()) {
 			// make a char field so on both C and C++ holds 1 byte
 			// still this field should never be used
 			// and its fields should not be accesible
@@ -341,84 +325,27 @@ void CTranspilerGenerator::visitStructStatement(
 		output << std::format(" {};\n", mangledStructName);
 	}
 }
-void CTranspilerGenerator::visitTraitStatement(
-    const syntax::ast::Trait &value) {
-	messageBag.error(value.getToken(),
-	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
-}
-void CTranspilerGenerator::visitCompDirectiveStatement(
-    const syntax::ast::CompDirective &compDirective) {
-	auto directiveName = compDirective.name.getLexeme();
-	if (directiveName == "Linkage") {
-		auto &attributes = compDirective.values;
-		auto directive = directive::LinkageDirective(
-		    attributes.find("name") != attributes.end() ? attributes.at("name")
-		                                                : "",
-		    attributes.find("resolution") != attributes.end()
-		        ? attributes.at("resolution") == "external"
-		        : false,
-		    attributes.find("mangling") != attributes.end()
-		        ? attributes.at("mangling") == "c"
-		              ? directive::LinkageDirective::ManglingType::C
-		              : directive::LinkageDirective::ManglingType::Unknown
-		        : directive::LinkageDirective::ManglingType::Default,
-		    compDirective.getToken());
-		if (compDirective.child) {
-			auto childValue = compDirective.child.get();
-			if (dynamic_cast<syntax::ast::Function *>(childValue) ||
-			    dynamic_cast<syntax::ast::Struct *>(childValue)) {
-				size_t startDirectives = directivesStack.size();
-				size_t originalTop = top + 1;
-				top = startDirectives;
-				directivesStack.push_back(
-				    std::make_unique<directive::LinkageDirective>(directive));
-				compDirective.child->visit(*this);
-				if (directivesStack.size() != startDirectives) {
-					messageBag.bug(childValue->getToken(),
-					               "unprocessed compiler directives");
-				}
-				top = originalTop;
-			} else {
-				messageBag.error(
-				    childValue->getToken(),
-				    std::format(
-				        "{} child expression must be a function or a struct.",
-				        directive.directiveName()));
-			}
-		} else {
-			messageBag.error(compDirective.getToken(),
-			                 std::format("{} must have a child expression.",
-			                             directive.directiveName()));
-		}
-	} else {
-		messageBag.error(
-		    compDirective.getToken(),
-		    std::format("Unknown compiler directive '{}'.", directiveName));
-	}
-}
-void CTranspilerGenerator::visitPackageStatement(
-    const syntax::ast::Package &value) {
-	// TODO: convert the transpiler to use the RST instead
-}
+void CTranspilerGenerator::visitPlaceholderStatement(
+    const syntax::rst::Placeholder &value) {}
 
 // Expression
 void CTranspilerGenerator::visitVariableExpression(
-    const syntax::ast::Variable &variable) {
+    const syntax::rst::Variable &variable) {
 	output << std::format("{}", variable.name.lexeme);
 }
 void CTranspilerGenerator::visitIntrinsicExpression(
-    const syntax::ast::Intrinsic &intrinsic) {
+    const syntax::rst::Intrinsic &intrinsic) {
 	messageBag.error(intrinsic.name,
 	                 "visitIntrinsicExpression not implemented");
 }
 void CTranspilerGenerator::visitAssignExpression(
-    const syntax::ast::Assign &value) {
+    const syntax::rst::Assign &value) {
 	value.lhs->visit(*this);
 	output << std::format(" {} ", value.assignmentOp.getGlyph());
 	value.rhs->visit(*this);
 }
 void CTranspilerGenerator::visitBinaryExpression(
-    const syntax::ast::Binary &binaryExpression) {
+    const syntax::rst::Binary &binaryExpression) {
 	std::string identTab = currentIdent();
 	binaryExpression.left->visit(*this);
 
@@ -451,10 +378,10 @@ void CTranspilerGenerator::visitBinaryExpression(
 	binaryExpression.right->visit(*this);
 }
 void CTranspilerGenerator::visitCallExpression(
-    const syntax::ast::Call &callable) {
+    const syntax::rst::Call &callable) {
 	// check if the callable contains a function
-	if (syntax::ast::Variable *var =
-	        dynamic_cast<syntax::ast::Variable *>(callable.callee.get())) {
+	if (syntax::rst::Variable *var =
+	        dynamic_cast<syntax::rst::Variable *>(callable.callee.get())) {
 		std::string callableName =
 		    findCallableName(callable, var->name.getLexeme());
 		if (callableName.empty()) {
@@ -482,7 +409,7 @@ void CTranspilerGenerator::visitCallExpression(
 	}
 }
 void CTranspilerGenerator::visitIntrinsicCallExpression(
-    const syntax::ast::IntrinsicCall &intrinsicCallAst) {
+    const syntax::rst::IntrinsicCall &intrinsicCallAst) {
 
 	switch (intrinsicCallAst.callee->intrinsic) {
 	case ray::compiler::syntax::common::IntrinsicType::INTR_SIZEOF: {
@@ -527,16 +454,16 @@ void CTranspilerGenerator::visitIntrinsicCallExpression(
 		break;
 	}
 }
-void CTranspilerGenerator::visitGetExpression(const syntax::ast::Get &value) {
+void CTranspilerGenerator::visitGetExpression(const syntax::rst::Get &value) {
 	value.object->visit(*this);
 	output << std::format(".{}", value.name.lexeme);
 }
 void CTranspilerGenerator::visitGroupingExpression(
-    const syntax::ast::Grouping &grouping) {
+    const syntax::rst::Grouping &grouping) {
 	grouping.expression->visit(*this);
 }
 void CTranspilerGenerator::visitLiteralExpression(
-    const syntax::ast::Literal &literal) {
+    const syntax::rst::Literal &literal) {
 	switch (literal.kind.type) {
 	case Token::TokenType::TOKEN_TRUE:
 	case Token::TokenType::TOKEN_FALSE:
@@ -629,21 +556,21 @@ void CTranspilerGenerator::visitLiteralExpression(
 	}
 }
 void CTranspilerGenerator::visitLogicalExpression(
-    const syntax::ast::Logical &logicalExpr) {
+    const syntax::rst::Logical &logicalExpr) {
 	output << "(bool)(";
 	logicalExpr.left->visit(*this);
 	output << std::format(" {} ", logicalExpr.op.getGlyph());
 	logicalExpr.right->visit(*this);
 	output << ")";
 }
-void CTranspilerGenerator::visitSetExpression(const syntax::ast::Set &value) {
+void CTranspilerGenerator::visitSetExpression(const syntax::rst::Set &value) {
 	value.object->visit(*this);
 	output << std::format(".{} {} ", value.name.lexeme,
 	                      value.assignmentOp.getGlyph());
 	value.value->visit(*this);
 }
 void CTranspilerGenerator::visitUnaryExpression(
-    const syntax::ast::Unary &unary) {
+    const syntax::rst::Unary &unary) {
 	if (!unary.isPrefix) {
 		unary.expr->visit(*this);
 	}
@@ -664,14 +591,14 @@ void CTranspilerGenerator::visitUnaryExpression(
 	}
 }
 void CTranspilerGenerator::visitArrayAccessExpression(
-    const syntax::ast::ArrayAccess &value) {
+    const syntax::rst::ArrayAccess &value) {
 	value.array->visit(*this);
 	output << "[";
 	value.index->visit(*this);
 	output << "]";
 }
 void CTranspilerGenerator::visitArrayTypeExpression(
-    const syntax::ast::ArrayType &arrayTypeAst) {
+    const syntax::rst::ArrayType &arrayTypeAst) {
 	// TODO: once array type holds its size in the AST provide
 	// a check to transpile it to C
 	arrayTypeAst.subType->visit(*this);
@@ -682,7 +609,7 @@ void CTranspilerGenerator::visitArrayTypeExpression(
 	}
 }
 void CTranspilerGenerator::visitTupleTypeExpression(
-    const syntax::ast::TupleType &tupleAst) {
+    const syntax::rst::TupleType &tupleAst) {
 	// empty tuples are just plain void
 	if (tupleAst.expressions.empty()) {
 		output << "void";
@@ -695,7 +622,7 @@ void CTranspilerGenerator::visitTupleTypeExpression(
 	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
 }
 void CTranspilerGenerator::visitPointerTypeExpression(
-    const syntax::ast::PointerType &pointerTypeAst) {
+    const syntax::rst::PointerType &pointerTypeAst) {
 
 	pointerTypeAst.subtype->visit(*this);
 
@@ -705,7 +632,7 @@ void CTranspilerGenerator::visitPointerTypeExpression(
 	}
 }
 void CTranspilerGenerator::visitNamedTypeExpression(
-    const syntax::ast::NamedType &type) {
+    const syntax::rst::NamedType &type) {
 	if (!type.isMutable && type.name.lexeme != "void"
 	    // && !type.isPointer // TODO: make this section use the type checker
 	    // instead
@@ -732,7 +659,7 @@ void CTranspilerGenerator::visitNamedTypeExpression(
 		output << std::format("{}", typeName);
 	}
 }
-void CTranspilerGenerator::visitCastExpression(const syntax::ast::Cast &value) {
+void CTranspilerGenerator::visitCastExpression(const syntax::rst::Cast &value) {
 	output << "(";
 	value.type->visit(*this);
 	output << ")(";
@@ -740,9 +667,20 @@ void CTranspilerGenerator::visitCastExpression(const syntax::ast::Cast &value) {
 	output << ")";
 }
 void CTranspilerGenerator::visitParameterExpression(
-    const syntax::ast::Parameter &param) {
+    const syntax::rst::Parameter &param) {
 	param.type->visit(*this);
 	output << std::format(" {}", param.name.lexeme);
+}
+void CTranspilerGenerator::visitPlaceHolderExpression(
+    const syntax::rst::PlaceHolder &value) {}
+
+void CTranspilerGenerator::transpile(
+    const syntax::rst::Statement &statementAST) {
+	statementAST.visit(*this);
+}
+void CTranspilerGenerator::transpile(
+    const syntax::rst::Expression &expressionAST) {
+	expressionAST.visit(*this);
 }
 
 void CTranspilerGenerator::visitType(const lang::Type &type) {
@@ -797,7 +735,7 @@ void CTranspilerGenerator::visitType(const lang::Type &type) {
 }
 
 std::string
-CTranspilerGenerator::findCallableName(const syntax::ast::Call &callable,
+CTranspilerGenerator::findCallableName(const syntax::rst::Call &callable,
                                        const std::string_view name) const {
 	// TODO: replace this to a resolved lookup done by the type checker
 	// once the type checker performs the binding
@@ -849,8 +787,8 @@ CTranspilerGenerator::findTypeInfo(const std::string_view lexeme) {
 	return {};
 }
 std::optional<lang::Type> CTranspilerGenerator::getTypeExpression(
-    const syntax::ast::Expression *expression) {
-	if (auto var = dynamic_cast<const syntax::ast::Variable *>(expression)) {
+    const syntax::rst::Expression *expression) {
+	if (auto var = dynamic_cast<const syntax::rst::Variable *>(expression)) {
 		return findTypeInfo(var->name.lexeme);
 	}
 	return {};
@@ -894,4 +832,4 @@ void CTranspilerGenerator::defineStruct(
 	output << std::format("}} {};\n", structObj.mangledName);
 }
 
-} // namespace ray::compiler::generator::c
+} // namespace ray::compiler::backend::c

@@ -1,4 +1,5 @@
 #pragma once
+#include <functional>
 #include <optional>
 
 #include <ray/compiler/environment/dataModel/dataModel.hpp>
@@ -21,16 +22,13 @@ class TypeChecker : public syntax::rst::StatementVisitor,
 	std::reference_wrapper<lang::Scope> currentScope;
 	std::reference_wrapper<const environment::DataModel> currentDataModel;
 
-	syntax::rst::Block rootBlock;
-
   public:
 	TypeChecker(std::string filePath, const lang::ModuleStore &moduleStore,
 	            const environment::DataModel &dataModel,
 	            lang::SourceUnit &sourceUnit)
 	    : messageBag("TYPE-CHECKER", filePath), typeStack(),
 	      currentSourceUnit(sourceUnit),
-	      currentScope(currentSourceUnit.rootScope),
-	      currentDataModel(dataModel), rootBlock({}, Token::makeEOFToken())
+	      currentScope(currentSourceUnit.rootScope), currentDataModel(dataModel)
 	//,moduleStore(moduleStore)
 	{}
 
@@ -41,8 +39,7 @@ class TypeChecker : public syntax::rst::StatementVisitor,
 	}
 
 	bool hasFailed() const;
-	const std::vector<std::string> getErrors() const;
-	const std::vector<std::string> getWarnings() const;
+	const MessageBag &getMessageBag() const;
 
   private:
 	void visitBlockStatement(const syntax::rst::Block &value) override;
