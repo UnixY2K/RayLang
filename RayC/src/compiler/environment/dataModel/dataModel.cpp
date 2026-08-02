@@ -159,9 +159,9 @@ DataModel::defineOverloadedFunctionType(lang::Type returnType) const {
 	    0,
 	    // initialized as its overloads are initialized
 	    true,
-	    // a pointer is not a scalar as it is an address memory
-	    // that references an object
-	    lang::TypeKind::pointer,
+	    // overloaded functions are abstract types that resolve to function
+	    // pointers
+	    lang::TypeKind::abstract,
 	    // define the name as pointer
 	    "//fn-overload",
 	    0,          // an overloaded function does not hold any size

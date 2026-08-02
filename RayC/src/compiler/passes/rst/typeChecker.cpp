@@ -354,6 +354,8 @@ void TypeChecker::visitVariableExpression(
 			functionType =
 			    functionDeclaration.signature.getFunctionType(currentDataModel);
 		} else {
+			// the current function already is initialized
+			// so we have function overload
 			functionType =
 			    functionDeclaration.signature.getOverloadedFunctionType(
 			        currentDataModel);
@@ -552,8 +554,8 @@ void TypeChecker::visitCallExpression(const syntax::rst::Call &callExprRst) {
 		if (calleeType.overloaded) {
 			messageBag.bug(
 			    callExprRst.getToken(),
-			    std::format("overloaded functions not supported yet"));
-			return;
+			    std::format(
+			        "overloaded function resolve not supported yet, assuming first return function"));
 		}
 		break;
 	}
