@@ -327,7 +327,7 @@ void Lexer::number() {
 
 	auto number_literal = source.substr(start, current - start);
 
-	if (peek() == 'i' || peek() == 'u') {
+	if (peek() == 's' || peek() == 'u') {
 		size_t index = number_literal.length();
 		std::string_view new_literal = "";
 		auto subType = source.substr(start + index, 3);
