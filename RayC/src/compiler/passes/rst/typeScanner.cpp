@@ -280,7 +280,10 @@ void TypeScanner::visitIntrinsicExpression(
 		// TODO: return modulequery type so the module can be scanned
 		messageBag.error(
 		    intrinsicRst.getToken(),
-		    std::format("{} not implemented", __PRETTY_FUNCTION__));
+		    std::format("{} not implemented for import", __PRETTY_FUNCTION__));
+		typeStack.push_back(
+		    lang::Type::defineIntrinsicType(intrinsicRst.name.lexeme));
+		currentModuleStore;
 		break;
 	}
 	case syntax::common::IntrinsicType::INTR_UNKNOWN:

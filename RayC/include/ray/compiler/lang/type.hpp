@@ -32,9 +32,10 @@ class Type {
 	std::optional<std::vector<util::copy_ptr<Type>>> signature = std::nullopt;
 
 	Type() = default;
-	Type(size_t typeId, bool initialized, TypeKind kind, std::string name,
-	     size_t calculatedSize, bool isMutable, bool signedType,
-	     bool overloaded, std::optional<util::copy_ptr<Type>> subType,
+	Type(const size_t typeId, const bool initialized, const TypeKind kind,
+	     const std::string name, const size_t calculatedSize,
+	     const bool isMutable, const bool signedType, const bool overloaded,
+	     std::optional<util::copy_ptr<Type>> subType,
 	     std::optional<std::vector<util::copy_ptr<Type>>> signature)
 	    : initialized{initialized}, kind{kind}, typeId(typeId), name{name},
 	      calculatedSize{calculatedSize}, isMutable{isMutable},
@@ -54,68 +55,56 @@ class Type {
 	// returns a type that is not instatiable and cannot be used
 	// used by statements in the type checker
 	static constexpr Type defineStmtType() {
-		return Type{
-		    // not defined typeID
-		    0,
-		    // an statement does not even return an initialized type
-		    false,
-		    TypeKind::abstract, // abstract kind (non valid at runtime)
-		    // name cannot be mangled nor referenced
-		    "%<stmt>%",
-		    // size is 0 so it cannot be passed
-		    0,
-		    false, // non mutable
-		    false, // non signed
-		    false, // non overloaded
-		    {},    // no subtype data
-		    {},    // no signature data
-		};
+		return defineNamedAbstractType("%<stmt>%");
 	}
 
 	// defines an unknown type which is used when a child expression searched
 	// for a valid type but did not found a matching value
 	static constexpr Type defineUnknownType() {
-		return Type{
-		    // unknown type without ID
-		    0,
-		    // an statement does not even return an initialized type
-		    false,
-		    TypeKind::abstract, // abstract (unknown type not valid)
-		    // name cannot be mangled nor referenced
-		    "%<unknown>%",
-		    // size is 0 so it cannot be passed
-		    0,
-		    false, // non mutable
-		    false, // non signed
-		    false, // non overloaded
-		    {},    // no subtype data
-		    {},    // no signature data
-		};
+		return defineNamedAbstractType("%<unknown>%");
 	}
 
 	// defines an empty module type used by the type checker
 	static constexpr Type defineModuleType() {
+		return defineNamedAbstractType("%<module>%");
+	}
+
+	// defines an intrinsic expression, ex: @import
+	// note: its result must be evaluated later, this only exposes the intrinsic
+	// itself as a Type
+	static constexpr Type defineIntrinsicType(const std::string &name) {
+		return defineNamedAbstractType("%<intrinsic>%",
+		                               defineNamedAbstractType(name));
+	}
+
+	static constexpr Type defineNamedAbstractType(
+	    const std::string &name,
+	    std::optional<util::copy_ptr<Type>> subType = std::nullopt,
+	    std::optional<std::vector<util::copy_ptr<Type>>> signature =
+	        std::nullopt) {
 		return Type{
-		    // modules do not have a defined typeID
+		    // named abstract do not have a defined typeID
 		    0,
-		    // an statement does not even return an initialized type
+		    // abstracts consider itself initialized, as they have to be
+		    // evaluated per case
 		    true,
-		    TypeKind::abstract, // abstract (module type)
+		    TypeKind::abstract, // abstract
 		    // name cannot be mangled nor referenced
-		    "%<module>%",
+		    name,
 		    // size is 0 so it cannot be passed
 		    0,
-		    false, // non mutable
-		    false, // non signed
-		    false, // non overloaded
-		    {},    // no subtype data
-		    {},    // no signature data
+		    false,     // non mutable
+		    false,     // non signed
+		    false,     // non overloaded
+		    subType,   // subtype specified by caller
+		    signature, // signature specified by caller
 		};
 	}
 
 	// defines an empty tuple type, which holds different rules than a
 	// conventional tuple (abstract vs aggregate)
 	static constexpr Type defineUnitType(bool isMutable = false) {
+		// TODO: revisit this section in the future to evaluate unit constness
 		return {
 		    // its type is unknown and can be changed later
 		    0,

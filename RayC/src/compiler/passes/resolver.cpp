@@ -90,7 +90,8 @@ void Resolver::visitFunctionStatement(
 	for (const auto &paramAST : functionAST.params) {
 		auto paramExpression = resolveExpression(paramAST);
 		assert(dynamic_cast<syntax::rst::Parameter *>(paramExpression.get()));
-		auto &paramRef = static_cast<syntax::rst::Parameter&>(*paramExpression);
+		auto &paramRef =
+		    static_cast<syntax::rst::Parameter &>(*paramExpression);
 		functionRST->params.push_back(std::move(paramRef));
 	}
 
@@ -418,9 +419,12 @@ void Resolver::visitIntrinsicCallExpression(
 
 	expressionStack.push_back(std::move(callExpressionRST));
 }
-void Resolver::visitGetExpression(const syntax::ast::Get &value) {
-	messageBag.error(value.getToken(),
-	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
+void Resolver::visitGetExpression(const syntax::ast::Get &valueAST) {
+	auto objectRST = resolveExpression(*valueAST.object);
+	auto getExpressionRST = std::make_unique<syntax::rst::Get>(
+	    syntax::rst::Get(std::move(objectRST), valueAST.name, valueAST.token));
+
+	expressionStack.push_back(std::move(getExpressionRST));
 }
 void Resolver::visitGroupingExpression(
     const syntax::ast::Grouping &groupingExpressionAST) {

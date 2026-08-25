@@ -20,7 +20,7 @@
 
 #include <ray/compiler/backend/c/c_transpiler.hpp>
 
-#include <ray/compiler/lang/moduleStore.hpp>
+#include <ray/compiler/lang/module.hpp>
 #include <ray/compiler/lang/sourceUnit.hpp>
 
 // wingdi.h is included somewhere and is defining ERROR and as macro...

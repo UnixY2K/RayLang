@@ -5,7 +5,7 @@
 
 #include <ray/compiler/directives/compilerDirective.hpp>
 #include <ray/compiler/environment/dataModel/dataModel.hpp>
-#include <ray/compiler/lang/moduleStore.hpp>
+#include <ray/compiler/lang/module.hpp>
 #include <ray/compiler/lang/sourceUnit.hpp>
 #include <ray/compiler/lexer/token.hpp>
 #include <ray/compiler/message_bag.hpp>
