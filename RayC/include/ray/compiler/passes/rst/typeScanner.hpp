@@ -12,7 +12,7 @@
 #include <ray/compiler/syntax/rst/Expression.hpp>
 #include <ray/compiler/syntax/rst/Statement.hpp>
 
-namespace ray::compiler::passes {
+namespace ray::compiler::passes::rst {
 class TypeScanner : public syntax::rst::StatementVisitor,
                     public syntax::rst::ExpressionVisitor {
 	MessageBag messageBag;

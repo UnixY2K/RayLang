@@ -127,7 +127,7 @@ int main(int argc, char **argv) {
 			// return 1;
 		}
 
-		passes::TypeScanner typeScanner(sourceFile, *dataModel, sourceUnit,
+		passes::rst::TypeScanner typeScanner(sourceFile, *dataModel, sourceUnit,
 		                                moduleStore);
 
 		typeScanner.resolve(resolver.getRootBlock());

@@ -47,7 +47,9 @@ class Type {
 	TypeKind getKind() const { return kind; }
 
 	bool coercercesInto(const Type &targetType) const;
+	// checks for strict equality between types
 	bool signatureEquals(const Type &targetType) const;
+	// checks for a match in the signature considering type coercion
 	bool signatureMatches(const Type &targetType) const;
 
 	bool operator==(const Type &other) const;
@@ -69,12 +71,30 @@ class Type {
 		return defineNamedAbstractType("%<module>%");
 	}
 
+	// defines a "meta Type" Type, which is basically and abstract type
+	// that holds a Type information, ex: @sizeOf(c_char) where c_char is the
+	// meta type passed to the intrinsic
+	static constexpr Type defineMetaTypeType() {
+		return defineNamedAbstractType("%<Type>%");
+	}
+
+	// defines a known metaString type
+	static constexpr Type defineMetaStringType() {
+		return defineNamedAbstractType("%<MetaString>%");
+	}
+
 	// defines an intrinsic expression, ex: @import
 	// note: its result must be evaluated later, this only exposes the intrinsic
 	// itself as a Type
-	static constexpr Type defineIntrinsicType(const std::string &name) {
-		return defineNamedAbstractType("%<intrinsic>%",
-		                               defineNamedAbstractType(name));
+	static constexpr Type defineIntrinsicType(
+	    const std::string &name,
+	    // subtype(return type of the intrinsic(if known))
+	    // signature of the intrinsic to validate(if known)
+	    std::optional<util::copy_ptr<Type>> subType = std::nullopt,
+	    std::optional<std::vector<util::copy_ptr<Type>>> signature =
+	        std::nullopt) {
+		return defineNamedAbstractType(
+		    "%<intrinsic>%", defineNamedAbstractType(name, subType, signature));
 	}
 
 	static constexpr Type defineNamedAbstractType(

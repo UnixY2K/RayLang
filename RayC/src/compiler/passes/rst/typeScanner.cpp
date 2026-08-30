@@ -24,7 +24,7 @@
 #include <ray/util/copy_ptr.hpp>
 #include <ray/util/soft_reference.hpp>
 
-namespace ray::compiler::passes {
+namespace ray::compiler::passes::rst {
 
 void TypeScanner::resolve(const syntax::rst::Block &block) {
 	// search for structs
@@ -272,18 +272,22 @@ void TypeScanner::visitIntrinsicExpression(
     const syntax::rst::Intrinsic &intrinsicRst) {
 	switch (intrinsicRst.intrinsic) {
 	case syntax::common::IntrinsicType::INTR_SIZEOF: {
-		typeStack.push_back(currentDataModel.get().getScalarType(
-		    environment::DataModel::ScalarTypeKind::ssizeScalar));
+		auto moduleType = lang::Type::defineIntrinsicType(
+		    intrinsicRst.name.lexeme,
+		    // usize return type
+		    currentDataModel.get().getScalarType(
+		        environment::DataModel::ScalarTypeKind::usizeScalar),
+		    // signature: "%<metaType>%", ex call: @sizeOf(c_char)
+		    {{lang::Type::defineMetaTypeType()}});
 		break;
 	}
 	case syntax::common::IntrinsicType::INTR_IMPORT: {
-		// TODO: return modulequery type so the module can be scanned
-		messageBag.error(
-		    intrinsicRst.getToken(),
-		    std::format("{} not implemented for import", __PRETTY_FUNCTION__));
-		typeStack.push_back(
-		    lang::Type::defineIntrinsicType(intrinsicRst.name.lexeme));
-		currentModuleStore;
+		// the responsability of the import is on the call expression to resolve
+		// it and make it available
+		// to both the current source module and the assigne(lvalue)
+		typeStack.push_back(lang::Type::defineIntrinsicType(
+		    intrinsicRst.name.lexeme, lang::Type::defineModuleType(),
+		    {{lang::Type::defineMetaStringType()}}));
 		break;
 	}
 	case syntax::common::IntrinsicType::INTR_UNKNOWN:
@@ -343,6 +347,9 @@ void TypeScanner::visitIntrinsicCallExpression(
     const syntax::rst::IntrinsicCall &intrinsicCallRst) {
 	// TODO: review this section later for a module system
 	auto type = resolveType(*intrinsicCallRst.callee);
+	auto subType = type.subtype.value_or(lang::Type::defineUnknownType());
+	if (subType->signatureEquals(lang::Type::defineUnknownType())) {
+	}
 
 	for (auto &argument : intrinsicCallRst.arguments) {
 		argument->visit(*this);
@@ -670,4 +677,4 @@ void TypeScanner::discoverStruct(const syntax::rst::Struct &structRst) {
 	}
 }
 
-} // namespace ray::compiler::passes
+} // namespace ray::compiler::passes::rst
