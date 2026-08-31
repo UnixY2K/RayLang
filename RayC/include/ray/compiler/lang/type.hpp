@@ -80,6 +80,13 @@ class Type {
 
 	// defines a known metaString type
 	static constexpr Type defineMetaStringType() {
+		// previous definition used by scanner
+		// const auto baseType =
+		//     currentDataModel.get().findScalarType("u8").value();
+		//// literal strings are not mutable
+		// const auto arrayType =
+		//     currentDataModel.get().definePointerType(baseType, false);
+		// typeStack.push_back(arrayType);
 		return defineNamedAbstractType("%<MetaString>%");
 	}
 

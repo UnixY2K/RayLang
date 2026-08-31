@@ -349,11 +349,42 @@ void TypeScanner::visitIntrinsicCallExpression(
 	auto type = resolveType(*intrinsicCallRst.callee);
 	auto subType = type.subtype.value_or(lang::Type::defineUnknownType());
 	if (subType->signatureEquals(lang::Type::defineUnknownType())) {
+		messageBag.error(
+		    intrinsicCallRst.token,
+		    std::format("could not determine type of intrinsic callee"));
+		return;
 	}
 
-	for (auto &argument : intrinsicCallRst.arguments) {
-		argument->visit(*this);
+	if (intrinsicCallRst.arguments.size() != subType->signature->size()) {
+		messageBag.error(
+		    intrinsicCallRst.callee->getToken(),
+		    std::format(
+		        "provided number of arguments({}) does not match with required number of arguments({}).",
+		        intrinsicCallRst.arguments.size(), subType->signature->size()));
+		return;
 	}
+
+	for (size_t argumentIndex = 0;
+	     argumentIndex < intrinsicCallRst.arguments.size(); argumentIndex++) {
+		auto &argument = intrinsicCallRst.arguments.at(argumentIndex);
+		auto argumentType = resolveType(*argument);
+		auto &expectedType = subType->signature->at(argumentIndex);
+		if (!argumentType.coercercesInto(*expectedType)) {
+			messageBag.error(
+			    argument->getToken(),
+			    std::format(
+			        "argument type({}) does not coerce into required argument type ({})",
+			        argumentType.name, expectedType->name));
+		}
+	}
+
+	// at scan phase do not worry about the types and just return its
+	// subtype, later phases can check for further validation or required
+	// steps(such as module discovery)
+	lang::Type returnType =
+	    subType->subtype.transform([](auto &val) { return *val; })
+	        .value_or(lang::Type::defineUnknownType());
+	typeStack.push_back(returnType);
 }
 void TypeScanner::visitGetExpression(const syntax::rst::Get &value) {
 	messageBag.error(value.getToken(),
@@ -369,12 +400,10 @@ void TypeScanner::visitLiteralExpression(
 	switch (literalRst.kind.type) {
 
 	case Token::TokenType::TOKEN_STRING: {
-		const auto baseType =
-		    currentDataModel.get().findScalarType("u8").value();
-		// literal strings are not mutable
-		const auto arrayType =
-		    currentDataModel.get().definePointerType(baseType, false);
-		typeStack.push_back(arrayType);
+		// literal strings are its own type by itself
+		// TODO: review this section to conditionally return literal or meta
+		// strings
+		typeStack.push_back(lang::Type::defineMetaStringType());
 		break;
 	}
 	case Token::TokenType::TOKEN_NUMBER: {
