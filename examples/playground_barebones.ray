@@ -1,3 +1,5 @@
+package examples;
+
 #[Linkage(mangling="c", resolution="external")]
 struct FILE;
 #[Linkage(mangling = "c", resolution="external", name="ray_libc_stdio_get_stdout")]
