@@ -1,9 +1,9 @@
 # RayLang
 
-This is a work in progress of RayLang, a programming language with RustLike syntax designed to be in between Rust and C.
+This is a work in progress of RayLang.
 Currently only basic syntax is implemented like the one bellow:
 
-```rust
+```
 fn fib(n: s32) -> s32{
 	if n <= 1 {
 		return n;
@@ -43,7 +43,7 @@ so there is no validation of those types, still as long your code is valid it sh
 <b>example.ray</b>
 </summary>
 
-```rust
+```
 
 struct String{
 	array_size: usize;
