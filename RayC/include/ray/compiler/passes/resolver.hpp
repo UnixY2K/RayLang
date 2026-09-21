@@ -24,6 +24,7 @@ class Resolver : public syntax::ast::StatementVisitor,
                  public syntax::ast::ExpressionVisitor,
                  public CompilerPass {
 
+	infrastructure::CompilationContext *compilationContext;
 	lang::Scope *currentScope;
 
 	std::unique_ptr<syntax::rst::Block> rootBlock = nullptr;
@@ -33,8 +34,6 @@ class Resolver : public syntax::ast::StatementVisitor,
 
 	std::vector<lang::StructMember> structMemberStack;
 	std::vector<lang::Method> traitMethodStack;
-
-	infrastructure::CompilationContext *compilationContext;
 
 	std::vector<std::unique_ptr<syntax::rst::Statement>> statementStack;
 	std::vector<std::unique_ptr<syntax::rst::Expression>> expressionStack;

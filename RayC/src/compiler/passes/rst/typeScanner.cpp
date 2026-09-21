@@ -26,6 +26,22 @@
 
 namespace ray::compiler::passes::rst {
 
+void TypeScanner::run(infrastructure::CompilationContext &ctx,
+                      std::unique_ptr<infrastructure::CompilerArtifact>
+                          previousCompilerArtifact) {
+	compilationContext = &ctx;
+
+	currentScope = &compilationContext->sourceUnit.rootScope;
+	assert(previousCompilerArtifact->rootRSTBlock.has_value());
+	currentCompilerArtifact = std::move(previousCompilerArtifact);
+	auto rootRST = currentCompilerArtifact->rootRSTBlock->get();
+	resolve(*rootRST);
+}
+std::unique_ptr<infrastructure::CompilerArtifact>
+TypeScanner::getCompilationArtifact() {
+	return std::move(currentCompilerArtifact);
+}
+
 void TypeScanner::resolve(const syntax::rst::Block &block) {
 	// search for structs
 	const auto &statements = block.statements;
@@ -43,17 +59,9 @@ void TypeScanner::resolve(const syntax::rst::Block &block) {
 	}
 }
 
-bool TypeScanner::hasFailed() const { return messageBag.failed(); }
-const std::vector<std::string> TypeScanner::getErrors() const {
-	return messageBag.getErrors();
-}
-const std::vector<std::string> TypeScanner::getWarnings() const {
-	return messageBag.getWarnings();
-}
-
 void TypeScanner::visitBlockStatement(const syntax::rst::Block &blockRst) {
-	auto &parentScope = currentScope.get();
-	currentScope = parentScope.makeChildScope();
+	auto &parentScope = getCurrentScope();
+	currentScope = &parentScope.makeChildScope();
 	std::vector<lang::Type> returnTypes;
 
 	for (const auto &astStatement : blockRst.statements) {
@@ -71,7 +79,7 @@ void TypeScanner::visitBlockStatement(const syntax::rst::Block &blockRst) {
 		}
 	}
 
-	currentScope = parentScope;
+	currentScope = &parentScope;
 }
 void TypeScanner::visitTerminalExpressionStatement(
     const syntax::rst::TerminalExpression &terminalExprRst) {
@@ -94,7 +102,7 @@ void TypeScanner::visitFunctionStatement(
 		        dynamic_cast<directive::LinkageDirective *>(directive.get())) {
 			linkageDirective = *foundLinkDirective;
 		} else {
-			messageBag.warning(
+			compilationContext->diagnostics.warning(
 			    directive->getToken(),
 			    std::format(
 			        "unmatched compiler directive '{}' for function '{}'",
@@ -104,13 +112,13 @@ void TypeScanner::visitFunctionStatement(
 	}
 	std::string mangledFunctionName =
 	    passes::mangling::NameMangler().mangleFunction(
-	        currentSourceUnit.packageName, functionRst, linkageDirective);
+	        getCurrentSourceUnit().packageName, functionRst, linkageDirective);
 
 	auto returnType = resolveType(*functionRst.returnType->get());
 	// update the function signature
-	auto &functionsTable = currentSourceUnit.getFunctions();
+	auto &functionsTable = getCurrentSourceUnit().getFunctions();
 	if (!functionsTable.contains(functionRst.functionId)) {
-		messageBag.bug(
+		compilationContext->diagnostics.bug(
 		    functionRst.getToken(),
 		    std::format("could not find internal function via ID#{} for '{}'",
 		                functionRst.functionId, mangledFunctionName));
@@ -180,7 +188,7 @@ void TypeScanner::visitStructStatement(const syntax::rst::Struct &structRst) {
 		        dynamic_cast<directive::LinkageDirective *>(directive.get())) {
 			linkageDirective = *foundLinkDirective;
 		} else {
-			messageBag.warning(
+			compilationContext->diagnostics.warning(
 			    directive->getToken(),
 			    std::format("unmatched compiler directive '{}' for function.\n",
 			                directive->directiveName()));
@@ -191,16 +199,17 @@ void TypeScanner::visitStructStatement(const syntax::rst::Struct &structRst) {
 	auto structName = structRst.name.getLexeme();
 	std::string mangledStructName =
 	    passes::mangling::NameMangler().mangleStruct(
-	        currentSourceUnit.packageName, structRst, linkageDirective);
-	auto &scope = currentScope.get();
-	if (!currentSourceUnit.declareStruct(
+	        getCurrentSourceUnit().packageName, structRst, linkageDirective);
+	auto &scope = getCurrentScope();
+	if (!getCurrentSourceUnit().declareStruct(
 	        lang::Struct{
 	            .opaque = true,                   // unknown implementation
 	            .name = std::string(structName),  //
 	            .mangledName = mangledStructName, //
 	        },
 	        scope)) {
-		messageBag.error(structRst.getToken(), "could not declare struct");
+		compilationContext->diagnostics.error(structRst.getToken(),
+		                                      "could not declare struct");
 	}
 
 	auto structObjRes = scope.findLocalStruct(structName)
@@ -216,7 +225,7 @@ void TypeScanner::visitStructStatement(const syntax::rst::Struct &structRst) {
 	}
 
 	if (!structObjRes.has_value()) {
-		messageBag.bug(
+		compilationContext->diagnostics.bug(
 		    structRst.getToken(),
 		    std::format("could not find Struct internal reference for '{}'",
 		                structName));
@@ -227,7 +236,7 @@ void TypeScanner::visitStructStatement(const syntax::rst::Struct &structRst) {
 	for (const auto &member : structRst.members) {
 		member.visit(*this);
 		if (structMemberStack.empty()) {
-			messageBag.bug(
+			compilationContext->diagnostics.bug(
 			    member.getToken(),
 			    std::format("could not get struct member data for '{}'",
 			                member.name.getLexeme()));
@@ -251,7 +260,7 @@ void TypeScanner::visitVariableExpression(
 	// revisit this section so we can determine if abstract variables can hold
 	// values required to them
 	auto foundVariable =
-	    currentScope.get()
+	    getCurrentScope()
 	        .findVariable(varExprRst.name.lexeme)
 	        .transform([](const util::soft_reference<lang::Symbol> &symbolRef)
 	                       -> lang::Symbol {
@@ -275,7 +284,7 @@ void TypeScanner::visitIntrinsicExpression(
 		auto moduleType = lang::Type::defineIntrinsicType(
 		    intrinsicRst.name.lexeme,
 		    // usize return type
-		    currentDataModel.get().getScalarType(
+		    compilationContext->dataModel.getScalarType(
 		        environment::DataModel::ScalarTypeKind::usizeScalar),
 		    // signature: "%<metaType>%", ex call: @sizeOf(c_char)
 		    {{lang::Type::defineMetaTypeType()}});
@@ -330,9 +339,10 @@ void TypeScanner::visitBinaryExpression(
 		typeStack.push_back(findScalarTypeInfo("bool").value());
 		break;
 	default:
-		messageBag.error(binaryExprRst.op,
-		                 std::format("'{}' is not a supported binary operation",
-		                             op.getLexeme()));
+		compilationContext->diagnostics.error(
+		    binaryExprRst.op,
+		    std::format("'{}' is not a supported binary operation",
+		                op.getLexeme()));
 	}
 }
 void TypeScanner::visitCallExpression(const syntax::rst::Call &callRst) {
@@ -349,14 +359,14 @@ void TypeScanner::visitIntrinsicCallExpression(
 	auto type = resolveType(*intrinsicCallRst.callee);
 	auto subType = type.subtype.value_or(lang::Type::defineUnknownType());
 	if (subType->signatureEquals(lang::Type::defineUnknownType())) {
-		messageBag.error(
+		compilationContext->diagnostics.error(
 		    intrinsicCallRst.token,
 		    std::format("could not determine type of intrinsic callee"));
 		return;
 	}
 
 	if (intrinsicCallRst.arguments.size() != subType->signature->size()) {
-		messageBag.error(
+		compilationContext->diagnostics.error(
 		    intrinsicCallRst.callee->getToken(),
 		    std::format(
 		        "provided number of arguments({}) does not match with required number of arguments({}).",
@@ -370,7 +380,7 @@ void TypeScanner::visitIntrinsicCallExpression(
 		auto argumentType = resolveType(*argument);
 		auto &expectedType = subType->signature->at(argumentIndex);
 		if (!argumentType.coercercesInto(*expectedType)) {
-			messageBag.error(
+			compilationContext->diagnostics.error(
 			    argument->getToken(),
 			    std::format(
 			        "argument type({}) does not coerce into required argument type ({})",
@@ -387,8 +397,9 @@ void TypeScanner::visitIntrinsicCallExpression(
 	typeStack.push_back(returnType);
 }
 void TypeScanner::visitGetExpression(const syntax::rst::Get &value) {
-	messageBag.error(value.getToken(),
-	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
+	compilationContext->diagnostics.error(
+	    value.getToken(),
+	    std::format("{} not implemented", __PRETTY_FUNCTION__));
 }
 void TypeScanner::visitGroupingExpression(
     const syntax::rst::Grouping &groupingRst) {
@@ -407,10 +418,10 @@ void TypeScanner::visitLiteralExpression(
 		break;
 	}
 	case Token::TokenType::TOKEN_NUMBER: {
-		auto type = currentDataModel.get().getNumberLiteralType(
+		auto type = compilationContext->dataModel.getNumberLiteralType(
 		    literalRst.token.lexeme);
 		if (!type.has_value()) {
-			messageBag.error(
+			compilationContext->diagnostics.error(
 			    literalRst.getToken(),
 			    std::format("'{}' cannot be hold in any scalar number type",
 			                literalRst.getToken().getLexeme()));
@@ -424,30 +435,33 @@ void TypeScanner::visitLiteralExpression(
 		// so only ASCII characters allowed
 		const std::string_view character = literalRst.value;
 		if (character.size() > 1) {
-			messageBag.error(
+			compilationContext->diagnostics.error(
 			    literalRst.getToken(),
 			    std::format("'{}' is not a valid char literal type",
 			                literalRst.getToken().getLexeme()));
 			break;
 		}
 		typeStack.push_back(
-		    currentDataModel.get().findScalarType("u8").value());
+		    compilationContext->dataModel.findScalarType("u8").value());
 		break;
 	}
 	default:
-		messageBag.error(literalRst.getToken(),
-		                 std::format("'{}' is not a valid literal type",
-		                             literalRst.getToken().getLexeme()));
+		compilationContext->diagnostics.error(
+		    literalRst.getToken(),
+		    std::format("'{}' is not a valid literal type",
+		                literalRst.getToken().getLexeme()));
 		break;
 	}
 }
 void TypeScanner::visitLogicalExpression(const syntax::rst::Logical &value) {
-	messageBag.error(value.getToken(),
-	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
+	compilationContext->diagnostics.error(
+	    value.getToken(),
+	    std::format("{} not implemented", __PRETTY_FUNCTION__));
 }
 void TypeScanner::visitSetExpression(const syntax::rst::Set &value) {
-	messageBag.error(value.getToken(),
-	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
+	compilationContext->diagnostics.error(
+	    value.getToken(),
+	    std::format("{} not implemented", __PRETTY_FUNCTION__));
 }
 void TypeScanner::visitUnaryExpression(const syntax::rst::Unary &unaryRst) {
 	// TODO: rework this section once operator overload is implemented
@@ -473,23 +487,23 @@ void TypeScanner::visitArrayTypeExpression(
     const syntax::rst::ArrayType &arrayTypeRst) {
 	auto innerType = resolveType(*arrayTypeRst.subType);
 
-	typeStack.push_back(currentDataModel.get().definePointerType(
+	typeStack.push_back(compilationContext->dataModel.definePointerType(
 	    innerType, arrayTypeRst.isMutable));
 }
 void TypeScanner::visitTupleTypeExpression(
     const syntax::rst::TupleType &tupleRst) {
 	if (tupleRst.expressions.empty()) {
-		typeStack.push_back(currentDataModel.get().getUnitType());
+		typeStack.push_back(compilationContext->dataModel.getUnitType());
 		return;
 	}
-	messageBag.error(
+	compilationContext->diagnostics.error(
 	    tupleRst.getToken(),
 	    std::format("{} not implemented for tuples", __PRETTY_FUNCTION__));
 }
 void TypeScanner::visitPointerTypeExpression(
     const syntax::rst::PointerType &pointerTypeRst) {
 	auto innerType = resolveType(*pointerTypeRst.subtype);
-	typeStack.push_back(currentDataModel.get().definePointerType(
+	typeStack.push_back(compilationContext->dataModel.definePointerType(
 	    innerType, pointerTypeRst.isMutable));
 }
 void TypeScanner::visitNamedTypeExpression(
@@ -500,7 +514,7 @@ void TypeScanner::visitNamedTypeExpression(
 		obtainedType.isMutable = typeRst.isMutable;
 		typeStack.push_back(obtainedType);
 	} else {
-		messageBag.error(
+		compilationContext->diagnostics.error(
 		    typeRst.getToken(),
 		    std::format("type not found for {}", typeRst.name.lexeme));
 		typeStack.push_back(lang::Type::defineUnknownType());
@@ -525,7 +539,7 @@ lang::Type TypeScanner::resolveType(const syntax::rst::Statement &statement) {
 		// check wether the return types coerce
 		for (size_t i = 1; i < types.size(); i++) {
 			if (!types[0].coercercesInto(types[i])) {
-				messageBag.bug(
+				compilationContext->diagnostics.bug(
 				    statement.getToken(),
 				    std::format(
 				        "'{}' return types does not match for expected '{}' vs '{}'",
@@ -540,9 +554,9 @@ lang::Type TypeScanner::resolveType(const syntax::rst::Expression &expression) {
 	auto types = resolveTypes(expression);
 
 	if (types.size() > 1) {
-		messageBag.bug(expression.getToken(),
-		               std::format("'{}' yield multiple values",
-		                           expression.variantName()));
+		compilationContext->diagnostics.bug(
+		    expression.getToken(), std::format("'{}' yield multiple values",
+		                                       expression.variantName()));
 	}
 
 	return types.size() > 0 ? types[0] : lang::Type::defineUnknownType();
@@ -570,9 +584,9 @@ TypeScanner::resolveTypes(const syntax::rst::Expression &expression) {
 		returnTypes.push_back(returnType);
 	}
 	if (returnTypes.size() < 1) {
-		messageBag.bug(expression.getToken(),
-		               std::format("'{}' did not resolve a type",
-		                           expression.variantName()));
+		compilationContext->diagnostics.bug(
+		    expression.getToken(), std::format("'{}' did not resolve a type",
+		                                       expression.variantName()));
 		typeStack.push_back(lang::Type::defineUnknownType());
 	}
 	return returnTypes;
@@ -595,7 +609,7 @@ void TypeScanner::discardTypes(const syntax::rst::Expression &expression) {
 
 std::optional<lang::Type>
 TypeScanner::findScalarTypeInfo(const std::string_view lexeme) {
-	return currentDataModel.get().findScalarType(lexeme);
+	return compilationContext->dataModel.findScalarType(lexeme);
 }
 lang::Type TypeScanner::findTypeInfo(const std::string_view typeName) {
 	auto scalarType = findScalarTypeInfo(typeName);
@@ -603,25 +617,26 @@ lang::Type TypeScanner::findTypeInfo(const std::string_view typeName) {
 		return scalarType.value();
 	}
 	// a defined type in the source unit cannot shadow a primitive/scalar type
-	auto foundStruct = currentSourceUnit.findStruct(typeName, currentScope);
+	auto foundStruct =
+	    getCurrentSourceUnit().findStruct(typeName, getCurrentScope());
 	return foundStruct
 	    .transform([&](auto &structObj) {
-		    return currentDataModel.get().defineStructType(
+		    return compilationContext->dataModel.defineStructType(
 		        structObj.get().structID, structObj.get().name, 0);
 	    })
 	    .value_or(lang::Type::defineUnknownType());
 }
 
-lang::Scope &TypeScanner::getCurrentScope() { return currentScope.get(); }
+lang::Scope &TypeScanner::getCurrentScope() { return *currentScope; }
 lang::Scope &TypeScanner::makeChildScope() {
-	currentScope = currentScope.get().makeChildScope();
-	return currentScope;
+	currentScope = &getCurrentScope().makeChildScope();
+	return *currentScope;
 }
 bool TypeScanner::returnScope(lang::Scope &targetScope) {
 	lang::Scope *scope = &getCurrentScope();
 	while (scope != nullptr) {
 		if (scope == &targetScope) {
-			currentScope = *scope;
+			currentScope = scope;
 			return true;
 		}
 		scope = scope->getParentScope()
@@ -629,14 +644,14 @@ bool TypeScanner::returnScope(lang::Scope &targetScope) {
 		            .value_or(nullptr);
 	}
 
-	messageBag.bug({},
-	               "could not pop current scope, pop to first parent scope");
-	if (currentScope.get().getParentScope().has_value()) {
-		currentScope = currentScope.get().getParentScope().value();
+	compilationContext->diagnostics.bug(
+	    {}, "could not pop current scope, pop to first parent scope");
+	if (getCurrentScope().getParentScope().has_value()) {
+		currentScope = &getCurrentScope().getParentScope()->get();
 	} else {
-		messageBag.bug({},
-		               "parent scope not found, setting scope to root scope");
-		currentScope = currentSourceUnit.rootScope;
+		compilationContext->diagnostics.bug(
+		    {}, "parent scope not found, setting scope to root scope");
+		currentScope = &getCurrentSourceUnit().rootScope;
 	}
 	return false;
 }
@@ -650,7 +665,7 @@ void TypeScanner::discoverStruct(const syntax::rst::Struct &structRst) {
 		        dynamic_cast<directive::LinkageDirective *>(directive.get())) {
 			linkageDirective = *foundLinkDirective;
 		} else {
-			messageBag.warning(
+			compilationContext->diagnostics.warning(
 			    directive->getToken(),
 			    std::format("unmatched compiler directive '{}' for function.\n",
 			                directive->directiveName()));
@@ -661,19 +676,20 @@ void TypeScanner::discoverStruct(const syntax::rst::Struct &structRst) {
 	std::string structName = std::string(structRst.name.getLexeme());
 	std::string mangledStructName =
 	    passes::mangling::NameMangler().mangleStruct(
-	        currentSourceUnit.packageName, structRst, linkageDirective);
+	        getCurrentSourceUnit().packageName, structRst, linkageDirective);
 
-	auto &scope = currentScope.get();
+	auto &scope = getCurrentScope();
 
 	// declare the struct first so we can bind the definition later
-	if (!currentSourceUnit.declareStruct(
+	if (!getCurrentSourceUnit().declareStruct(
 	        lang::Struct{
 	            .opaque = true,                   // unknown implementation
 	            .name = structName,               //
 	            .mangledName = mangledStructName, //
 	        },
 	        scope)) {
-		messageBag.error(structRst.getToken(), "could not declare struct");
+		compilationContext->diagnostics.error(structRst.getToken(),
+		                                      "could not declare struct");
 	}
 	// do not bother with declarations
 	if (structRst.declaration) {
@@ -686,7 +702,7 @@ void TypeScanner::discoverStruct(const syntax::rst::Struct &structRst) {
 		structID = foundStruct->getObjectId();
 		assert(foundStruct->getObjectId() != 0);
 		if (!foundStruct->getObject()->get().opaque) {
-			messageBag.error(
+			compilationContext->diagnostics.error(
 			    structRst.getToken(),
 			    std::format("{} is defined multiple times", structName));
 		}
@@ -700,8 +716,9 @@ void TypeScanner::discoverStruct(const syntax::rst::Struct &structRst) {
 	        .mangledName = mangledStructName, //
 	        .members = {}                     //
 	    })) {
-		messageBag.error(structRst.getToken(),
-		                 std::format("could not bind struct '{}'", structName));
+		compilationContext->diagnostics.error(
+		    structRst.getToken(),
+		    std::format("could not bind struct '{}'", structName));
 		return;
 	}
 }

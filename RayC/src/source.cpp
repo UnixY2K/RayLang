@@ -126,11 +126,12 @@ int main(int argc, char **argv) {
 		passes::PassManager passManager;
 
 		passManager.addPass<passes::Resolver>();
+		passManager.addPass<passes::rst::TypeScanner>();
 
 		auto finalCompilationArtifact = passManager.run(
-		    compilationCtx,
-		    std::make_unique<infrastructure::CompilerArtifact>(
-		        infrastructure::CompilerArtifact({std::move(rootBlock)}, std::nullopt)));
+		    compilationCtx, std::make_unique<infrastructure::CompilerArtifact>(
+		                        infrastructure::CompilerArtifact(
+		                            {std::move(rootBlock)}, std::nullopt)));
 
 		if (compilationCtx.diagnostics.hasFailed()) {
 			for (auto diagnostic :
@@ -172,21 +173,6 @@ int main(int argc, char **argv) {
 
 		lang::ModuleStore moduleStore;
 		lang::SourceUnit sourceUnit;
-		passes::rst::TypeScanner typeScanner(sourceFile, *dataModel, sourceUnit,
-		                                     moduleStore);
-
-		typeScanner.resolve(finalRSTBlock);
-		// TODO: once a propper typeScanner is set in place replace this so
-		// type checker errors can be reported along with the previous
-		// errors
-		if (typeScanner.hasFailed()) {
-			std::cerr << std::format("{}: {}\n", "Error"_red,
-			                         "typeScanner failed");
-			for (auto typeScannerError : typeScanner.getErrors()) {
-				std::cerr << typeScannerError;
-			}
-			return 1;
-		}
 
 		passes::rst::TypeChecker typeChecker(sourceFile, moduleStore,
 		                                     *dataModel, sourceUnit);
