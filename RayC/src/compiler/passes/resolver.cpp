@@ -8,37 +8,51 @@
 #include <optional>
 #include <utility>
 
-#include <ray/compiler/passes/resolver.hpp>
-
 #include <ray/compiler/directives/compilerDirective.hpp>
 #include <ray/compiler/directives/linkageDirective.hpp>
+#include <ray/compiler/infrastructure/compilationContext.hpp>
 #include <ray/compiler/lang/functionDefinition.hpp>
 #include <ray/compiler/lang/type.hpp>
 #include <ray/compiler/lexer/token.hpp>
+#include <ray/compiler/passes/resolver.hpp>
 #include <ray/compiler/passes/symbol_mangler.hpp>
 #include <ray/compiler/syntax/rst/Expression.hpp>
 #include <ray/compiler/syntax/rst/Statement.hpp>
 
 namespace ray::compiler::passes {
 
+void Resolver::run(infrastructure::CompilationContext &ctx,
+                   std::unique_ptr<infrastructure::CompilerArtifact>
+                       previousCompilerArtifact) {
+	compilationContext = &ctx;
+
+	currentScope = &compilationContext->sourceUnit.rootScope;
+	assert(previousCompilerArtifact->rootASTBlock.has_value());
+	auto rootAST = previousCompilerArtifact->rootASTBlock->get();
+	resolve(rootAST->statements);
+}
+std::unique_ptr<infrastructure::CompilerArtifact>
+Resolver::getCompilationArtifact() {
+	return std::make_unique<infrastructure::CompilerArtifact>(
+	    infrastructure::CompilerArtifact(getRootBlock()));
+}
+
 void Resolver::resolve(
     const std::vector<std::unique_ptr<syntax::ast::Statement>> &statements) {
 
-	rootBlock.statements.clear();
+	rootBlock = std::make_unique<syntax::rst::Block>(
+	    syntax::rst::Block({}, Token::makeEOFToken()));
 	for (const auto &childStatement : statements) {
 		auto statement = resolveStatement(*childStatement);
-		rootBlock.statements.push_back(std::move(statement));
+		rootBlock->statements.push_back(std::move(statement));
 	}
 
 	for (auto &directive : directivesStack) {
-		messageBag.warning(directive->getToken(),
-		                   std::format("unused compiler directive {}",
-		                               directive->directiveName()));
+		compilationContext->diagnostics.warning(
+		    directive->getToken(), std::format("unused compiler directive {}",
+		                                       directive->directiveName()));
 	}
 }
-
-bool Resolver::hasFailed() const { return messageBag.failed(); }
-const MessageBag &Resolver::getMessageBag() const { return messageBag; }
 
 void Resolver::visitBlockStatement(const syntax::ast::Block &blockAST) {
 	std::vector<std::unique_ptr<syntax::rst::Statement>> statementsRST;
@@ -105,17 +119,17 @@ void Resolver::visitFunctionStatement(
 	auto createdDeclarationResult = makeFunctionDeclaration(*functionRST);
 
 	if (!createdDeclarationResult.has_value()) {
-		messageBag.error(
+		compilationContext->diagnostics.error(
 		    functionAST.getToken(),
 		    std::format("could not resolve function declaration for '{}'",
 		                functionAST.name.getLexeme()));
 	} else {
 		const auto &functionDeclaration = createdDeclarationResult.value();
-		auto declarationResult = currentSourceUnit.declareFunction(
-		    functionDeclaration, currentScope);
+		auto declarationResult = getCurrentSourceUnit().declareFunction(
+		    functionDeclaration, getCurrentScope());
 		if (!declarationResult.has_value()) {
-			messageBag.error(functionAST.getToken(),
-			                 "could not declare function");
+			compilationContext->diagnostics.error(functionAST.getToken(),
+			                                      "could not declare function");
 		}
 		functionRST->functionId =
 		    declarationResult
@@ -128,8 +142,9 @@ void Resolver::visitFunctionStatement(
 }
 void Resolver::visitTraitMethodStatement(
     const syntax::ast::TraitMethod &value) {
-	messageBag.error(value.getToken(),
-	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
+	compilationContext->diagnostics.error(
+	    value.getToken(),
+	    std::format("{} not implemented", __PRETTY_FUNCTION__));
 }
 void Resolver::visitIfStatement(const syntax::ast::If &ifAST) {
 	auto conditionRST = resolveExpression(*ifAST.condition);
@@ -205,7 +220,7 @@ void Resolver::visitStructStatement(const syntax::ast::Struct &structAst) {
 		        dynamic_cast<directive::LinkageDirective *>(directive.get())) {
 			linkageDirective = *foundLinkDirective;
 		} else {
-			messageBag.warning(
+			compilationContext->diagnostics.warning(
 			    directive->getToken(),
 			    std::format("unmatched compiler directive '{}' for struct.\n",
 			                directive->directiveName()));
@@ -215,18 +230,19 @@ void Resolver::visitStructStatement(const syntax::ast::Struct &structAst) {
 	auto structName = structAst.name.getLexeme();
 	std::string mangledStructName =
 	    passes::mangling::NameMangler().mangleStruct(
-	        currentSourceUnit.packageName, structAst, linkageDirective);
+	        getCurrentSourceUnit().packageName, structAst, linkageDirective);
 
-	auto &scope = currentScope.get();
+	auto &scope = *currentScope;
 
-	if (!currentSourceUnit.declareStruct(
+	if (!getCurrentSourceUnit().declareStruct(
 	        lang::Struct{
 	            .opaque = true,                   // unknown implementation
 	            .name = std::string(structName),  //
 	            .mangledName = mangledStructName, //
 	        },
 	        scope)) {
-		messageBag.error(structAst.getToken(), "could not declare struct");
+		compilationContext->diagnostics.error(structAst.getToken(),
+		                                      "could not declare struct");
 	}
 
 	std::unique_ptr<syntax::rst::Struct> structRST =
@@ -246,7 +262,7 @@ void Resolver::visitStructStatement(const syntax::ast::Struct &structAst) {
 	                        .getObject();
 
 	if (!structObjRes.has_value()) {
-		messageBag.bug(
+		compilationContext->diagnostics.bug(
 		    structAst.getToken(),
 		    std::format("could not find Struct internal reference for '{}'",
 		                structName));
@@ -258,7 +274,7 @@ void Resolver::visitStructStatement(const syntax::ast::Struct &structAst) {
 		auto memberRSTPtr =
 		    dynamic_cast<syntax::rst::Member *>(resolvedStatementRST.get());
 		if (!memberRSTPtr) {
-			messageBag.bug(
+			compilationContext->diagnostics.bug(
 			    member.getToken(),
 			    std::format("could not get struct member data for '{}'",
 			                member.name.getLexeme()));
@@ -272,8 +288,9 @@ void Resolver::visitStructStatement(const syntax::ast::Struct &structAst) {
 	statementStack.push_back(std::move(structRST));
 }
 void Resolver::visitTraitStatement(const syntax::ast::Trait &value) {
-	messageBag.error(value.getToken(),
-	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
+	compilationContext->diagnostics.error(
+	    value.getToken(),
+	    std::format("{} not implemented", __PRETTY_FUNCTION__));
 }
 void Resolver::visitCompDirectiveStatement(
     const syntax::ast::CompDirective &compDirectiveAst) {
@@ -294,16 +311,17 @@ void Resolver::visitCompDirectiveStatement(
 		        : directive::LinkageDirective::ManglingType::Default,
 		    directiveToken);
 		if (!compDirectiveAst.child) {
-			messageBag.error(compDirectiveAst.getToken(),
-			                 std::format("{} must have a child expression.",
-			                             directive.directiveName()));
+			compilationContext->diagnostics.error(
+			    compDirectiveAst.getToken(),
+			    std::format("{} must have a child expression.",
+			                directive.directiveName()));
 			return;
 		}
 
 		auto childValue = compDirectiveAst.child.get();
 		if (!dynamic_cast<syntax::ast::Function *>(childValue) &&
 		    !dynamic_cast<syntax::ast::Struct *>(childValue)) {
-			messageBag.error(
+			compilationContext->diagnostics.error(
 			    childValue->getToken(),
 			    std::format(
 			        "{} child expression must be a function or a struct.",
@@ -318,26 +336,27 @@ void Resolver::visitCompDirectiveStatement(
 		    std::make_unique<directive::LinkageDirective>(directive));
 		auto statementRST = resolveStatement(*compDirectiveAst.child);
 		if (directivesStack.size() != startDirectives) {
-			messageBag.bug(childValue->getToken(),
-			               "unprocessed compiler directives");
+			compilationContext->diagnostics.bug(
+			    childValue->getToken(), "unprocessed compiler directives");
 		}
 		directivesStackTop = originalTop;
 
 		statementStack.push_back(std::move(statementRST));
 
 	} else {
-		messageBag.error(
+		compilationContext->diagnostics.error(
 		    compDirectiveAst.getToken(),
 		    std::format("Unknown compiler directive '{}'.", directiveName));
 	}
 }
 void Resolver::visitPackageStatement(const syntax::ast::Package &package) {
-	if (!currentSourceUnit.packageName.empty()) {
-		messageBag.error(package.getToken(),
-		                 "package name cannot be defined multiple times");
+	if (!getCurrentSourceUnit().packageName.empty()) {
+		compilationContext->diagnostics.error(
+		    package.getToken(),
+		    "package name cannot be defined multiple times");
 		return;
 	}
-	currentSourceUnit.packageName = package.packageName.lexeme;
+	getCurrentSourceUnit().packageName = package.packageName.lexeme;
 	statementStack.push_back(std::make_unique<syntax::rst::Placeholder>(
 	    syntax::rst::Placeholder(package.getToken())));
 }
@@ -444,12 +463,14 @@ void Resolver::visitLiteralExpression(
 	expressionStack.push_back(std::move(literalExpressionRST));
 }
 void Resolver::visitLogicalExpression(const syntax::ast::Logical &value) {
-	messageBag.error(value.getToken(),
-	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
+	compilationContext->diagnostics.error(
+	    value.getToken(),
+	    std::format("{} not implemented", __PRETTY_FUNCTION__));
 }
 void Resolver::visitSetExpression(const syntax::ast::Set &value) {
-	messageBag.error(value.getToken(),
-	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
+	compilationContext->diagnostics.error(
+	    value.getToken(),
+	    std::format("{} not implemented", __PRETTY_FUNCTION__));
 }
 void Resolver::visitUnaryExpression(
     const syntax::ast::Unary &unaryExpressionAST) {
@@ -553,7 +574,7 @@ Resolver::resolveStatement(const syntax::ast::Statement &statementAST) {
 	} else if (statements.size() > 0) {
 		returnStatement = std::move(statements[0]);
 	} else {
-		messageBag.bug(
+		compilationContext->diagnostics.bug(
 		    statementAST.getToken(),
 		    std::format(
 		        "'{}' statement did not yield an RST statement, making empty block RST statement",
@@ -590,7 +611,7 @@ Resolver::resolveExpression(const syntax::ast::Expression &expressionAST) {
 	} else if (expressions.size() > 0) {
 		returnExpression = std::move(expressions[0]);
 	} else {
-		messageBag.bug(
+		compilationContext->diagnostics.bug(
 		    expressionAST.getToken(),
 		    std::format(
 		        "'{}' expression did not yield an RST expression, making empty tuple RST expression",
@@ -639,7 +660,8 @@ std::optional<lang::FunctionDeclaration> Resolver::makeFunctionDeclaration(
 
 	std::string mangledFunctionName =
 	    passes::mangling::NameMangler().mangleFunction(
-	        currentSourceUnit.packageName, functionExprRST, linkageDirective);
+	        getCurrentSourceUnit().packageName, functionExprRST,
+	        linkageDirective);
 
 	auto declaration = lang::FunctionDeclaration(
 	    0, std::string(functionExprRST.name.getLexeme()), mangledFunctionName,
@@ -668,20 +690,20 @@ Resolver::collectCompilerDirectives() {
 	return directives;
 }
 
-lang::Scope &Resolver::getCurrentScope() { return currentScope.get(); }
+lang::Scope &Resolver::getCurrentScope() { return *currentScope; }
 lang::Scope &Resolver::makeChildScope() {
-	currentScope = currentScope.get().makeChildScope();
-	return currentScope;
+	currentScope = &currentScope->makeChildScope();
+	return *currentScope;
 }
 bool Resolver::popScope(lang::Scope &targetScope) {
 	lang::Scope *scope = &getCurrentScope();
 	while (scope != nullptr) {
 		if (scope == &targetScope) {
 			if (scope->getParentScope().has_value()) {
-				currentScope = scope->getParentScope()->get();
+				currentScope = &scope->getParentScope()->get();
 			} else {
-				currentScope = *scope;
-				messageBag.bug(
+				currentScope = scope;
+				compilationContext->diagnostics.bug(
 				    {},
 				    "found scope to pop but no parent scope, setting current scope to found scope");
 			}
@@ -696,14 +718,14 @@ bool Resolver::popScope(lang::Scope &targetScope) {
 		scope = parentScope;
 	}
 
-	messageBag.bug({},
-	               "could not pop current scope, pop to first parent scope");
-	if (currentScope.get().getParentScope().has_value()) {
-		currentScope = currentScope.get().getParentScope().value();
+	compilationContext->diagnostics.bug(
+	    {}, "could not pop current scope, pop to first parent scope");
+	if (getCurrentScope().getParentScope().has_value()) {
+		currentScope = &getCurrentScope().getParentScope()->get();
 	} else {
-		messageBag.bug({},
-		               "parent scope not found, setting scope to root scope");
-		currentScope = currentSourceUnit.rootScope;
+		compilationContext->diagnostics.bug(
+		    {}, "parent scope not found, setting scope to root scope");
+		currentScope = &getCurrentSourceUnit().rootScope;
 	}
 	return false;
 }

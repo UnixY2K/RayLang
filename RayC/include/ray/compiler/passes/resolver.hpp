@@ -1,14 +1,18 @@
 #pragma once
 
+#include <cassert>
 #include <memory>
+#include <string_view>
 #include <vector>
 
 #include <ray/compiler/directives/compilerDirective.hpp>
 #include <ray/compiler/environment/dataModel/dataModel.hpp>
+#include <ray/compiler/infrastructure/compilationContext.hpp>
 #include <ray/compiler/lang/module.hpp>
 #include <ray/compiler/lang/sourceUnit.hpp>
 #include <ray/compiler/lexer/token.hpp>
 #include <ray/compiler/message_bag.hpp>
+#include <ray/compiler/passes/compilerPass.hpp>
 #include <ray/compiler/passes/rst/typeScanner.hpp>
 #include <ray/compiler/syntax/ast/Expression.hpp>
 #include <ray/compiler/syntax/ast/Statement.hpp>
@@ -17,9 +21,12 @@
 
 namespace ray::compiler::passes {
 class Resolver : public syntax::ast::StatementVisitor,
-                 public syntax::ast::ExpressionVisitor {
+                 public syntax::ast::ExpressionVisitor,
+                 public CompilerPass {
 
-	MessageBag messageBag;
+	lang::Scope *currentScope;
+
+	std::unique_ptr<syntax::rst::Block> rootBlock = nullptr;
 
 	std::vector<std::unique_ptr<directive::CompilerDirective>> directivesStack;
 	size_t directivesStackTop = 0;
@@ -27,39 +34,32 @@ class Resolver : public syntax::ast::StatementVisitor,
 	std::vector<lang::StructMember> structMemberStack;
 	std::vector<lang::Method> traitMethodStack;
 
-	std::reference_wrapper<const environment::DataModel> currentDataModel;
-
-	lang::SourceUnit &currentSourceUnit;
-	lang::ModuleStore &currentModuleStore;
-	std::reference_wrapper<lang::Scope> currentScope;
-
-	syntax::rst::Block rootBlock;
+	infrastructure::CompilationContext *compilationContext;
 
 	std::vector<std::unique_ptr<syntax::rst::Statement>> statementStack;
 	std::vector<std::unique_ptr<syntax::rst::Expression>> expressionStack;
 
   public:
-	Resolver(std::string filePath, const environment::DataModel &dataModel,
-	         lang::SourceUnit &sourceUnit, lang::ModuleStore &moduleStore)
-	    : messageBag("RESOLVER", filePath), directivesStack(),
-	      currentDataModel(dataModel), currentSourceUnit(sourceUnit),
-	      currentModuleStore(moduleStore),
-	      currentScope(currentSourceUnit.rootScope),
-	      rootBlock({}, Token::makeEOFToken()) {}
+	Resolver() = default;
 
+	// CompilerPass interface
+	std::string_view name() const override { return "resolver"; }
+	void run(infrastructure::CompilationContext &ctx,
+	         std::unique_ptr<infrastructure::CompilerArtifact>
+	             previousCompilerArtifact) override;
+	std::unique_ptr<infrastructure::CompilerArtifact>
+	getCompilationArtifact() override;
+	// visitor interface
+
+  private:
 	void resolve(
 	    const std::vector<std::unique_ptr<syntax::ast::Statement>> &statements);
 
-	const lang::SourceUnit &getCurrentSourceUnit() const {
-		return currentSourceUnit;
+	auto getRootBlock() {
+		return std::optional<std::unique_ptr<syntax::rst::Block>>(
+		    std::move(rootBlock));
 	}
 
-	bool hasFailed() const;
-	const MessageBag &getMessageBag() const;
-
-	auto &getRootBlock() { return rootBlock; }
-
-  private:
 	// Statement
 	void visitBlockStatement(const syntax::ast::Block &value) override;
 	void visitTerminalExpressionStatement(
@@ -128,6 +128,16 @@ class Resolver : public syntax::ast::StatementVisitor,
 	lang::Scope &makeChildScope();
 	// pops until located at the requested scope, if not found makes an error
 	bool popScope(lang::Scope &scope);
+
+	// helper methods, just used as a shorcut for some frequently accessed data
+	// in compilation process
+	lang::SourceUnit &getCurrentSourceUnit() {
+		assert(compilationContext);
+		return compilationContext->sourceUnit;
+	}
+
+  public:
+	virtual ~Resolver() = default;
 };
 
 } // namespace ray::compiler::passes

@@ -23,7 +23,7 @@ using namespace terminal::literals;
 Parser::Parser(std::string filepath, std::vector<Token> tokens)
     : messageBag("parser", filepath), tokens(tokens) {}
 
-std::vector<std::unique_ptr<syntax::ast::Statement>> Parser::parse() {
+std::unique_ptr<syntax::ast::Block> Parser::parse() {
 	current = 0;
 	try {
 		std::vector<std::unique_ptr<syntax::ast::Statement>> statements{};
@@ -33,9 +33,11 @@ std::vector<std::unique_ptr<syntax::ast::Statement>> Parser::parse() {
 				statements.push_back(std::move(*stmts));
 			}
 		}
-		return statements;
+		return std::make_unique<syntax::ast::Block>(
+		    syntax::ast::Block(std::move(statements), Token::makeEOFToken()));
 	} catch (ParseException &e) {
-		return {};
+		return std::make_unique<syntax::ast::Block>(
+		    syntax::ast::Block({}, Token::makeEOFToken()));
 	}
 }
 

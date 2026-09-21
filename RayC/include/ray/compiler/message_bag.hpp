@@ -26,13 +26,12 @@ class MessageBag {
 	MessageBag(std::string category, std::string filepath)
 	    : category(category), filepath(filepath) {};
 
-	void error(size_t line, size_t column, std::string_view message);
 	void error(const Token token, std::string_view message);
-
 	void warning(size_t line, size_t column, std::string_view message);
-	void warning(const Token token, std::string_view message);
-
 	void bug(size_t line, size_t column, std::string_view message);
+
+	void error(size_t line, size_t column, std::string_view message);
+	void warning(const Token token, std::string_view message);
 	void bug(const Token token, std::string_view message);
 
 	bool failed() const;

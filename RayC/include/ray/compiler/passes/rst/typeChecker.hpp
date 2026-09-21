@@ -32,7 +32,7 @@ class TypeChecker : public syntax::rst::StatementVisitor,
 	//,moduleStore(moduleStore)
 	{}
 
-	void resolve(syntax::rst::Block &rootBlock);
+	void resolve(const syntax::rst::Block &rootBlock);
 
 	const lang::SourceUnit &getCurrentSourceUnit() const {
 		return currentSourceUnit;

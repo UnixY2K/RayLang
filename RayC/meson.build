@@ -9,6 +9,8 @@ rayc_srcs = [
 	'src/compiler/backend/c/c_transpiler.cpp',
 	#environment data
 	'src/compiler/environment/dataModel/dataModel.cpp',
+	#infrastucture
+	'src/compiler/infrastructure/diagnosticsEngine.cpp',
 	# lang
 	'src/compiler/lang/scope.cpp',
 	'src/compiler/lang/sourceUnit.cpp',
@@ -21,6 +23,7 @@ rayc_srcs = [
 	'src/compiler/parser/parser.cpp',
 	'src/compiler/passes/rst/typeChecker.cpp',
 	'src/compiler/passes/rst/typeScanner.cpp',
+	'src/compiler/passes/passManager.cpp',
 	'src/compiler/passes/resolver.cpp',
 	'src/compiler/passes/symbol_mangler.cpp',
 	'src/compiler/message_bag.cpp',

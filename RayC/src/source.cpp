@@ -1,8 +1,11 @@
+
 #include <exception>
 #include <expected>
 #include <format>
 #include <fstream>
 #include <iostream>
+#include <memory>
+#include <optional>
 #include <sstream>
 
 #include <ray/cli/cli_args.hpp>
@@ -11,9 +14,15 @@
 
 #include <ray/compiler/environment/dataModel/dataModel.hpp>
 
-#include <ray/compiler/lexer/lexer.hpp>
-#include <ray/compiler/parser/parser.hpp>
+#include <ray/compiler/infrastructure/compilationContext.hpp>
+#include <ray/compiler/infrastructure/diagnosticsEngine.hpp>
 
+#include <ray/compiler/lexer/lexer.hpp>
+#include <ray/compiler/lexer/token.hpp>
+#include <ray/compiler/parser/parser.hpp>
+#include <ray/compiler/syntax/rst/Statement.hpp>
+
+#include <ray/compiler/passes/passManager.hpp>
 #include <ray/compiler/passes/resolver.hpp>
 #include <ray/compiler/passes/rst/typeChecker.hpp>
 #include <ray/compiler/passes/rst/typeScanner.hpp>
@@ -70,6 +79,10 @@ int main(int argc, char **argv) {
 			return 1;
 		}
 		}
+		auto sourceFile = opts.input.make_preferred().relative_path().string();
+		if (opts.target == ray::compiler::cli::Options::TargetEnum::NONE) {
+			opts.target = opts.defaultTarget;
+		}
 
 		// read the contents of the file
 		std::ifstream input(opts.input);
@@ -93,9 +106,8 @@ int main(int argc, char **argv) {
 			return 1;
 		}
 
-		auto sourceFile = opts.input.make_preferred().relative_path().string();
 		auto parser = Parser(sourceFile, tokens);
-		auto statements = parser.parse();
+		auto rootBlock = parser.parse();
 
 		if (parser.failed()) {
 			for (auto parseError : parser.getErrors()) {
@@ -103,34 +115,67 @@ int main(int argc, char **argv) {
 			}
 			return 1;
 		}
-		if (opts.target == ray::compiler::cli::Options::TargetEnum::NONE) {
-			opts.target = opts.defaultTarget;
-		}
 
 		std::string output;
 		bool handled = false;
 
-		lang::ModuleStore moduleStore;
-		lang::SourceUnit sourceUnit;
+		infrastructure::diagnostics::DiagnosticEngine diagnostics;
+		infrastructure::CompilationContext compilationCtx{
+		    lang::ModuleStore(), lang::SourceUnit(), *dataModel, diagnostics};
 
-		passes::Resolver resolver(sourceFile, *dataModel, sourceUnit,
-		                          moduleStore);
-		resolver.resolve(statements);
+		passes::PassManager passManager;
 
-		if (resolver.hasFailed()) {
-			std::cerr << std::format("{}: {}\n", "Error"_red,
-			                         "typeChecker failed");
-			const auto &messageBag = resolver.getMessageBag();
-			for (auto error : messageBag.getErrors()) {
-				std::cerr << error;
+		passManager.addPass<passes::Resolver>();
+
+		auto finalCompilationArtifact = passManager.run(
+		    compilationCtx,
+		    std::make_unique<infrastructure::CompilerArtifact>(
+		        infrastructure::CompilerArtifact({std::move(rootBlock)}, std::nullopt)));
+
+		if (compilationCtx.diagnostics.hasFailed()) {
+			for (auto diagnostic :
+			     compilationCtx.diagnostics.getDiagnostics()) {
+				auto messageColor = terminal::Color::None;
+				switch (diagnostic.severity) {
+
+				case infrastructure::diagnostics::DiagnosticSeverity::Warning:
+					messageColor = terminal::Color::Yellow;
+					break;
+				case infrastructure::diagnostics::DiagnosticSeverity::Error:
+				case infrastructure::diagnostics::DiagnosticSeverity::Fatal:
+				case infrastructure::diagnostics::DiagnosticSeverity::Bug:
+					messageColor = terminal::Color::Red;
+					break;
+				}
+				// TODO: set correctly filePath based off
+				// diagnostic.location.sourceId
+				std::string filePath = opts.input;
+				const auto &location = diagnostic.location;
+				std::cerr << std::format(
+				    "{}|{} [{}:{}:{}] : {}\n",
+				    terminal::colored(diagnostic.severityAsString(),
+				                      messageColor),
+				    terminal::colored(diagnostic.category, messageColor),
+				    filePath, location.line, location.column,
+				    diagnostic.message);
 			}
-			// return 1;
+			return 1;
 		}
 
-		passes::rst::TypeScanner typeScanner(sourceFile, *dataModel, sourceUnit,
-		                                moduleStore);
+		// TODO: remove this block once all the phases use the pass manager
+		auto defaultRSTBlock = syntax::rst::Block({}, Token::makeEOFToken());
+		auto &finalRSTBlock = *finalCompilationArtifact->rootRSTBlock
+		                           .transform([](auto &blockUniquePtr) {
+			                           return blockUniquePtr.get();
+		                           })
+		                           .value_or(&defaultRSTBlock);
 
-		typeScanner.resolve(resolver.getRootBlock());
+		lang::ModuleStore moduleStore;
+		lang::SourceUnit sourceUnit;
+		passes::rst::TypeScanner typeScanner(sourceFile, *dataModel, sourceUnit,
+		                                     moduleStore);
+
+		typeScanner.resolve(finalRSTBlock);
 		// TODO: once a propper typeScanner is set in place replace this so
 		// type checker errors can be reported along with the previous
 		// errors
@@ -146,7 +191,7 @@ int main(int argc, char **argv) {
 		passes::rst::TypeChecker typeChecker(sourceFile, moduleStore,
 		                                     *dataModel, sourceUnit);
 
-		typeChecker.resolve(resolver.getRootBlock());
+		typeChecker.resolve(finalRSTBlock);
 		if (typeChecker.hasFailed()) {
 			std::cerr << std::format("{}: {}\n", "Error"_red,
 			                         "typeChecker failed");
@@ -167,7 +212,7 @@ int main(int argc, char **argv) {
 			backend::c::CTranspilerGenerator CTranspilerGen(
 			    sourceFile, typeChecker.getCurrentSourceUnit(), *dataModel);
 
-			CTranspilerGen.resolve(resolver.getRootBlock());
+			CTranspilerGen.resolve(finalRSTBlock);
 			if (CTranspilerGen.hasFailed()) {
 				std::cerr << std::format("{}: {}\n", "Error"_red,
 				                         "CSourceGen failed");

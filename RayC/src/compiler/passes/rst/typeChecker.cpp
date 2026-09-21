@@ -9,7 +9,7 @@
 
 namespace ray::compiler::passes::rst {
 
-void TypeChecker::resolve(syntax::rst::Block &rootBlock) {
+void TypeChecker::resolve(const syntax::rst::Block &rootBlock) {
 	rootBlock.visit(*this);
 }
 

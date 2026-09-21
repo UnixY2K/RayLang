@@ -3,6 +3,7 @@
 
 #include <format>
 #include <string>
+#include <string_view>
 
 namespace ray::compiler::terminal {
 
@@ -16,6 +17,7 @@ constexpr std::string_view esc_fg_gray = "\x1B[90m";
 constexpr std::string_view esc_fg_cyan = "\x1B[36m";
 constexpr std::string_view esc_fg_orange = "\x1B[38;5;202m";
 constexpr std::string_view esc_fg_lime = "\x1B[38;5;112m";
+constexpr std::string_view esc_fg_none = esc_reset;
 
 std::string foreground_escape(Color color) {
 	switch (color) {
@@ -37,6 +39,8 @@ std::string foreground_escape(Color color) {
 		return std::string(esc_fg_orange);
 	case Color::Lime:
 		return std::string(esc_fg_lime);
+	case Color::None:
+		return std::string(esc_fg_none);
 	}
 	return "";
 }
@@ -58,6 +62,7 @@ std::string gray(std::string_view str) { return colored(str, Color::Gray); }
 std::string cyan(std::string_view str) { return colored(str, Color::Cyan); }
 std::string orange(std::string_view str) { return colored(str, Color::Orange); }
 std::string lime(std::string_view str) { return colored(str, Color::Lime); }
+std::string none(std::string_view str) { return colored(str, Color::None); }
 
 namespace literals {
 std::string operator""_red(const char *str, std::size_t len) {
@@ -86,6 +91,9 @@ std::string operator""_orange(const char *str, std::size_t len) {
 }
 std::string operator""_lime(const char *str, std::size_t len) {
 	return lime(std::string_view(str, len));
+}
+std::string operator""_none(const char *str, std::size_t len) {
+	return none(std::string_view(str, len));
 }
 } // namespace literals
 } // namespace ray::compiler::terminal

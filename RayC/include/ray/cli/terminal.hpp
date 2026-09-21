@@ -4,7 +4,18 @@
 #include <string_view>
 
 namespace ray::compiler::terminal {
-enum class Color { Red, Green, Blue, Yellow, White, Gray, Cyan, Orange, Lime };
+enum class Color {
+	Red,
+	Green,
+	Blue,
+	Yellow,
+	White,
+	Gray,
+	Cyan,
+	Orange,
+	Lime,
+	None
+};
 
 std::string foreground_escape(Color color);
 std::string colored(std::string_view str, Color color);
@@ -18,6 +29,7 @@ std::string gray(std::string_view str);
 std::string cyan(std::string_view str);
 std::string orange(std::string_view str);
 std::string lime(std::string_view str);
+std::string none(std::string_view str);
 
 namespace literals {
 std::string operator""_red(const char *str, std::size_t len);
@@ -29,5 +41,6 @@ std::string operator""_gray(const char *str, std::size_t len);
 std::string operator""_cyan(const char *str, std::size_t len);
 std::string operator""_orange(const char *str, std::size_t len);
 std::string operator""_lime(const char *str, std::size_t len);
+std::string operator""_none(const char *str, std::size_t len);
 } // namespace literals
-} // namespace ray::vmapp::terminal
+} // namespace ray::compiler::terminal

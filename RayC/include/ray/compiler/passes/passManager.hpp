@@ -5,11 +5,8 @@
 #include <utility>
 #include <vector>
 
+#include <ray/compiler/infrastructure/compilationContext.hpp>
 #include <ray/compiler/passes/compilerPass.hpp>
-
-namespace ray::compiler::infrastructure {
-struct CompilationContext;
-}
 
 namespace ray::compiler::passes {
 
@@ -24,13 +21,9 @@ class PassManager {
 		passes.push_back(std::make_unique<TPass>(std::forward<Args>(args)...));
 	}
 
-	bool run(infrastructure::CompilationContext &ctx);
+	std::unique_ptr<infrastructure::CompilerArtifact>
+	run(infrastructure::CompilationContext &context, std::unique_ptr<infrastructure::CompilerArtifact> initialCompilationArtifact);
 	void clear() { passes.clear(); }
-
-	[[nodiscard]] const std::vector<std::unique_ptr<CompilerPass>> &
-	getPasses() const {
-		return passes;
-	}
 };
 
 } // namespace ray::compiler::passes
