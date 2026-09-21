@@ -1,10 +1,11 @@
 #pragma once
-#include "ray/compiler/lang/scope.hpp"
 #include <cstddef>
+#include <string_view>
 
 #include <ray/compiler/directives/compilerDirective.hpp>
 #include <ray/compiler/environment/dataModel/dataModel.hpp>
 #include <ray/compiler/lang/module.hpp>
+#include <ray/compiler/lang/scope.hpp>
 #include <ray/compiler/lang/sourceUnit.hpp>
 #include <ray/compiler/lang/struct.hpp>
 #include <ray/compiler/lang/trait.hpp>
@@ -13,7 +14,6 @@
 #include <ray/compiler/passes/compilerPass.hpp>
 #include <ray/compiler/syntax/rst/Expression.hpp>
 #include <ray/compiler/syntax/rst/Statement.hpp>
-#include <string_view>
 
 namespace ray::compiler::passes::rst {
 class TypeScanner : public syntax::rst::StatementVisitor,
@@ -111,9 +111,7 @@ class TypeScanner : public syntax::rst::StatementVisitor,
 
 	void discoverStruct(const syntax::rst::Struct &structAst);
 
-	lang::SourceUnit &getCurrentSourceUnit() {
-		return compilationContext->sourceUnit;
-	}
+	auto &getCurrentSourceUnit() { return compilationContext->sourceUnit; }
 
   public:
 	~TypeScanner() = default;

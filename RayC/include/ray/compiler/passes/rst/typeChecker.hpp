@@ -1,6 +1,6 @@
 #pragma once
-#include <functional>
 #include <optional>
+#include <string_view>
 
 #include <ray/compiler/environment/dataModel/dataModel.hpp>
 #include <ray/compiler/lang/functionDefinition.hpp>
@@ -8,40 +8,34 @@
 #include <ray/compiler/lang/sourceUnit.hpp>
 #include <ray/compiler/lexer/token.hpp>
 #include <ray/compiler/message_bag.hpp>
+#include <ray/compiler/passes/compilerPass.hpp>
 #include <ray/compiler/syntax/rst/Expression.hpp>
 #include <ray/compiler/syntax/rst/Statement.hpp>
 
 namespace ray::compiler::passes::rst {
 class TypeChecker : public syntax::rst::StatementVisitor,
-                    syntax::rst::ExpressionVisitor {
-	MessageBag messageBag;
+                    syntax::rst::ExpressionVisitor,
+                    public CompilerPass {
+	infrastructure::CompilationContext *compilationContext;
+	lang::Scope *currentScope;
+
+	std::unique_ptr<infrastructure::CompilerArtifact> currentCompilerArtifact;
 
 	std::vector<lang::Type> typeStack;
 
-	lang::SourceUnit &currentSourceUnit;
-	std::reference_wrapper<lang::Scope> currentScope;
-	std::reference_wrapper<const environment::DataModel> currentDataModel;
-
   public:
-	TypeChecker(std::string filePath, const lang::ModuleStore &moduleStore,
-	            const environment::DataModel &dataModel,
-	            lang::SourceUnit &sourceUnit)
-	    : messageBag("TYPE-CHECKER", filePath), typeStack(),
-	      currentSourceUnit(sourceUnit),
-	      currentScope(currentSourceUnit.rootScope), currentDataModel(dataModel)
-	//,moduleStore(moduleStore)
-	{}
+	TypeChecker() = default;
 
-	void resolve(const syntax::rst::Block &rootBlock);
-
-	const lang::SourceUnit &getCurrentSourceUnit() const {
-		return currentSourceUnit;
-	}
-
-	bool hasFailed() const;
-	const MessageBag &getMessageBag() const;
+	std::string_view name() const override { return "TypeChecker"; }
+	void run(infrastructure::CompilationContext &ctx,
+	         std::unique_ptr<infrastructure::CompilerArtifact>
+	             previousCompilerArtifact) override;
+	std::unique_ptr<infrastructure::CompilerArtifact>
+	getCompilationArtifact() override;
 
   private:
+	void resolve(const syntax::rst::Block &rootBlock);
+
 	void visitBlockStatement(const syntax::rst::Block &value) override;
 	void visitTerminalExpressionStatement(
 	    const syntax::rst::TerminalExpression &value) override;
@@ -103,5 +97,8 @@ class TypeChecker : public syntax::rst::StatementVisitor,
 	lang::Scope &makeChildScope();
 	// pops until found the passed scope, if not found makes an error
 	bool popScope(lang::Scope &scope);
+
+  public:
+	auto &getCurrentSourceUnit() { return compilationContext->sourceUnit; }
 };
 } // namespace ray::compiler::passes::rst

@@ -127,6 +127,7 @@ int main(int argc, char **argv) {
 
 		passManager.addPass<passes::Resolver>();
 		passManager.addPass<passes::rst::TypeScanner>();
+		passManager.addPass<passes::rst::TypeChecker>();
 
 		auto finalCompilationArtifact = passManager.run(
 		    compilationCtx, std::make_unique<infrastructure::CompilerArtifact>(
@@ -171,32 +172,13 @@ int main(int argc, char **argv) {
 		                           })
 		                           .value_or(&defaultRSTBlock);
 
-		lang::ModuleStore moduleStore;
 		lang::SourceUnit sourceUnit;
-
-		passes::rst::TypeChecker typeChecker(sourceFile, moduleStore,
-		                                     *dataModel, sourceUnit);
-
-		typeChecker.resolve(finalRSTBlock);
-		if (typeChecker.hasFailed()) {
-			std::cerr << std::format("{}: {}\n", "Error"_red,
-			                         "typeChecker failed");
-			for (auto typeCheckerError :
-			     typeChecker.getMessageBag().getErrors()) {
-				std::cerr << typeCheckerError;
-			}
-			return 1;
-		}
-		for (auto typeCheckerWarning :
-		     typeChecker.getMessageBag().getWarnings()) {
-			std::cerr << typeCheckerWarning;
-		}
 
 		switch (opts.target) {
 		case cli::Options::TargetEnum::C_SOURCE: {
 			handled = true;
 			backend::c::CTranspilerGenerator CTranspilerGen(
-			    sourceFile, typeChecker.getCurrentSourceUnit(), *dataModel);
+			    sourceFile, compilationCtx.sourceUnit, *dataModel);
 
 			CTranspilerGen.resolve(finalRSTBlock);
 			if (CTranspilerGen.hasFailed()) {
