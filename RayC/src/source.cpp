@@ -149,7 +149,7 @@ int main(int argc, char **argv) {
 				}
 				// TODO: set correctly filePath based off
 				// diagnostic.location.sourceId
-				std::string filePath = opts.input;
+				std::string filePath = opts.input.string();
 				const auto &location = diagnostic.location;
 				std::cerr << std::format(
 				    "{}|{} [{}:{}:{}] : {}\n",
