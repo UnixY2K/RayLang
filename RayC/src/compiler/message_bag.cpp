@@ -56,22 +56,26 @@ const std::vector<std::string> MessageBag::getWarnings() const {
 
 void MessageBag::reportError(size_t line, size_t column, std::string_view where,
                              std::string_view message) {
-	errors.push_back(std::format("{}|{} [{}:{}:{}] {}: {}\n", "Error"_red,
-	                             terminal::red(category), filepath, line,
-	                             column, where, message));
+	errors.push_back(std::format(
+	    "{}|{} [{}:{}:{}] {}: {}\n",
+	    terminal::colored(std::format("{:<8}", "Error"), terminal::Color::Red),
+	    terminal::red(category), filepath, line, column, where, message));
 }
 void MessageBag::reportWarning(size_t line, size_t column,
                                std::string_view where,
                                std::string_view message) {
-	errors.push_back(std::format("{}|{} [{}:{}:{}] {}: {}\n", "Warning"_yellow,
-	                             terminal::red(category), filepath, line,
-	                             column, where, message));
+	errors.push_back(std::format(
+	    "{}|{} [{}:{}:{}] {}: {}\n",
+	    terminal::colored(std::format("{:<8}", "Warning"),
+	                      terminal::Color::Yellow),
+	    terminal::red(category), filepath, line, column, where, message));
 }
 void MessageBag::reportBug(size_t line, size_t column, std::string_view where,
                            std::string_view message) {
-	errors.push_back(std::format("{}|{} [{}:{}:{}] {}: {}\n", "Bug"_red,
-	                             terminal::red(category), filepath, line,
-	                             column, where, message));
+	errors.push_back(std::format(
+	    "{}|{} [{}:{}:{}] {}: {}\n",
+	    terminal::colored(std::format("{:<8}", "Bug"), terminal::Color::Red),
+	    terminal::red(category), filepath, line, column, where, message));
 }
 
 std::string MessageBag::escapeString(const std::string_view string) {

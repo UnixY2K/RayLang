@@ -164,8 +164,9 @@ int main(int argc, char **argv) {
 				const auto &location = diagnostic.location;
 				std::cerr << std::format(
 				    "{}|{} [{}:{}:{}] : {}\n",
-				    terminal::colored(diagnostic.severityAsString(),
-				                      messageColor),
+				    terminal::colored(
+				        std::format("{:<8}", diagnostic.severityAsString()),
+				        messageColor),
 				    terminal::colored(diagnostic.category, messageColor),
 				    filePath, location.line, location.column,
 				    diagnostic.message);
@@ -191,7 +192,7 @@ int main(int argc, char **argv) {
 
 			CTranspilerGen.resolve(finalRSTBlock);
 			if (CTranspilerGen.hasFailed()) {
-				std::cerr << std::format("{}: {}\n", "Error"_red,
+				std::cerr << std::format("{:<10}: {}\n", "Error"_red,
 				                         "CSourceGen failed");
 				for (auto cError : CTranspilerGen.getErrors()) {
 					std::cerr << cError;
