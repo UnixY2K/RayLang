@@ -1,4 +1,8 @@
 
+#include "ray/compiler/passes/rst/desugaring.hpp"
+#include "ray/compiler/passes/rst/lowering.hpp"
+#include "ray/compiler/passes/rst/metaExpansion.hpp"
+#include "ray/compiler/passes/rst/moduleResolver.hpp"
 #include <exception>
 #include <expected>
 #include <format>
@@ -127,8 +131,12 @@ int main(int argc, char **argv) {
 		passes::PassManager passManager;
 
 		passManager.addPass<passes::Resolver>();
+		passManager.addPass<passes::rst::moduleResolver>();
 		passManager.addPass<passes::rst::TypeScanner>();
+		passManager.addPass<passes::rst::MetaExpansion>();
+		passManager.addPass<passes::rst::Desugaring>();
 		passManager.addPass<passes::rst::TypeChecker>();
+		passManager.addPass<passes::rst::Lowering>();
 
 		auto finalCompilationArtifact = passManager.run(
 		    compilationCtx, std::make_unique<infrastructure::CompilerArtifact>(
