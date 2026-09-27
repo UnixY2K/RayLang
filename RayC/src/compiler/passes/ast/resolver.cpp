@@ -14,7 +14,7 @@
 #include <ray/compiler/lang/functionDefinition.hpp>
 #include <ray/compiler/lang/type.hpp>
 #include <ray/compiler/lexer/token.hpp>
-#include <ray/compiler/passes/resolver.hpp>
+#include <ray/compiler/passes/ast/resolver.hpp>
 #include <ray/compiler/passes/symbol_mangler.hpp>
 #include <ray/compiler/syntax/rst/Expression.hpp>
 #include <ray/compiler/syntax/rst/Statement.hpp>

@@ -23,7 +23,8 @@
 #include <ray/compiler/syntax/rst/Statement.hpp>
 
 #include <ray/compiler/passes/passManager.hpp>
-#include <ray/compiler/passes/resolver.hpp>
+// compiler passes
+#include <ray/compiler/passes/ast/resolver.hpp>
 #include <ray/compiler/passes/rst/typeChecker.hpp>
 #include <ray/compiler/passes/rst/typeScanner.hpp>
 
