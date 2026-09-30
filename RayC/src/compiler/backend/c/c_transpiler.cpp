@@ -1,7 +1,6 @@
 #include <cassert>
 #include <cstddef>
 #include <format>
-#include <functional>
 #include <memory>
 #include <optional>
 #include <string>
@@ -22,16 +21,21 @@
 
 namespace ray::compiler::backend::c {
 
-std::string CTranspilerGenerator::currentIdent() const {
-	return std::string(ident, '\t');
-}
+void CTranspilerGenerator::run(infrastructure::CompilationContext &ctx,
+                               std::unique_ptr<infrastructure::CompilerArtifact>
+                                   previousCompilerArtifact) {
+	compilationContext = &ctx;
 
-CTranspilerGenerator::CTranspilerGenerator(
-    std::string filePath, const lang::SourceUnit &sourceUnit,
-    const environment::DataModel &dataModel)
-    : messageBag("C-BACKEND", filePath), currentSourceUnit(sourceUnit),
-      currentScope(currentSourceUnit.get().rootScope),
-      currentDataModel(dataModel) {}
+	currentScope = &compilationContext->sourceUnit.rootScope;
+	assert(previousCompilerArtifact->rootRSTBlock.has_value());
+	currentCompilerArtifact = std::move(previousCompilerArtifact);
+	auto rootRST = currentCompilerArtifact->rootRSTBlock->get();
+	resolve(*rootRST);
+}
+std::unique_ptr<infrastructure::CompilerArtifact>
+CTranspilerGenerator::getCompilationArtifact() {
+	return std::move(currentCompilerArtifact);
+}
 
 void CTranspilerGenerator::resolve(const syntax::rst::Block &blockRST) {
 	output.clear();
@@ -43,7 +47,7 @@ void CTranspilerGenerator::resolve(const syntax::rst::Block &blockRST) {
 
 	output << "#pragma region struct_declarations\n";
 	for (auto const &[structId, structDeclaration] :
-	     currentSourceUnit.get().getStructs()) {
+	     compilationContext->sourceUnit.getStructs()) {
 		output << std::format("{}typedef struct {}", currentIdent(),
 		                      structDeclaration.mangledName);
 		output << std::format(" {};\n", structDeclaration.mangledName);
@@ -53,16 +57,16 @@ void CTranspilerGenerator::resolve(const syntax::rst::Block &blockRST) {
 	output << "#pragma region struct_definitions\n";
 	// struct cyclic dependency check is done at type check step
 	std::unordered_set<size_t> visitedStructs;
-	visitedStructs.reserve(currentSourceUnit.get().getStructs().size());
+	visitedStructs.reserve(compilationContext->sourceUnit.getStructs().size());
 	for (auto const &[structId, structDeclaration] :
-	     currentSourceUnit.get().getStructs()) {
+	     compilationContext->sourceUnit.getStructs()) {
 		defineStruct(visitedStructs, structDeclaration);
 	}
 	output << "#pragma endregion struct_definitions\n";
 
 	output << "#pragma region function_declarations\n";
 	for (const auto &[functionId, functionDeclaration] :
-	     currentSourceUnit.get().getFunctions()) {
+	     compilationContext->sourceUnit.getFunctions()) {
 		// main should be extern c++
 		if (functionDeclaration.mangledName == "main") {
 			output << "RAYLANG_DEFAULT_LINKAGE ";
@@ -101,11 +105,6 @@ void CTranspilerGenerator::resolve(const syntax::rst::Block &blockRST) {
 	output << "#endif\n";
 }
 
-bool CTranspilerGenerator::hasFailed() const { return messageBag.failed(); }
-const std::vector<std::string> CTranspilerGenerator::getErrors() const {
-	return messageBag.getErrors();
-}
-
 std::string CTranspilerGenerator::getOutput() const { return output.str(); }
 
 // Statement
@@ -142,14 +141,15 @@ void CTranspilerGenerator::visitFunctionStatement(
 		        dynamic_cast<directive::LinkageDirective *>(directive.get())) {
 			linkageDirective = *foundLinkDirective;
 		} else {
-			messageBag.warning(
+			compilationContext->diagnostics.warning(
 			    directive->getToken(),
 			    std::format("unmatched compiler directive '{}' for function.",
 			                directive->directiveName()));
 		}
 	}
-	std::string functionName = nameMangler.mangleFunction(
-	    currentSourceUnit.get().packageName, functionRST, linkageDirective);
+	std::string functionName =
+	    nameMangler.mangleFunction(compilationContext->sourceUnit.packageName,
+	                               functionRST, linkageDirective);
 
 	// ignore any function declaration
 	if (functionRST.body.has_value()) {
@@ -228,9 +228,9 @@ void CTranspilerGenerator::visitJumpStatement(const syntax::rst::Jump &jump) {
 		output << ";\n";
 		break;
 	default:
-		messageBag.error(jump.getToken(),
-		                 std::format("'{}' is not a supported jump type",
-		                             jump.keyword.getLexeme()));
+		compilationContext->diagnostics.error(
+		    jump.getToken(), std::format("'{}' is not a supported jump type",
+		                                 jump.keyword.getLexeme()));
 		break;
 	}
 }
@@ -291,7 +291,7 @@ void CTranspilerGenerator::visitStructStatement(
 		        dynamic_cast<directive::LinkageDirective *>(directive.get())) {
 			linkageDirective = *foundLinkDirective;
 		} else {
-			messageBag.warning(
+			compilationContext->diagnostics.warning(
 			    directive->getToken(),
 			    std::format("unmatched compiler directive '{}' for function.",
 			                directive->directiveName()));
@@ -301,8 +301,9 @@ void CTranspilerGenerator::visitStructStatement(
 	// TODO: remove this once the full logic of struct using type data is
 	// implemented
 	return;
-	const std::string mangledStructName = nameMangler.mangleStruct(
-	    currentSourceUnit.get().packageName, structRST, linkageDirective);
+	const std::string mangledStructName =
+	    nameMangler.mangleStruct(compilationContext->sourceUnit.packageName,
+	                             structRST, linkageDirective);
 
 	// we just ignore any struct declaration
 	// as they were declared before
@@ -339,8 +340,8 @@ void CTranspilerGenerator::visitVariableExpression(
 }
 void CTranspilerGenerator::visitIntrinsicExpression(
     const syntax::rst::Intrinsic &intrinsic) {
-	messageBag.error(intrinsic.name,
-	                 "visitIntrinsicExpression not implemented");
+	compilationContext->diagnostics.error(
+	    intrinsic.name, "visitIntrinsicExpression not implemented");
 }
 void CTranspilerGenerator::visitAssignExpression(
     const syntax::rst::Assign &value) {
@@ -374,9 +375,10 @@ void CTranspilerGenerator::visitBinaryExpression(
 		output << std::format(" {} ", op.getGlyph());
 		break;
 	default:
-		messageBag.error(binaryExpression.op,
-		                 std::format("'{}' is not a supported binary operation",
-		                             op.getLexeme()));
+		compilationContext->diagnostics.error(
+		    binaryExpression.op,
+		    std::format("'{}' is not a supported binary operation",
+		                op.getLexeme()));
 	}
 
 	binaryExpression.right->visit(*this);
@@ -389,8 +391,9 @@ void CTranspilerGenerator::visitCallExpression(
 		std::string callableName =
 		    findCallableName(callable, var->name.getLexeme());
 		if (callableName.empty()) {
-			messageBag.error(var->name, std::format("undefined symbol '{}'",
-			                                        var->name.lexeme));
+			compilationContext->diagnostics.error(
+			    var->name,
+			    std::format("undefined symbol '{}'", var->name.lexeme));
 			callableName = var->name.lexeme;
 		}
 		output << std::format("{}(", callableName);
@@ -407,9 +410,10 @@ void CTranspilerGenerator::visitCallExpression(
 		}
 		output << ")";
 	} else {
-		messageBag.error(callable.callee->getToken(),
-		                 std::format("'{}' is not a supported callable type",
-		                             callable.callee.get()->variantName()));
+		compilationContext->diagnostics.error(
+		    callable.callee->getToken(),
+		    std::format("'{}' is not a supported callable type",
+		                callable.callee.get()->variantName()));
 	}
 }
 void CTranspilerGenerator::visitIntrinsicCallExpression(
@@ -418,21 +422,23 @@ void CTranspilerGenerator::visitIntrinsicCallExpression(
 	switch (intrinsicCallAst.callee->intrinsic) {
 	case ray::compiler::syntax::common::IntrinsicType::INTR_SIZEOF: {
 		if (intrinsicCallAst.arguments.size() != 1) {
-			messageBag.error(intrinsicCallAst.callee->name,
-			                 std::format("@sizeOf intrinsic expects 1 "
-			                             "argument but {} got provided",
-			                             intrinsicCallAst.arguments.size()));
+			compilationContext->diagnostics.error(
+			    intrinsicCallAst.callee->name,
+			    std::format("@sizeOf intrinsic expects 1 "
+			                "argument but {} got provided",
+			                intrinsicCallAst.arguments.size()));
 		} else {
 			auto param = intrinsicCallAst.arguments[0].get();
 			auto type = getTypeExpression(param);
 			if (!type) {
-				messageBag.error(intrinsicCallAst.callee->name,
-				                 std::format("'{}' is not a Type expression",
-				                             param->variantName()));
+				compilationContext->diagnostics.error(
+				    intrinsicCallAst.callee->name,
+				    std::format("'{}' is not a Type expression",
+				                param->variantName()));
 				break;
 			}
 			if (type->getKind() == lang::TypeKind::abstract) {
-				messageBag.error(
+				compilationContext->diagnostics.error(
 				    intrinsicCallAst.callee->name,
 				    std::format("'{}' cannot be an abstract Type expression",
 				                param->variantName()));
@@ -445,16 +451,17 @@ void CTranspilerGenerator::visitIntrinsicCallExpression(
 		break;
 	}
 	case ray::compiler::syntax::common::IntrinsicType::INTR_IMPORT: {
-		messageBag.error(
+		compilationContext->diagnostics.error(
 		    intrinsicCallAst.callee->name,
 		    std::format("'{}' is not implemented yet for C backend",
 		                intrinsicCallAst.callee->name.lexeme));
 		break;
 	}
 	case ray::compiler::syntax::common::IntrinsicType::INTR_UNKNOWN:
-		messageBag.error(intrinsicCallAst.callee->name,
-		                 std::format("'{}' is not a valid intrinsic",
-		                             intrinsicCallAst.callee->name.lexeme));
+		compilationContext->diagnostics.error(
+		    intrinsicCallAst.callee->name,
+		    std::format("'{}' is not a valid intrinsic",
+		                intrinsicCallAst.callee->name.lexeme));
 		break;
 	}
 }
@@ -552,7 +559,7 @@ void CTranspilerGenerator::visitLiteralExpression(
 		break;
 	}
 	default:
-		messageBag.error(
+		compilationContext->diagnostics.error(
 		    literal.token,
 		    std::format("'{}' ({}) is not a supported literal type",
 		                literal.kind.getLexeme(), literal.kind.getGlyph()));
@@ -586,9 +593,9 @@ void CTranspilerGenerator::visitUnaryExpression(
 		output << std::format("{}", unary.op.getLexeme());
 		break;
 	default:
-		messageBag.error(unary.op,
-		                 std::format("'{}' is not a supported unary operation",
-		                             unary.op.getLexeme()));
+		compilationContext->diagnostics.error(
+		    unary.op, std::format("'{}' is not a supported unary operation",
+		                          unary.op.getLexeme()));
 	}
 	if (unary.isPrefix) {
 		unary.expr->visit(*this);
@@ -622,8 +629,9 @@ void CTranspilerGenerator::visitTupleTypeExpression(
 	if (!tupleAst.isMutable) {
 		output << "const ";
 	}
-	messageBag.error(tupleAst.getToken(),
-	                 std::format("{} not implemented", __PRETTY_FUNCTION__));
+	compilationContext->diagnostics.error(
+	    tupleAst.getToken(),
+	    std::format("{} not implemented", __PRETTY_FUNCTION__));
 }
 void CTranspilerGenerator::visitPointerTypeExpression(
     const syntax::rst::PointerType &pointerTypeAst) {
@@ -653,7 +661,7 @@ void CTranspilerGenerator::visitNamedTypeExpression(
 			if (typeInfo.has_value()) {
 				typeName = typeInfo->name;
 			} else {
-				messageBag.warning(
+				compilationContext->diagnostics.warning(
 				    type.getToken(),
 				    std::format("could not find mangled name for '{}'",
 				                type.name.lexeme));
@@ -708,19 +716,19 @@ void CTranspilerGenerator::visitType(const lang::Type &type) {
 	}
 	case lang::TypeKind::aggregate: {
 		// see if the type is a struct and get its mangled name
-		if (currentSourceUnit.get().getStructs().contains(type.typeId)) {
+		if (compilationContext->sourceUnit.getStructs().contains(type.typeId)) {
 			const lang::Struct &structObj =
-			    currentSourceUnit.get().getStructs().at(type.typeId);
+			    compilationContext->sourceUnit.getStructs().at(type.typeId);
 			output << structObj.mangledName;
-		} else if (currentSourceUnit.get().getFunctions().contains(
+		} else if (compilationContext->sourceUnit.getFunctions().contains(
 		               type.typeId)) {
 
-			messageBag.bug(
+			compilationContext->diagnostics.bug(
 			    Token::makeEOFToken(),
 			    std::format("function name mangling not yet supported"));
 
 		} else {
-			messageBag.bug(
+			compilationContext->diagnostics.bug(
 			    Token::makeEOFToken(),
 			    std::format("could not identify aggregate name information"));
 		}
@@ -728,12 +736,13 @@ void CTranspilerGenerator::visitType(const lang::Type &type) {
 	}
 	case lang::TypeKind::abstract:
 		// unit types are abstract and its "equivalent" in C is void
-		if (type == currentDataModel.get().getUnitType(type.isMutable)) {
+		if (type == compilationContext->dataModel.getUnitType(type.isMutable)) {
 			output << "void";
 			break;
 		}
-		messageBag.bug(Token::makeEOFToken(),
-		               std::format("abstract tokens cannot be transpiled"));
+		compilationContext->diagnostics.bug(
+		    Token::makeEOFToken(),
+		    std::format("abstract tokens cannot be transpiled"));
 		break;
 	}
 }
@@ -746,8 +755,7 @@ CTranspilerGenerator::findCallableName(const syntax::rst::Call &callable,
 
 	std::string key(name);
 	const auto functionName =
-	    currentScope.get()
-	        .findLocalFunctionDeclaration(name)
+	    currentScope->findLocalFunctionDeclaration(name)
 	        .transform([&callable](const auto &functionDeclarations) {
 		        for (const auto &function : functionDeclarations) {
 			        const auto &functionObject = function.getObject();
@@ -765,7 +773,7 @@ CTranspilerGenerator::findCallableName(const syntax::rst::Call &callable,
 std::string
 CTranspilerGenerator::findStructName(const std::string_view name) const {
 	auto queriedStruct =
-	    currentSourceUnit.get().findStruct(name, currentScope.get());
+	    compilationContext->sourceUnit.findStruct(name, *currentScope);
 	if (queriedStruct.has_value()) {
 		return queriedStruct
 		    .transform(
@@ -780,7 +788,7 @@ CTranspilerGenerator::findStructName(const std::string_view name) const {
 
 std::optional<lang::Type>
 CTranspilerGenerator::findScalarTypeInfo(const std::string_view lexeme) {
-	return currentDataModel.get().findScalarType(lexeme);
+	return compilationContext->dataModel.findScalarType(lexeme);
 }
 std::optional<lang::Type>
 CTranspilerGenerator::findTypeInfo(const std::string_view lexeme) {
@@ -815,9 +823,9 @@ void CTranspilerGenerator::defineStruct(
 
 	for (auto const &structMember : structObj.members) {
 		auto typeId = structMember.type.typeId;
-		if (currentSourceUnit.get().getStructs().contains(typeId)) {
+		if (compilationContext->sourceUnit.getStructs().contains(typeId)) {
 			const lang::Struct structDeclaration =
-			    currentSourceUnit.get().getStructs().at(typeId);
+			    compilationContext->sourceUnit.getStructs().at(typeId);
 			defineStruct(visitedStructs, structDeclaration);
 		}
 	}
@@ -834,6 +842,10 @@ void CTranspilerGenerator::defineStruct(
 	}
 
 	output << std::format("}} {};\n", structObj.mangledName);
+}
+
+std::string CTranspilerGenerator::currentIdent() const {
+	return std::string(ident, '\t');
 }
 
 } // namespace ray::compiler::backend::c

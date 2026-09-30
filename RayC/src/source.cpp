@@ -1,8 +1,5 @@
 
-#include "ray/compiler/passes/rst/desugaring.hpp"
-#include "ray/compiler/passes/rst/lowering.hpp"
-#include "ray/compiler/passes/rst/metaExpansion.hpp"
-#include "ray/compiler/passes/rst/moduleResolver.hpp"
+
 #include <exception>
 #include <expected>
 #include <format>
@@ -29,6 +26,10 @@
 #include <ray/compiler/passes/passManager.hpp>
 // compiler passes
 #include <ray/compiler/passes/ast/resolver.hpp>
+#include <ray/compiler/passes/rst/desugaring.hpp>
+#include <ray/compiler/passes/rst/lowering.hpp>
+#include <ray/compiler/passes/rst/metaExpansion.hpp>
+#include <ray/compiler/passes/rst/moduleResolver.hpp>
 #include <ray/compiler/passes/rst/typeChecker.hpp>
 #include <ray/compiler/passes/rst/typeScanner.hpp>
 
@@ -121,9 +122,6 @@ int main(int argc, char **argv) {
 			return 1;
 		}
 
-		std::string output;
-		bool handled = false;
-
 		infrastructure::diagnostics::DiagnosticEngine diagnostics;
 		infrastructure::CompilationContext compilationCtx{
 		    lang::ModuleStore(), lang::SourceUnit(), *dataModel, diagnostics};
@@ -138,68 +136,11 @@ int main(int argc, char **argv) {
 		passManager.addPass<passes::rst::TypeChecker>();
 		passManager.addPass<passes::rst::Lowering>();
 
-		auto finalCompilationArtifact = passManager.run(
-		    compilationCtx, std::make_unique<infrastructure::CompilerArtifact>(
-		                        infrastructure::CompilerArtifact(
-		                            {std::move(rootBlock)}, std::nullopt)));
-
-		if (compilationCtx.diagnostics.hasFailed()) {
-			for (auto diagnostic :
-			     compilationCtx.diagnostics.getDiagnostics()) {
-				auto messageColor = terminal::Color::None;
-				switch (diagnostic.severity) {
-
-				case infrastructure::diagnostics::DiagnosticSeverity::Warning:
-					messageColor = terminal::Color::Yellow;
-					break;
-				case infrastructure::diagnostics::DiagnosticSeverity::Error:
-				case infrastructure::diagnostics::DiagnosticSeverity::Fatal:
-				case infrastructure::diagnostics::DiagnosticSeverity::Bug:
-					messageColor = terminal::Color::Red;
-					break;
-				}
-				// TODO: set correctly filePath based off
-				// diagnostic.location.sourceId
-				std::string filePath = opts.input.string();
-				const auto &location = diagnostic.location;
-				std::cerr << std::format(
-				    "{}|{} [{}:{}:{}] : {}\n",
-				    terminal::colored(
-				        std::format("{:<8}", diagnostic.severityAsString()),
-				        messageColor),
-				    terminal::colored(diagnostic.category, messageColor),
-				    filePath, location.line, location.column,
-				    diagnostic.message);
-			}
-			return 1;
-		}
-
-		// TODO: remove this block once all the phases use the pass manager
-		auto defaultRSTBlock = syntax::rst::Block({}, Token::makeEOFToken());
-		auto &finalRSTBlock = *finalCompilationArtifact->rootRSTBlock
-		                           .transform([](auto &blockUniquePtr) {
-			                           return blockUniquePtr.get();
-		                           })
-		                           .value_or(&defaultRSTBlock);
-
-		lang::SourceUnit sourceUnit;
-
+		bool handled = false;
 		switch (opts.target) {
 		case cli::Options::TargetEnum::C_SOURCE: {
 			handled = true;
-			backend::c::CTranspilerGenerator CTranspilerGen(
-			    sourceFile, compilationCtx.sourceUnit, *dataModel);
-
-			CTranspilerGen.resolve(finalRSTBlock);
-			if (CTranspilerGen.hasFailed()) {
-				std::cerr << std::format("{:<10}: {}\n", "Error"_red,
-				                         "CSourceGen failed");
-				for (auto cError : CTranspilerGen.getErrors()) {
-					std::cerr << cError;
-				}
-				return 1;
-			}
-			output = CTranspilerGen.getOutput();
+			passManager.addPass<backend::c::CTranspilerGenerator>();
 		}
 		// both cases should never show
 		case cli::Options::TargetEnum::NONE:
@@ -213,6 +154,56 @@ int main(int argc, char **argv) {
 			return -1;
 		}
 
+		auto finalCompilationArtifact = passManager.run(
+		    compilationCtx, std::make_unique<infrastructure::CompilerArtifact>(
+		                        infrastructure::CompilerArtifact(
+		                            {std::move(rootBlock)}, std::nullopt)));
+
+		for (auto diagnostic : compilationCtx.diagnostics.getDiagnostics()) {
+			auto messageColor = terminal::Color::None;
+			switch (diagnostic.severity) {
+
+			case infrastructure::diagnostics::DiagnosticSeverity::Warning:
+				messageColor = terminal::Color::Yellow;
+				break;
+			case infrastructure::diagnostics::DiagnosticSeverity::Error:
+			case infrastructure::diagnostics::DiagnosticSeverity::Fatal:
+			case infrastructure::diagnostics::DiagnosticSeverity::Bug:
+				messageColor = terminal::Color::Red;
+				break;
+			}
+			// TODO: set correctly filePath based off
+			// diagnostic.location.sourceId
+			std::string filePath = opts.input.string();
+			const auto &location = diagnostic.location;
+			std::cerr << std::format(
+			    "{}|{} [{}:{}:{}] : {}\n",
+			    terminal::colored(
+			        std::format("{:<8}", diagnostic.severityAsString()),
+			        messageColor),
+			    terminal::colored(std::format("{:<14}", diagnostic.category),
+			                      messageColor),
+			    filePath, location.line, location.column, diagnostic.message);
+		}
+
+		if (compilationCtx.diagnostics.hasFailed()) {
+			return 1;
+		}
+
+		std::string output;
+		switch (opts.target) {
+		case ray::compiler::cli::Options::TargetEnum::C_SOURCE: {
+			output =
+			    passManager.getCompilerPass<backend::c::CTranspilerGenerator>()
+			        .transform([](backend::c::CTranspilerGenerator &generator) {
+				        return generator.getOutput();
+			        })
+			        .value_or("");
+			break;
+		}
+		default:
+			break;
+		}
 		std::ofstream outputFile(opts.output, std::ios::trunc);
 		if (!outputFile) {
 			std::cerr << std::format("{}: could not open file: {}\n",

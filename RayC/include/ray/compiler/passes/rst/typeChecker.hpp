@@ -7,7 +7,6 @@
 #include <ray/compiler/lang/module.hpp>
 #include <ray/compiler/lang/sourceUnit.hpp>
 #include <ray/compiler/lexer/token.hpp>
-#include <ray/compiler/message_bag.hpp>
 #include <ray/compiler/passes/compilerPass.hpp>
 #include <ray/compiler/syntax/rst/Expression.hpp>
 #include <ray/compiler/syntax/rst/Statement.hpp>
@@ -17,9 +16,9 @@ class TypeChecker : public syntax::rst::StatementVisitor,
                     syntax::rst::ExpressionVisitor,
                     public CompilerPass {
 	infrastructure::CompilationContext *compilationContext;
-	lang::Scope *currentScope;
-
 	std::unique_ptr<infrastructure::CompilerArtifact> currentCompilerArtifact;
+	
+	lang::Scope *currentScope;
 
 	std::vector<lang::Type> typeStack;
 

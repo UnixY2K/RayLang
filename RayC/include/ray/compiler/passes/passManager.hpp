@@ -1,7 +1,9 @@
 
 #pragma once
 
+#include <functional>
 #include <memory>
+#include <optional>
 #include <utility>
 #include <vector>
 
@@ -21,8 +23,20 @@ class PassManager {
 		passes.push_back(std::make_unique<TPass>(std::forward<Args>(args)...));
 	}
 
+	template <class T>
+	std::optional<std::reference_wrapper<T>> getCompilerPass() {
+		for (const auto &pass : passes) {
+			if (auto *derived = dynamic_cast<T *>(pass.get())) {
+				return *derived;
+			}
+		}
+		return std::nullopt;
+	}
+
 	std::unique_ptr<infrastructure::CompilerArtifact>
-	run(infrastructure::CompilationContext &context, std::unique_ptr<infrastructure::CompilerArtifact> initialCompilationArtifact);
+	run(infrastructure::CompilationContext &context,
+	    std::unique_ptr<infrastructure::CompilerArtifact>
+	        initialCompilationArtifact);
 	void clear() { passes.clear(); }
 };
 

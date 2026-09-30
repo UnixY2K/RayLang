@@ -11,7 +11,6 @@
 #include <ray/compiler/lang/module.hpp>
 #include <ray/compiler/lang/sourceUnit.hpp>
 #include <ray/compiler/lexer/token.hpp>
-#include <ray/compiler/message_bag.hpp>
 #include <ray/compiler/passes/compilerPass.hpp>
 #include <ray/compiler/passes/rst/typeScanner.hpp>
 #include <ray/compiler/syntax/ast/Expression.hpp>

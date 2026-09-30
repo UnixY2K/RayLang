@@ -21,6 +21,7 @@ void DiagnosticEngine::error(size_t line, size_t column,
                              std::string_view message) {
 	report(DiagnosticSeverity::Error,
 	       SourceLocation{currentSourceID, line, column}, message);
+	failed = true;
 }
 void DiagnosticEngine::warning(size_t line, size_t column,
                                std::string_view message) {
@@ -31,11 +32,16 @@ void DiagnosticEngine::bug(size_t line, size_t column,
                            std::string_view message) {
 	report(DiagnosticSeverity::Bug,
 	       SourceLocation{currentSourceID, line, column}, message);
+	// maybe for debugging reasons we would like to receive all the bug lists
+	// or not, still if we are not debugging the compiler we should not see a
+	// lot of errors that the user is not responsible to fix
+	fatallyFailed = true;
 }
 void DiagnosticEngine::fatal(size_t line, size_t column,
                              std::string_view message) {
 	report(DiagnosticSeverity::Fatal,
 	       SourceLocation{currentSourceID, line, column}, message);
+	fatallyFailed = true;
 }
 
 void DiagnosticEngine::report(DiagnosticSeverity severity,

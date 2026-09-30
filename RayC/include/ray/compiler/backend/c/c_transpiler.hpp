@@ -1,11 +1,9 @@
 #pragma once
 
 #include <cstddef>
-#include <functional>
 #include <sstream>
 #include <string_view>
 #include <unordered_set>
-#include <vector>
 
 #include <ray/compiler/directives/compilerDirective.hpp>
 #include <ray/compiler/environment/dataModel/dataModel.hpp>
@@ -15,6 +13,7 @@
 #include <ray/compiler/lang/symbol.hpp>
 #include <ray/compiler/lang/type.hpp>
 #include <ray/compiler/message_bag.hpp>
+#include <ray/compiler/passes/compilerPass.hpp>
 #include <ray/compiler/passes/symbol_mangler.hpp>
 #include <ray/compiler/syntax/rst/Expression.hpp>
 #include <ray/compiler/syntax/rst/Statement.hpp>
@@ -22,29 +21,30 @@
 namespace ray::compiler::backend::c {
 
 class CTranspilerGenerator : public syntax::rst::StatementVisitor,
-                             public syntax::rst::ExpressionVisitor {
-	MessageBag messageBag;
+                             public syntax::rst::ExpressionVisitor,
+                             public passes::CompilerPass {
+	infrastructure::CompilationContext *compilationContext;
+	std::unique_ptr<infrastructure::CompilerArtifact> currentCompilerArtifact;
+
+	lang::Scope *currentScope;
+
 	std::stringstream output;
 	size_t ident = 0;
 
-	std::string currentIdent() const;
-
 	passes::mangling::NameMangler nameMangler;
 
-	std::reference_wrapper<const lang::SourceUnit> currentSourceUnit;
-	std::reference_wrapper<const lang::Scope> currentScope;
-
-	std::reference_wrapper<const environment::DataModel> currentDataModel;
-
   public:
-	CTranspilerGenerator(std::string filePath,
-	                     const lang::SourceUnit &sourceUnit,
-	                     const environment::DataModel &dataModel);
+	CTranspilerGenerator() = default;
+
+	std::string_view name() const override { return "C-Backend"; }
+	void run(infrastructure::CompilationContext &ctx,
+	         std::unique_ptr<infrastructure::CompilerArtifact>
+	             previousCompilerArtifact) override;
+	bool requiresCleanState() const override { return false; }
+	std::unique_ptr<infrastructure::CompilerArtifact>
+	getCompilationArtifact() override;
 
 	void resolve(const syntax::rst::Block &statement);
-
-	bool hasFailed() const;
-	const std::vector<std::string> getErrors() const;
 
 	std::string getOutput() const;
 
@@ -106,6 +106,11 @@ class CTranspilerGenerator : public syntax::rst::StatementVisitor,
 
 	void defineStruct(std::unordered_set<size_t> &visitedStructs,
 	                  const lang::Struct &);
+
+	std::string currentIdent() const;
+
+  public:
+	~CTranspilerGenerator() = default;
 };
 
 } // namespace ray::compiler::backend::c

@@ -10,7 +10,6 @@
 #include <ray/compiler/lang/struct.hpp>
 #include <ray/compiler/lang/trait.hpp>
 #include <ray/compiler/lang/type.hpp>
-#include <ray/compiler/message_bag.hpp>
 #include <ray/compiler/passes/compilerPass.hpp>
 #include <ray/compiler/syntax/rst/Expression.hpp>
 #include <ray/compiler/syntax/rst/Statement.hpp>
@@ -21,9 +20,9 @@ class TypeScanner : public syntax::rst::StatementVisitor,
                     public CompilerPass {
 
 	infrastructure::CompilationContext *compilationContext;
-	lang::Scope *currentScope;
-
 	std::unique_ptr<infrastructure::CompilerArtifact> currentCompilerArtifact;
+	
+	lang::Scope *currentScope;
 
 	std::vector<std::unique_ptr<directive::CompilerDirective>> directivesStack;
 	size_t directivesStackTop = 0;
