@@ -24,7 +24,7 @@ class Parser {
 	Parser() : Parser("", {}) {};
 	Parser(std::string filepath, std::vector<Token> tokens);
 
-	std::vector<std::unique_ptr<syntax::ast::Statement>> parse();
+	std::unique_ptr<syntax::ast::Block> parse();
 
 	bool failed() const;
 	const std::vector<std::string> getErrors() const;

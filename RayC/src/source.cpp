@@ -1,8 +1,12 @@
+
+
 #include <exception>
 #include <expected>
 #include <format>
 #include <fstream>
 #include <iostream>
+#include <memory>
+#include <optional>
 #include <sstream>
 
 #include <ray/cli/cli_args.hpp>
@@ -11,10 +15,21 @@
 
 #include <ray/compiler/environment/dataModel/dataModel.hpp>
 
-#include <ray/compiler/lexer/lexer.hpp>
-#include <ray/compiler/parser/parser.hpp>
+#include <ray/compiler/infrastructure/compilationContext.hpp>
+#include <ray/compiler/infrastructure/diagnosticsEngine.hpp>
 
-#include <ray/compiler/passes/resolver.hpp>
+#include <ray/compiler/lexer/lexer.hpp>
+#include <ray/compiler/lexer/token.hpp>
+#include <ray/compiler/parser/parser.hpp>
+#include <ray/compiler/syntax/rst/Statement.hpp>
+
+#include <ray/compiler/passes/passManager.hpp>
+// compiler passes
+#include <ray/compiler/passes/ast/resolver.hpp>
+#include <ray/compiler/passes/rst/desugaring.hpp>
+#include <ray/compiler/passes/rst/lowering.hpp>
+#include <ray/compiler/passes/rst/metaExpansion.hpp>
+#include <ray/compiler/passes/rst/moduleResolver.hpp>
 #include <ray/compiler/passes/rst/typeChecker.hpp>
 #include <ray/compiler/passes/rst/typeScanner.hpp>
 
@@ -70,6 +85,10 @@ int main(int argc, char **argv) {
 			return 1;
 		}
 		}
+		auto sourceFile = opts.input.make_preferred().relative_path().string();
+		if (opts.target == ray::compiler::cli::Options::TargetEnum::NONE) {
+			opts.target = opts.defaultTarget;
+		}
 
 		// read the contents of the file
 		std::ifstream input(opts.input);
@@ -93,9 +112,8 @@ int main(int argc, char **argv) {
 			return 1;
 		}
 
-		auto sourceFile = opts.input.make_preferred().relative_path().string();
 		auto parser = Parser(sourceFile, tokens);
-		auto statements = parser.parse();
+		auto rootBlock = parser.parse();
 
 		if (parser.failed()) {
 			for (auto parseError : parser.getErrors()) {
@@ -103,80 +121,26 @@ int main(int argc, char **argv) {
 			}
 			return 1;
 		}
-		if (opts.target == ray::compiler::cli::Options::TargetEnum::NONE) {
-			opts.target = opts.defaultTarget;
-		}
 
-		std::string output;
+		infrastructure::diagnostics::DiagnosticEngine diagnostics;
+		infrastructure::CompilationContext compilationCtx{
+		    lang::ModuleStore(), lang::SourceUnit(), *dataModel, diagnostics};
+
+		passes::PassManager passManager;
+
+		passManager.addPass<passes::Resolver>();
+		passManager.addPass<passes::rst::moduleResolver>();
+		passManager.addPass<passes::rst::TypeScanner>();
+		passManager.addPass<passes::rst::MetaExpansion>();
+		passManager.addPass<passes::rst::Desugaring>();
+		passManager.addPass<passes::rst::TypeChecker>();
+		passManager.addPass<passes::rst::Lowering>();
+
 		bool handled = false;
-
-		lang::ModuleStore moduleStore;
-		lang::SourceUnit sourceUnit;
-
-		passes::Resolver resolver(sourceFile, *dataModel, sourceUnit,
-		                          moduleStore);
-		resolver.resolve(statements);
-
-		if (resolver.hasFailed()) {
-			std::cerr << std::format("{}: {}\n", "Error"_red,
-			                         "typeChecker failed");
-			const auto &messageBag = resolver.getMessageBag();
-			for (auto error : messageBag.getErrors()) {
-				std::cerr << error;
-			}
-			// return 1;
-		}
-
-		passes::rst::TypeScanner typeScanner(sourceFile, *dataModel, sourceUnit,
-		                                moduleStore);
-
-		typeScanner.resolve(resolver.getRootBlock());
-		// TODO: once a propper typeScanner is set in place replace this so
-		// type checker errors can be reported along with the previous
-		// errors
-		if (typeScanner.hasFailed()) {
-			std::cerr << std::format("{}: {}\n", "Error"_red,
-			                         "typeScanner failed");
-			for (auto typeScannerError : typeScanner.getErrors()) {
-				std::cerr << typeScannerError;
-			}
-			return 1;
-		}
-
-		passes::rst::TypeChecker typeChecker(sourceFile, moduleStore,
-		                                     *dataModel, sourceUnit);
-
-		typeChecker.resolve(resolver.getRootBlock());
-		if (typeChecker.hasFailed()) {
-			std::cerr << std::format("{}: {}\n", "Error"_red,
-			                         "typeChecker failed");
-			for (auto typeCheckerError :
-			     typeChecker.getMessageBag().getErrors()) {
-				std::cerr << typeCheckerError;
-			}
-			return 1;
-		}
-		for (auto typeCheckerWarning :
-		     typeChecker.getMessageBag().getWarnings()) {
-			std::cerr << typeCheckerWarning;
-		}
-
 		switch (opts.target) {
 		case cli::Options::TargetEnum::C_SOURCE: {
 			handled = true;
-			backend::c::CTranspilerGenerator CTranspilerGen(
-			    sourceFile, typeChecker.getCurrentSourceUnit(), *dataModel);
-
-			CTranspilerGen.resolve(resolver.getRootBlock());
-			if (CTranspilerGen.hasFailed()) {
-				std::cerr << std::format("{}: {}\n", "Error"_red,
-				                         "CSourceGen failed");
-				for (auto cError : CTranspilerGen.getErrors()) {
-					std::cerr << cError;
-				}
-				return 1;
-			}
-			output = CTranspilerGen.getOutput();
+			passManager.addPass<backend::c::CTranspilerGenerator>();
 		}
 		// both cases should never show
 		case cli::Options::TargetEnum::NONE:
@@ -190,6 +154,56 @@ int main(int argc, char **argv) {
 			return -1;
 		}
 
+		auto finalCompilationArtifact = passManager.run(
+		    compilationCtx, std::make_unique<infrastructure::CompilerArtifact>(
+		                        infrastructure::CompilerArtifact(
+		                            {std::move(rootBlock)}, std::nullopt)));
+
+		for (auto diagnostic : compilationCtx.diagnostics.getDiagnostics()) {
+			auto messageColor = terminal::Color::None;
+			switch (diagnostic.severity) {
+
+			case infrastructure::diagnostics::DiagnosticSeverity::Warning:
+				messageColor = terminal::Color::Yellow;
+				break;
+			case infrastructure::diagnostics::DiagnosticSeverity::Error:
+			case infrastructure::diagnostics::DiagnosticSeverity::Fatal:
+			case infrastructure::diagnostics::DiagnosticSeverity::Bug:
+				messageColor = terminal::Color::Red;
+				break;
+			}
+			// TODO: set correctly filePath based off
+			// diagnostic.location.sourceId
+			std::string filePath = opts.input.string();
+			const auto &location = diagnostic.location;
+			std::cerr << std::format(
+			    "{}|{} [{}:{}:{}] : {}\n",
+			    terminal::colored(
+			        std::format("{:<8}", diagnostic.severityAsString()),
+			        messageColor),
+			    terminal::colored(std::format("{:<14}", diagnostic.category),
+			                      messageColor),
+			    filePath, location.line, location.column, diagnostic.message);
+		}
+
+		if (compilationCtx.diagnostics.hasFailed()) {
+			return 1;
+		}
+
+		std::string output;
+		switch (opts.target) {
+		case ray::compiler::cli::Options::TargetEnum::C_SOURCE: {
+			output =
+			    passManager.getCompilerPass<backend::c::CTranspilerGenerator>()
+			        .transform([](backend::c::CTranspilerGenerator &generator) {
+				        return generator.getOutput();
+			        })
+			        .value_or("");
+			break;
+		}
+		default:
+			break;
+		}
 		std::ofstream outputFile(opts.output, std::ios::trunc);
 		if (!outputFile) {
 			std::cerr << std::format("{}: could not open file: {}\n",

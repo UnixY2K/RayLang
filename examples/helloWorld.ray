@@ -1,0 +1,13 @@
+package examples;
+
+@import("cstd:io.ray");
+
+fn print(buffer: [u8;]) 
+	fwrite(buffer as mut *(), @sizeOf(c_char) as c_size, strlen(buffer as mut* mut c_char), get_stdout());
+
+
+#[Linkage(mangling="c", resolution="external")]
+pub fn main(argc: mut s32, argv: mut *mut *mut c_char) -> mut s32 {
+	print("Hello World!\n");
+	return 0;
+}

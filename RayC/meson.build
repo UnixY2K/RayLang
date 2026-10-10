@@ -3,12 +3,13 @@ rayc_incl = include_directories('include')
 rayc_srcs = [
 	'src/cli/cli_args.cpp',
 	'src/cli/options.cpp',
-	'src/cli/terminal.cpp',
 	'src/compiler/syntax/common/intrinsic.cpp',
 	#backend target output
 	'src/compiler/backend/c/c_transpiler.cpp',
 	#environment data
 	'src/compiler/environment/dataModel/dataModel.cpp',
+	#infrastucture
+	'src/compiler/infrastructure/diagnosticsEngine.cpp',
 	# lang
 	'src/compiler/lang/scope.cpp',
 	'src/compiler/lang/sourceUnit.cpp',
@@ -19,9 +20,14 @@ rayc_srcs = [
 	'src/compiler/lexer/lexer.cpp',
 	'src/compiler/lexer/token.cpp',
 	'src/compiler/parser/parser.cpp',
-	'src/compiler/passes/rst/typeChecker.cpp',
+	'src/compiler/passes/ast/resolver.cpp',
+	'src/compiler/passes/rst/moduleResolver.cpp',
 	'src/compiler/passes/rst/typeScanner.cpp',
-	'src/compiler/passes/resolver.cpp',
+	'src/compiler/passes/rst/metaExpansion.cpp',
+	'src/compiler/passes/rst/desugaring.cpp',
+	'src/compiler/passes/rst/typeChecker.cpp',
+	'src/compiler/passes/rst/lowering.cpp',
+	'src/compiler/passes/passManager.cpp',
 	'src/compiler/passes/symbol_mangler.cpp',
 	'src/compiler/message_bag.cpp',
 	'src/source.cpp',

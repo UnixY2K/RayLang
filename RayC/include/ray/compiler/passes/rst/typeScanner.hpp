@@ -1,21 +1,28 @@
 #pragma once
 #include <cstddef>
+#include <string_view>
 
 #include <ray/compiler/directives/compilerDirective.hpp>
 #include <ray/compiler/environment/dataModel/dataModel.hpp>
 #include <ray/compiler/lang/module.hpp>
+#include <ray/compiler/lang/scope.hpp>
 #include <ray/compiler/lang/sourceUnit.hpp>
 #include <ray/compiler/lang/struct.hpp>
 #include <ray/compiler/lang/trait.hpp>
 #include <ray/compiler/lang/type.hpp>
-#include <ray/compiler/message_bag.hpp>
+#include <ray/compiler/passes/compilerPass.hpp>
 #include <ray/compiler/syntax/rst/Expression.hpp>
 #include <ray/compiler/syntax/rst/Statement.hpp>
 
 namespace ray::compiler::passes::rst {
 class TypeScanner : public syntax::rst::StatementVisitor,
-                    public syntax::rst::ExpressionVisitor {
-	MessageBag messageBag;
+                    public syntax::rst::ExpressionVisitor,
+                    public CompilerPass {
+
+	infrastructure::CompilationContext *compilationContext;
+	std::unique_ptr<infrastructure::CompilerArtifact> currentCompilerArtifact;
+	
+	lang::Scope *currentScope;
 
 	std::vector<std::unique_ptr<directive::CompilerDirective>> directivesStack;
 	size_t directivesStackTop = 0;
@@ -24,31 +31,19 @@ class TypeScanner : public syntax::rst::StatementVisitor,
 	std::vector<lang::StructMember> structMemberStack;
 	std::vector<lang::Method> traitMethodStack;
 
-	std::reference_wrapper<const environment::DataModel> currentDataModel;
-
-	lang::SourceUnit &currentSourceUnit;
-	lang::ModuleStore &currentModuleStore;
-	std::reference_wrapper<lang::Scope> currentScope;
-
   public:
-	TypeScanner(std::string filePath, const environment::DataModel &dataModel,
-	            lang::SourceUnit &sourceUnit, lang::ModuleStore &moduleStore)
-	    : messageBag("TYPE-SCANNER", filePath), directivesStack(),
-	      currentDataModel(dataModel), currentSourceUnit(sourceUnit),
-	      currentModuleStore(moduleStore),
-	      currentScope(currentSourceUnit.rootScope) {}
+	TypeScanner() = default;
 
-	void resolve(const syntax::rst::Block &statement);
-
-	const lang::SourceUnit &getCurrentSourceUnit() const {
-		return currentSourceUnit;
-	}
-
-	bool hasFailed() const;
-	const std::vector<std::string> getErrors() const;
-	const std::vector<std::string> getWarnings() const;
+	std::string_view name() const override { return "TypeScanner"; }
+	void run(infrastructure::CompilationContext &ctx,
+	         std::unique_ptr<infrastructure::CompilerArtifact>
+	             previousCompilerArtifact) override;
+	std::unique_ptr<infrastructure::CompilerArtifact>
+	getCompilationArtifact() override;
 
   private:
+	void resolve(const syntax::rst::Block &statement);
+
 	void visitBlockStatement(const syntax::rst::Block &value) override;
 	void visitTerminalExpressionStatement(
 	    const syntax::rst::TerminalExpression &value) override;
@@ -114,5 +109,10 @@ class TypeScanner : public syntax::rst::StatementVisitor,
 	bool returnScope(lang::Scope &scope);
 
 	void discoverStruct(const syntax::rst::Struct &structAst);
+
+	auto &getCurrentSourceUnit() { return compilationContext->sourceUnit; }
+
+  public:
+	~TypeScanner() = default;
 };
-} // namespace ray::compiler::passes
+} // namespace ray::compiler::passes::rst
