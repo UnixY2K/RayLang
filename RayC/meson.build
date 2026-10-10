@@ -16,7 +16,6 @@ rayc_srcs = [
 	'src/compiler/lang/struct.cpp',
 	'src/compiler/lang/trait.cpp',
 	'src/compiler/lang/type.cpp',
-	'src/compiler/lexer/lexer_error.cpp',
 	'src/compiler/lexer/lexer.cpp',
 	'src/compiler/lexer/token.cpp',
 	'src/compiler/parser/parser.cpp',
@@ -29,7 +28,6 @@ rayc_srcs = [
 	'src/compiler/passes/rst/lowering.cpp',
 	'src/compiler/passes/passManager.cpp',
 	'src/compiler/passes/symbol_mangler.cpp',
-	'src/compiler/message_bag.cpp',
 	'src/source.cpp',
 ]
 rayc_args = []

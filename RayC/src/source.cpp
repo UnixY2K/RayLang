@@ -97,30 +97,6 @@ int main(int argc, char **argv) {
 			                         "Error"_red, opts.input.string());
 			return 1;
 		}
-		std::ostringstream oss{};
-		oss << input.rdbuf();
-
-		Lexer lexer(oss.view());
-
-		auto tokens = lexer.scanTokens();
-		if (lexer.getErrors().size() > 0) {
-			for (auto &error : lexer.getErrors()) {
-				std::cerr << std::format(
-				    "{}: [{}:{}] {}\n", "LexerError"_red, opts.input.string(),
-				    error.positionString(), error.toString());
-			}
-			return 1;
-		}
-
-		auto parser = Parser(sourceFile, tokens);
-		auto rootBlock = parser.parse();
-
-		if (parser.failed()) {
-			for (auto parseError : parser.getErrors()) {
-				std::cerr << parseError;
-			}
-			return 1;
-		}
 
 		infrastructure::diagnostics::DiagnosticEngine diagnostics;
 		infrastructure::CompilationContext compilationCtx{
@@ -154,10 +130,11 @@ int main(int argc, char **argv) {
 			return -1;
 		}
 
-		auto finalCompilationArtifact = passManager.run(
-		    compilationCtx, std::make_unique<infrastructure::CompilerArtifact>(
-		                        infrastructure::CompilerArtifact(
-		                            {std::move(rootBlock)}, std::nullopt)));
+		std::ostringstream oss{};
+		oss << input.rdbuf();
+
+		auto finalCompilationArtifact =
+		    passManager.run(compilationCtx, sourceFile, oss.view());
 
 		for (auto diagnostic : compilationCtx.diagnostics.getDiagnostics()) {
 			auto messageColor = terminal::Color::None;
@@ -182,7 +159,7 @@ int main(int argc, char **argv) {
 			        std::format("{:<8}", diagnostic.severityAsString()),
 			        messageColor),
 			    terminal::colored(std::format("{:<14}", diagnostic.category),
-			                      messageColor),
+				                  messageColor),
 			    filePath, location.line, location.column, diagnostic.message);
 		}
 

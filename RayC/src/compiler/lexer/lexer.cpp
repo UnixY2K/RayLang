@@ -5,18 +5,18 @@
 #include <vector>
 
 #include <ray/compiler/lexer/lexer.hpp>
-#include <ray/compiler/lexer/lexer_error.hpp>
 #include <ray/compiler/lexer/token.hpp>
 
 namespace ray::compiler {
 
-Lexer::Lexer(std::string_view source) : source(source) {}
+Lexer::Lexer(infrastructure::CompilationContext &context,
+             std::string_view source)
+    : source(source) {}
 
 bool Lexer::isAtEnd() const { return current >= source.length(); };
 
 std::vector<Token> Lexer::scanTokens() {
 	tokens.clear();
-	errors.clear();
 	current = 0;
 	line = 1;
 	column = 0;
@@ -30,8 +30,6 @@ std::vector<Token> Lexer::scanTokens() {
 
 	return tokens;
 }
-
-const std::vector<LexerError> &Lexer::getErrors() const { return errors; }
 
 void Lexer::scanToken() {
 	char c = advance();
@@ -213,10 +211,7 @@ void Lexer::scanToken() {
 		} else {
 			Token errorToken =
 			    Token{type, std::string{std::string_view(&c, 1)}, line, column};
-			errors.push_back(
-			    {.category = LexerError::ErrorCategory::UnexpectedCharacter,
-			     .token = errorToken,
-			     .message = "Unexpected character"});
+			context->diagnostics.error(errorToken, "Unexpected character");
 		}
 		break;
 	}
@@ -267,10 +262,7 @@ void Lexer::string() {
 			if (isAtEnd()) {
 				Token errorToken{Token::TokenType::TOKEN_STRING, value, line,
 				                 column};
-				errors.push_back(
-				    {.category = LexerError::ErrorCategory::UnterminatedString,
-				     .token = errorToken,
-				     .message = "Unterminated string"});
+				context->diagnostics.error(errorToken, "Unterminated string");
 			}
 			switch (peek()) {
 			case 'n': {
@@ -284,11 +276,9 @@ void Lexer::string() {
 			default: {
 				Token errorToken{Token::TokenType::TOKEN_STRING, value, line,
 				                 column};
-				errors.push_back(
-				    {.category = LexerError::ErrorCategory::UnterminatedString,
-				     .token = errorToken,
-				     .message = std::format("Unknown escape sequence '\\{}'",
-				                            peek())});
+				context->diagnostics.error(
+				    errorToken,
+				    std::format("Unknown escape sequence '\\{}'", peek()));
 				return;
 			}
 			}
@@ -301,10 +291,7 @@ void Lexer::string() {
 
 	if (isAtEnd()) {
 		Token errorToken{Token::TokenType::TOKEN_STRING, value, line, column};
-		errors.push_back(
-		    {.category = LexerError::ErrorCategory::UnterminatedString,
-		     .token = errorToken,
-		     .message = "Unterminated string"});
+		context->diagnostics.error(errorToken, "Unterminated string");
 		return;
 	}
 
@@ -372,11 +359,9 @@ void Lexer::charLiteral() {
 		default: {
 			Token errorToken{
 			    Token::TokenType::TOKEN_STRING, {character}, line, column};
-			errors.push_back(
-			    {.category = LexerError::ErrorCategory::UnterminatedCharLiteral,
-			     .token = errorToken,
-			     .message =
-			         std::format("Unknown escape sequence '\\{}'", peek())});
+			context->diagnostics.error(
+			    errorToken,
+			    std::format("Unknown escape sequence '\\{}'", peek()));
 			return;
 		}
 		}
@@ -386,10 +371,8 @@ void Lexer::charLiteral() {
 	if (peek() != '\'') {
 		Token errorToken{
 		    Token::TokenType::TOKEN_CHAR, {character}, line, column};
-		errors.push_back(
-		    {.category = LexerError::ErrorCategory::UnterminatedCharLiteral,
-		     .token = errorToken,
-		     .message = "Expected ' after char literal"});
+		context->diagnostics.error(errorToken,
+		                                     "Expected ' after char literal");
 	}
 	advance();
 	addToken(Token::TokenType::TOKEN_CHAR, {character});
@@ -414,7 +397,7 @@ void Lexer::identifier() {
 	auto type = Token::fromString(text);
 	addToken(type == Token::TokenType::TOKEN_ERROR
 	             ? Token::TokenType::TOKEN_IDENTIFIER
-	             : type,
+				 : type,
 	         std::string{type == Token::TokenType::TOKEN_ERROR ? text : ""});
 }
 

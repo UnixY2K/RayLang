@@ -14,7 +14,6 @@
 #include <ray/compiler/lang/struct.hpp>
 #include <ray/compiler/lang/type.hpp>
 #include <ray/compiler/lexer/token.hpp>
-#include <ray/compiler/message_bag.hpp>
 #include <ray/compiler/passes/symbol_mangler.hpp>
 #include <ray/compiler/syntax/common/intrinsic.hpp>
 #include <ray/util/soft_reference.hpp>

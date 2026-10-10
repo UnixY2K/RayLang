@@ -6,8 +6,9 @@
 #include <string>
 #include <vector>
 
+#include <ray/compiler/infrastructure/compilationContext.hpp>
 #include <ray/compiler/lexer/token.hpp>
-#include <ray/compiler/message_bag.hpp>
+#include <ray/compiler/passes/compilerPass.hpp>
 #include <ray/compiler/syntax/ast/Expression.hpp>
 #include <ray/compiler/syntax/ast/Statement.hpp>
 
@@ -16,18 +17,18 @@ namespace ray::compiler {
 class ParseException : public std::exception {};
 
 class Parser {
-	MessageBag messageBag;
+	infrastructure::CompilationContext *compilationContext;
+
 	std::vector<Token> tokens;
 	size_t current = 0;
 
   public:
-	Parser() : Parser("", {}) {};
-	Parser(std::string filepath, std::vector<Token> tokens);
+	Parser(std::vector<Token> tokens);
 
 	std::unique_ptr<syntax::ast::Block> parse();
 
-	bool failed() const;
-	const std::vector<std::string> getErrors() const;
+	std::unique_ptr<infrastructure::CompilerArtifact>
+	makeInitialCompilationArtifact(infrastructure::CompilationContext &ctx);
 
   private:
 	std::unique_ptr<syntax::ast::Expression> expression();

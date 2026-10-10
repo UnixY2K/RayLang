@@ -1,6 +1,6 @@
 #pragma once
 
-#include <ray/compiler/lexer/lexer_error.hpp>
+#include <ray/compiler/infrastructure/compilationContext.hpp>
 #include <ray/compiler/lexer/token.hpp>
 
 #include <cstddef>
@@ -9,9 +9,9 @@
 
 namespace ray::compiler {
 class Lexer {
+	infrastructure::CompilationContext *context;
 	std::string_view source;
 	std::vector<Token> tokens;
-	std::vector<LexerError> errors;
 	size_t start = 0;
 	size_t startLine = 0;
 	size_t startColumn = 0;
@@ -20,12 +20,10 @@ class Lexer {
 	size_t column = 0;
 
   public:
-	Lexer(std::string_view source);
+	Lexer(infrastructure::CompilationContext &context, std::string_view source);
 
 	bool isAtEnd() const;
 	std::vector<Token> scanTokens();
-
-	const std::vector<LexerError> &getErrors() const;
 
   private:
 	void scanToken();

@@ -4,6 +4,7 @@
 #include <functional>
 #include <memory>
 #include <optional>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -37,6 +38,9 @@ class PassManager {
 	run(infrastructure::CompilationContext &context,
 	    std::unique_ptr<infrastructure::CompilerArtifact>
 	        initialCompilationArtifact);
+	std::unique_ptr<infrastructure::CompilerArtifact>
+	run(infrastructure::CompilationContext &context, std::string_view filePath,
+	    std::string_view source);
 	void clear() { passes.clear(); }
 };
 

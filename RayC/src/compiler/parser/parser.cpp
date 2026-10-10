@@ -9,8 +9,8 @@
 
 #include <ray/cli/terminal.hpp>
 
+#include <ray/compiler/infrastructure/compilationContext.hpp>
 #include <ray/compiler/lexer/token.hpp>
-#include <ray/compiler/message_bag.hpp>
 #include <ray/compiler/parser/parser.hpp>
 #include <ray/compiler/syntax/ast/Expression.hpp>
 #include <ray/compiler/syntax/ast/Statement.hpp>
@@ -20,8 +20,8 @@ namespace ray::compiler {
 
 using namespace terminal::literals;
 
-Parser::Parser(std::string filepath, std::vector<Token> tokens)
-    : messageBag("parser", filepath), tokens(tokens) {}
+Parser::Parser(std::vector<Token> tokens)
+    : tokens(tokens) {}
 
 std::unique_ptr<syntax::ast::Block> Parser::parse() {
 	current = 0;
@@ -41,9 +41,12 @@ std::unique_ptr<syntax::ast::Block> Parser::parse() {
 	}
 }
 
-bool Parser::failed() const { return messageBag.failed(); }
-const std::vector<std::string> Parser::getErrors() const {
-	return messageBag.getErrors();
+std::unique_ptr<infrastructure::CompilerArtifact>
+Parser::makeInitialCompilationArtifact(
+    infrastructure::CompilationContext &ctx) {
+	compilationContext = &ctx;
+	return std::make_unique<infrastructure::CompilerArtifact>(
+	    infrastructure::CompilerArtifact(parse()));
 }
 
 std::optional<std::unique_ptr<syntax::ast::Statement>>
@@ -60,7 +63,7 @@ Parser::CompilerDirective() {
 			do {
 				auto attributeToken =
 				    consume(Token::TokenType::TOKEN_IDENTIFIER,
-				            "Expect attribute name.");
+					        "Expect attribute name.");
 				std::string attributeName =
 				    std::string(attributeToken.getLexeme());
 				if (attributes.contains(
@@ -75,8 +78,8 @@ Parser::CompilerDirective() {
 				if (match({Token::TokenType::TOKEN_EQUAL})) {
 					auto valueToken =
 					    consume(Token::TokenType::TOKEN_STRING,
-					            "expected string literal value for "
-					            "compiler directive attribute");
+						        "expected string literal value for "
+						        "compiler directive attribute");
 					attributeValue = valueToken.getLexeme();
 				}
 				attributes[attributeName] = attributeValue;
@@ -659,7 +662,7 @@ std::unique_ptr<syntax::ast::Expression> Parser::comparisonExpression() {
 
 	while (match(
 	    {Token::TokenType::TOKEN_GREAT, Token::TokenType::TOKEN_GREAT_EQUAL,
-	     Token::TokenType::TOKEN_LESS, Token::TokenType::TOKEN_LESS_EQUAL})) {
+		 Token::TokenType::TOKEN_LESS, Token::TokenType::TOKEN_LESS_EQUAL})) {
 		Token op = previous();
 		auto right = terminalExpression();
 		expr = std::make_unique<syntax::ast::Binary>(syntax::ast::Binary{
@@ -775,7 +778,7 @@ std::unique_ptr<syntax::ast::Expression> Parser::tupleTypeExpression() {
 
 		auto tupleNameToken =
 		    Token{Token::TokenType::TOKEN_LEFT_SQUARE_BRACE, "%<tuple>%",
-		          tupleStartToken.line, tupleStartToken.column};
+			      tupleStartToken.line, tupleStartToken.column};
 		return std::make_unique<syntax::ast::TupleType>(syntax::ast::TupleType{
 		    isMutable, std::move(types), tupleStartToken});
 	}
@@ -993,7 +996,7 @@ Token Parser::consume(Token::TokenType type, std::string message) {
 }
 
 ParseException Parser::error(Token token, std::string message) {
-	messageBag.error(token, message);
+	compilationContext->diagnostics.error(token, message);
 	return ParseException();
 }
 
