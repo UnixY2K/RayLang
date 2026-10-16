@@ -154,7 +154,7 @@ int main(int argc, char **argv) {
 			std::string filePath = opts.input.string();
 			const auto &location = diagnostic.location;
 			std::cerr << std::format(
-			    "{}|{} [{}:{}:{}] : {}\n",
+			    "{}|{} [{}:{}:{}]: {}\n",
 			    terminal::colored(
 			        std::format("{:<8}", diagnostic.severityAsString()),
 			        messageColor),
