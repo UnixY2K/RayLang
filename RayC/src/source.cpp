@@ -66,11 +66,6 @@ int main(int argc, char **argv) {
 
 		const environment::DataModel *dataModel;
 		switch (opts.dataModel) {
-		case ray::compiler::cli::Options::TargetDataModel::NONE: {
-			std::cerr << std::format("{}: no data model available\n",
-			                         "Error"_red);
-			return 1;
-		}
 		case ray::compiler::cli::Options::TargetDataModel::LLP64: {
 			dataModel = &environment::DataModel::LLP64DataModel();
 			break;
@@ -78,6 +73,11 @@ int main(int argc, char **argv) {
 		case ray::compiler::cli::Options::TargetDataModel::LP64: {
 			dataModel = &environment::DataModel::LP64DataModel();
 			break;
+		}
+		case ray::compiler::cli::Options::TargetDataModel::NONE: {
+			std::cerr << std::format("{}: no data model available\n",
+			                         "Error"_red);
+			return 1;
 		}
 		default: {
 			std::cerr << std::format(
