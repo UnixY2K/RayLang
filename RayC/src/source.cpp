@@ -5,7 +5,6 @@
 #include <format>
 #include <fstream>
 #include <iostream>
-#include <memory>
 #include <optional>
 #include <sstream>
 
@@ -105,7 +104,7 @@ int main(int argc, char **argv) {
 		passes::PassManager passManager;
 
 		passManager.addPass<passes::Resolver>();
-		passManager.addPass<passes::rst::moduleResolver>();
+		passManager.addPass<passes::rst::ModuleResolver>();
 		passManager.addPass<passes::rst::TypeScanner>();
 		passManager.addPass<passes::rst::MetaExpansion>();
 		passManager.addPass<passes::rst::Desugaring>();
